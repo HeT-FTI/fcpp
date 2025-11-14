@@ -9,9 +9,9 @@
  * @defgroup demo Demo
  *
  * @brief [en] demonstration for file-level description
- *     The file-level docstring uses multi-lined code-block with start of  "/*!".
+ *     The file-level docstring uses multi-lined code-block with start of  "*!".
  * @brief [zh] 文件级说明演示
- *     文件级字符串使用形如“/*!”为开始的多行代码块注释。
+ *     文件级字符串使用形如“*!”为开始的多行代码块注释。
  *
  * @section tag_1st main-title
  *     Description for the 1st level section. No language tag here means this part will
