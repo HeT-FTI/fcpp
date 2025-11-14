@@ -68,6 +68,8 @@ class PackageTestConan(ConanFile):
         tc.variables["LIB_NAME"] = lib_name
         tc.variables["CXX_DEPS"] = self._get_targets()
         tc.variables["TRIGGER_TESTS"] = self.metadata.get('trigger_tests')
+        tc.variables["MAIN_LIB_TARGET"] = [_a := self.metadata.get('target'),
+                                           f'{lib_name}::{lib_name}' if _a == 'auto' else _a][-1]
         tc.generate()
 
     def _preparing_deps_links(self):

@@ -65,11 +65,11 @@ if (TRIGGER_TESTS)
 
     file(GLOB TEST_SOURCES_U "test/unit/*.cpp")
     add_executable(unit_tests ${TEST_SOURCES_U})
-    target_link_libraries(unit_tests PRIVATE ${LIB_NAME}::${LIB_NAME} GTest::gtest)
+    target_link_libraries(unit_tests PRIVATE ${MAIN_LIB_TARGET} GTest::gtest)
     add_test(NAME unit_tests COMMAND unit_tests)
 
     file(GLOB TEST_SOURCES_S "test/stress/*.cpp")
     add_executable(stress_tests ${TEST_SOURCES_S})
-    target_link_libraries(stress_tests PRIVATE ${LIB_NAME}::${LIB_NAME} GTest::gtest)
+    target_link_libraries(stress_tests PRIVATE ${MAIN_LIB_TARGET} GTest::gtest)
     add_test(NAME stress_tests COMMAND stress_tests)
 endif ()
