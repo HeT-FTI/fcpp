@@ -1,6 +1,6 @@
 # A Modern C/CPP Library Build System
 
-This project is a C/C++ library built using Conan 2.0, featuring modern C and C++ standard support and module 
+This project is a C/C++ library built using Conan 2, featuring modern C and C++ standard support and module 
 capabilities.
 
 ## Badges
@@ -24,7 +24,7 @@ capabilities.
 - **Module Support**: Optionally activated, when C++ standard ≥ 23
 - **Component Structure**:
     - pairwise header and source assumption
-    - strict suffix constraint, (.h, .c) for C part, and (.hpp, .cpp) for C++ part
+    - suffix distinguishment, (.h, .c) for C part, and (.hpp, .cpp) for C++ part
     - documenting system uses .dox for pure docstring, .cxx for examples codes
 
 ## Features
@@ -53,6 +53,7 @@ capabilities.
 - Graphviz
 - sphinx
 - sphinx-intl
+- sphinx-rtd-theme
 
 ## Test Requirements
 
@@ -62,8 +63,16 @@ capabilities.
 
 ### 1. Build then test your library
 
+inplace build and test
+
 ```bash
 conan create . -s build_type=Debug --build=missing
+```
+
+cross-build to host device (assume toolchain and profile are ready):
+
+```bash
+conan create . -pr:b=default -pr:h=arm_profile -s build_type=Debug --build=missing -tf=""
 ```
 
 ### 2. Build documentations
@@ -72,16 +81,30 @@ conan create . -s build_type=Debug --build=missing
 python ./docs/build.py
 ```
 
-### 3. Add requirements
+### 3. One-lined build automation 
 
-Add your desired library in *conandata.yml* where dependency graph is computed through, then modify the 
-**dependencies** field in *metadata.json*, to link the targets in the proper way (no need modification
-on *CMakeLists.txt*).
+Unix-like platforms (Linux, MacOS):
+
+```bash
+bash ./build
+```
+
+Windows:
+
+```powershell
+Get-Content "build" | Invoke-Expression
+```
+
+### 4. Add requirements
+
+Add your required libraries in *conandata.yml* where dependency graph is automatically computed from, then 
+modify the **dependencies** field in *metadata.json* to config proper package names and associated targets to 
+link (no need modification on *CMakeLists.txt*).
 
 Requirements for your project can be the package archived on [Conan Center](https://conan.io/center), or user 
-built ones. If the later, more detailed configuration is in discussion.
+built ones. If the later one, at least you need a locale Conan server for managing your libraries.
 
-## Project Structure
+## All-in-one Project Structure
 
 ```
 project-root/
@@ -116,12 +139,12 @@ project-root/
     │   └── *.cpp            # Scripts for stress testing
     ├── unit/
     │   └── *.cpp            # Scripts for unit testing
-    ├── main.cpp             # No testing validation program
+    ├── main.cpp             # Validation program for package
     ├── conanfile.py         # Conan recipe for test_package
     └── CMakeLists.txt       # CMake build workflow for test_package
 ```
 
-## Module Generation
+## Module Generation (experimental)
 
 When `generate_modules_inplace` is enabled in `metadata.json`:
 
@@ -136,13 +159,18 @@ migration to fit the future C++ standard.
 
 ## Compiler Support Matrix
 
-| Feature          | MSVC | Clang | GCC |
-|------------------|------|-------|-----|
-| C++ Modules      | ✓    | ✓     | ✓   |
-| C Compatibility  | ✓    | ✓     | ✓   |
-| Automatic Export | ✓    | ✓     | ✓   |
+| Feature          | MSVC | Clang | GCC | Apple-Clang |
+|------------------|------|-------|-----|-------------|
+| C++ Modules      | ✓    | ✓     | ✓   | ✓           |
+| C Compatibility  | ✓    | ✓     | ✓   | ✓           |
+| Automatic Export | ✓    | ✓     | ✓   | ✓           |
 
-## To do things
+## Platforms Support
+
+- **Desktop**: Windows, Linux, MacOS
+- **Mobile**: arm-linux, risc-v
+
+## To Do Things
 
 Possible frame design/validation on Apple Clang compiler (raised from dlib requirement).
 
