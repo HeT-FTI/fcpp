@@ -24,10 +24,10 @@
     "cpp": {"Eigen3": ["Eigen3::Eigen"], "dlib": ["dlib::dlib"]},
     "test": {"GTest": ["gtest::gtest"]}
   },
-  "graphviz_bin": "C:\\Program Files\\Graphviz\\bin",
+  "graphviz_bin": "/usr/bin",
   "doc_languages": ["en", "zh"],
   "doc_versions": ["1.0", "2.0"],
-  "doc_doxygen_folders": ["include", "src", "docs\\doxygen\\dox"],
+  "doc_doxygen_folders": ["include", "src", "docs/doxygen/dox"],
   "doc_doxygen_suffix": ["h", "c", "hpp", "cpp", "dox", "cxx"],
   "trigger_tests": true,
   "saving_tests_log": true
