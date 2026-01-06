@@ -1,0 +1,18 @@
+name: Sync
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync labels templates
+        uses: micnnim/action-sync-lables@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          source_repo: HeT-FTI/.github-private
+          source_label_path: labels.yml
