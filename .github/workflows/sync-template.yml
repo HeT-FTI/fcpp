@@ -1,18 +1,27 @@
 name: Sync
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+    paths:
+      - '.github/labels.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
-  sync:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Sync labels templates
-        uses: actions/labeler@v5
+      - name: Run Labeler
+        uses: Mic92/labeler@master
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          label-path: .github/labels.yml
-          allow-updates: true
+          filename: .github/labels.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
