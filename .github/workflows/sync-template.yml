@@ -28,8 +28,4 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           yaml-file: .github/labels.yml
-          skip-delete: false
           dry-run: ${{ github.event_name == 'pull_request' }}
-          exclude: |
-            help*
-            *issue
