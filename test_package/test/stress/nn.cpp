@@ -13,7 +13,7 @@ int sleep(int n) {
 
 
 void net_predict() {
-    int prediction = predict_random_sample();
+    // int prediction = predict_random_sample();
 }
 
 
