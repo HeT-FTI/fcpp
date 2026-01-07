@@ -1,4 +1,4 @@
-name: github
+name: Sync
 
 on:
   push:
@@ -6,11 +6,9 @@ on:
       - 'main'
     paths:
       - '.github/labels.yml'
-      - '.github/workflows/labels.yml'
   pull_request:
     paths:
       - '.github/labels.yml'
-      - '.github/workflows/labels.yml'
 
 jobs:
   labeler:
