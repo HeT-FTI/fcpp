@@ -25,43 +25,29 @@ jobs:
       - name: Check build_type
         id: check_build_type
         run: |
-          if [ ! -f metadata.json ]; then
-            echo "metadata.json not found. Skipping versioning."
-            echo "should_release=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          BUILD_TYPE=$(jq -r '.build_type // empty' metadata.json)
-          if [ -z "$BUILD_TYPE" ]; then
-            echo "build_type field missing or null in metadata.json. Skipping."
-            echo "should_release=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          echo "Detected build_type: $BUILD_TYPE"
-          if [ "$BUILD_TYPE" = "Release" ]; then
-            echo "build_type is 'Release'. Proceeding with versioning."
-            echo "should_release=true" >> $GITHUB_OUTPUT
+          BUILD_TYPE=$(jq -r '.build_type' metadata.json)
+          echo "build_type=$BUILD_TYPE" >> $GITHUB_OUTPUT
+          if [ "$BUILD_TYPE" == "Release" ]; then
+            echo "should_versioning=true" >> $GITHUB_OUTPUT
+            echo "build_type is 'Release'. Continuing with versioning."
           else
+            echo "should_versioning=false" >> $GITHUB_OUTPUT
             echo "build_type is '$BUILD_TYPE', not 'Release'. Skipping versioning."
-            echo "should_release=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Set up Python
-        if: steps.check_build_type.outputs.should_release == 'true'
+        if: steps.check_build_type.outputs.should_versioning == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
       - name: Run Versioning Script
-        if: steps.check_build_type.outputs.should_release == 'true'
+        if: steps.check_build_type.outputs.should_versioning == 'true'
         run: |
           chmod +x .github/misc/commit_semver.py
           python3 .github/misc/commit_semver.py
 
       - name: Push Changes
-        if: steps.check_build_type.outputs.should_release == 'true'
+        if: steps.check_build_type.outputs.should_versioning == 'true'
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git push origin main
