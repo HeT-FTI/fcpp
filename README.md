@@ -170,6 +170,11 @@ migration to fit the future C++ standard.
 - **Desktop**: Windows, Linux, MacOS
 - **Mobile**: arm-linux, risc-v
 
+## Commit Convention
+
+Commit style use the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+specificationfor commit messages.
+
 ## To Do Things
 
 Possible frame design/validation on Apple Clang compiler (raised from dlib requirement).
