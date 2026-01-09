@@ -1,14 +1,14 @@
-name: Sync
+name: github
 
 on:
   push:
     branches:
       - 'main'
     paths:
-      - '.github/labels.yml'
+      - '.github/misc/labels.yml'
   pull_request:
     paths:
-      - '.github/labels.yml'
+      - '.github/misc/labels.yml'
 
 jobs:
   labeler:
@@ -25,5 +25,5 @@ jobs:
         uses: crazy-max/ghaction-github-labeler@v5
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          yaml-file: .github/labels.yml
+          yaml-file: .github/misc/labels.yml
           dry-run: ${{ github.event_name == 'pull_request' }}
