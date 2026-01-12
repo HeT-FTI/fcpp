@@ -1,0 +1,104 @@
+name: Tests
+
+on:
+  push:
+    branches: [ fcpp-dev ]
+  pull_request:
+    branches: [ fcpp-dev ]
+
+env:
+  CONAN_HOME: ${{ github.workspace }}/conan_home
+
+jobs:
+  build-and-test:
+    if: >-
+      github.event_name == 'push' &&
+      contains(join(github.event.commits.*.message, '\n'), ':+1:') ||
+      github.event_name == 'pull_request'
+    name: Build and Test (${{ matrix.os }}, ${{ matrix.build_type }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        build_type: [Debug]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Conan
+        run: |
+          pip install conan
+
+      - name: Read metadata.json
+        id: read_metadata
+        run: |
+          python -c "
+          import json, os
+          with open('metadata.json') as f:
+            m = json.load(f)
+          pkg_name = str(m.get('name'))
+          is_debug = str(m.get('is_debug', True)).lower()
+          trigger = str(m.get('trigger_tests', False)).lower()
+          saving = str(m.get('saving_tests_log', False)).lower()
+          coverage = str(m.get('activate_code_coverage', False)).lower()
+          "
+
+      - name: Configure Conan
+        run: |
+          echo "CONAN_HOME=${{ env.CONAN_HOME }}" >> $GITHUB_ENV
+          conan profile detect --force
+
+      - name: System dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt install -y libnsl-dev lcov
+
+      - name: Cache Conan packages
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.CONAN_HOME }}
+          key: conan-${{ runner.os }}-${{ hashFiles('conanfile.py', 'conan.lock') }}
+          restore-keys: |
+            conan-${{ runner.os }}-
+
+      - name: Build and test with Conan
+        run: |
+          conan create . -pr:b=default -pr:h=default -s build_type=${{ matrix.build_type }} --build=missing
+        timeout-minutes: 30
+
+      - name: Upload test log
+        if: >-
+          steps.read_metadata.outputs.is_debug == 'true' &&
+          steps.read_metadata.outputs.trigger_tests == 'true' &&
+          steps.read_metadata.outputs.saving_tests_log == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResult-log-${{ matrix.os }}-${{ matrix.build_type }}
+          path: test_package/export/TestResult.log
+          if-no-files-found: warn
+
+      - name: Upload code coverage
+        if: >-
+          steps.read_metadata.outputs.is_debug == 'true' &&
+          steps.read_metadata.outputs.trigger_tests == 'true' &&
+          steps.read_metadata.outputs.coverage == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Coverage-report-${{ matrix.os }}-${{ matrix.build_type }}
+          path: test_package/export/coverage/
+          if-no-files-found: warn
+
+      - name: Clean up test_package builds
+        run: |
+          python ./test_package/conanfile.py
+
+      - name: Clean up Conan packages
+        if: always()
+        run: |
+          conan remove "${{ steps.read_metadata.outputs.pkg_name }}/*" --confirm
