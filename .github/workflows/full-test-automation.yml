@@ -10,7 +10,7 @@ env:
   CONAN_HOME: ~/conan_home
 
 jobs:
-  build-and-test:
+  auto-testing:
     if: >-
       github.event_name == 'push' &&
       contains(join(github.event.commits.*.message, '\n'), ':+1:') ||
@@ -82,8 +82,8 @@ jobs:
       - name: Upload test log
         if: >-
           steps.read_metadata.outputs.type == 'Debug' &&
-          steps.read_metadata.outputs.trigger_tests == 'true' &&
-          steps.read_metadata.outputs.saving_tests_log == 'true'
+          steps.read_metadata.outputs.trigger == 'true' &&
+          steps.read_metadata.outputs.saving == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: TestResult-log-${{ matrix.os }}-${{ matrix.build_type }}
@@ -93,7 +93,7 @@ jobs:
       - name: Upload code coverage
         if: >-
           steps.read_metadata.outputs.type == 'Debug' &&
-          steps.read_metadata.outputs.trigger_tests == 'true' &&
+          steps.read_metadata.outputs.trigger == 'true' &&
           steps.read_metadata.outputs.coverage == 'true'
         uses: actions/upload-artifact@v4
         with:
