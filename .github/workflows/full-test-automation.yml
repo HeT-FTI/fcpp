@@ -38,27 +38,18 @@ jobs:
       - name: Read metadata.json
         id: read_metadata
         run: |
-          python -c "
-          import json, os
-          with open('metadata.json') as f:
-            m = json.load(f)
-          pkg_name = str(m.get('name'))
-          type = str(m.get('build_type'))
-          trigger = str(m.get('trigger_tests')).lower()
-          saving = str(m.get('saving_tests_log')).lower()
-          coverage = str(m.get('activate_code_coverage')).lower()
+          pck_name=$(jq -r '.name' metadata.json)
+          type=$(jq -r '.build_type' metadata.json)
+          trigger=$(jq -r '.trigger_tests | ascii_downcase' metadata.json)
+          saving=$(jq -r '.saving_tests_log | ascii_downcase' metadata.json)
+          coverage=$(jq -r '.activate_code_coverage | ascii_downcase' metadata.json)
+          echo "all values: $pkg_name $type $trigger $saving $coverage"
 
-          env_file = os.environ.get('GITHUB_OUTPUT')
-          if env_file:
-            with open(env_file, 'a') as f:
-              f.write(f'pkg_name={pkg_name}\n')
-              f.write(f'type={type}\n')
-              f.write(f'trigger={trigger}\n')
-              f.write(f'saving={saving}\n')
-              f.write(f'coverage={coverage}\n')
-          "
-
-          echo "the PKG_NAME: ${{ steps.read_metadata.outputs.pkg_name }}"
+          echo "pck_name=$pkg_name" >> "$GITHUB_OUTPUT"
+          echo "type=$type" >> "$GITHUB_OUTPUT"
+          echo "trigger=$trigger" >> "$GITHUB_OUTPUT"
+          echo "saving=$saving" >> "$GITHUB_OUTPUT"
+          echo "coverage=$coverage" >> "$GITHUB_OUTPUT"
 
       - name: Configure Conan
         run: |
