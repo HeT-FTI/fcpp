@@ -43,7 +43,7 @@ jobs:
           with open('metadata.json') as f:
             m = json.load(f)
           pkg_name = str(m.get('name'))
-          is_debug = str(m.get('is_debug', True)).lower()
+          type = str(m.get('build_type'))
           trigger = str(m.get('trigger_tests', False)).lower()
           saving = str(m.get('saving_tests_log', False)).lower()
           coverage = str(m.get('activate_code_coverage', False)).lower()
@@ -74,7 +74,7 @@ jobs:
 
       - name: Upload test log
         if: >-
-          steps.read_metadata.outputs.is_debug == 'true' &&
+          steps.read_metadata.outputs.type == 'Debug' &&
           steps.read_metadata.outputs.trigger_tests == 'true' &&
           steps.read_metadata.outputs.saving_tests_log == 'true'
         uses: actions/upload-artifact@v4
@@ -85,7 +85,7 @@ jobs:
 
       - name: Upload code coverage
         if: >-
-          steps.read_metadata.outputs.is_debug == 'true' &&
+          steps.read_metadata.outputs.type == 'Debug' &&
           steps.read_metadata.outputs.trigger_tests == 'true' &&
           steps.read_metadata.outputs.coverage == 'true'
         uses: actions/upload-artifact@v4
@@ -101,4 +101,5 @@ jobs:
       - name: Clean up Conan packages
         if: always()
         run: |
-          conan remove "${{ steps.read_metadata.outputs.pkg_name }}/*" --confirm
+          echo "${{ steps.read_metadata.outputs.pkg_name }}"
+          conan remove "fcpp/*" --confirm
