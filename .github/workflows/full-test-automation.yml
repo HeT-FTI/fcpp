@@ -15,7 +15,7 @@ jobs:
       github.event_name == 'push' &&
       contains(join(github.event.commits.*.message, '\n'), ':+1:') ||
       github.event_name == 'pull_request'
-    name: Build and Test (${{ matrix.os }}, ${{ matrix.build_type }})
+    name: Auto Testing (${{ matrix.os }}, ${{ matrix.build_type }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -48,7 +48,7 @@ jobs:
           saving = str(m.get('saving_tests_log')).lower()
           coverage = str(m.get('activate_code_coverage')).lower()
 
-          env_file = os.environ.get('GITHUB_ENV')
+          env_file = os.environ.get('GITHUB_OUTPUT')
           if env_file:
             with open(env_file, 'a') as f:
               f.write(f'pkg_name={pkg_name}\n')
@@ -58,7 +58,7 @@ jobs:
               f.write(f'coverage={coverage}\n')
           "
 
-          echo "the PKG_NAME: $PKG_NAME"
+          echo "the PKG_NAME: ${{ step.read_metadata.outputs.pkg_name }}"
 
       - name: Configure Conan
         run: |
