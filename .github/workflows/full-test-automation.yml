@@ -35,10 +35,10 @@ jobs:
   auto-testing:
     needs: check-build-type
     if: >-
-      ${{ needs.check_build_type.outputs.should_versioning == 'false' &&
+      ${{ needs.check_build_type.outputs.build_type == 'Debug' &&
           github.event_name == 'push' &&
           contains(join(github.event.commits.*.message, '\n'), ':+1:') }}
-    name: Auto Testing (${{ matrix.os }}, ${{ matrix.build_type }})
+    name: Auto Testing
     runs-on: ubuntu-latest
 
     steps:
