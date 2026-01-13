@@ -38,11 +38,7 @@ jobs:
       steps.check_build_type.outputs.should_versioning == 'false' &&
       github.event_name == 'push' && contains(join(github.event.commits.*.message, '\n'), ':+1:')
     name: Auto Testing (${{ matrix.os }}, ${{ matrix.build_type }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        build_type: [Debug]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
