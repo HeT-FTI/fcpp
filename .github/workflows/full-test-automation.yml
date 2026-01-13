@@ -10,11 +10,33 @@ env:
   CONAN_HOME: ~/conan_home
 
 jobs:
+  check-build-type:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check build_type
+        id: check_build_type
+        runs: |
+          BUILD_TYPE=$(jq -r '.build_type' metadata.json)
+          echo "build_type=$BUILD_TYPE" >> $GITHUB_OUTPUT
+          if [ "$BUILD_TYPE" == "Release" ]; then
+            echo "should_versioning=true" >> $GITHUB_OUTPUT
+            echo "build_type is 'Release'. Continuing with versioning."
+          else
+            echo "should_versioning=false" >> $GITHUB_OUTPUT
+            echo "build_type is '$BUILD_TYPE', not 'Release'. Skipping versioning."
+          fi
+  
   auto-testing:
+    needs: check-build-type
     if: >-
-      github.event_name == 'push' &&
-      contains(join(github.event.commits.*.message, '\n'), ':+1:') ||
-      github.event_name == 'pull_request'
+      steps.check_build_type.outputs.should_versioning == 'false' &&
+      github.event_name == 'push' && contains(join(github.event.commits.*.message, '\n'), ':+1:')
     name: Auto Testing (${{ matrix.os }}, ${{ matrix.build_type }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -38,7 +60,7 @@ jobs:
       - name: Read metadata.json
         id: read_metadata
         run: |
-          pck_name=$(jq -r '.name' metadata.json)
+          pkg_name=$(jq -r '.name' metadata.json)
           type=$(jq -r '.build_type' metadata.json)
           trigger=$(jq -r '.trigger_tests | ascii_downcase' metadata.json)
           saving=$(jq -r '.saving_tests_log | ascii_downcase' metadata.json)

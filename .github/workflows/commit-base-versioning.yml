@@ -9,12 +9,8 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  check-build-type:
     runs-on: ubuntu-latest
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: false
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -24,7 +20,7 @@ jobs:
 
       - name: Check build_type
         id: check_build_type
-        run: |
+        runs: |
           BUILD_TYPE=$(jq -r '.build_type' metadata.json)
           echo "build_type=$BUILD_TYPE" >> $GITHUB_OUTPUT
           if [ "$BUILD_TYPE" == "Release" ]; then
@@ -35,19 +31,23 @@ jobs:
             echo "build_type is '$BUILD_TYPE', not 'Release'. Skipping versioning."
           fi
 
+  auto-versioning:
+    needs: check-build-type
+    if: >-
+      steps.check_build_type.outputs.should_versioning == 'true' &&
+      github.event_name == 'push' && !contains(join(github.event.commits.*.message, '\n'), '(:package:): ')
+    runs-on: ubuntu-latest
+    steps:
       - name: Set up Python
-        if: steps.check_build_type.outputs.should_versioning == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
       - name: Run Versioning Script
-        if: steps.check_build_type.outputs.should_versioning == 'true'
         run: |
           chmod +x .github/misc/commit_semver.py
           python3 .github/misc/commit_semver.py
 
       - name: Push Changes
-        if: steps.check_build_type.outputs.should_versioning == 'true'
         run: |
           git push origin main

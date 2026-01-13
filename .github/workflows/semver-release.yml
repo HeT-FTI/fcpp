@@ -5,11 +5,33 @@ on:
       - main
 
 jobs:
-  release:
+  check-build-type:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check build_type
+        id: check_build_type
+        runs: |
+          BUILD_TYPE=$(jq -r '.build_type' metadata.json)
+          echo "build_type=$BUILD_TYPE" >> $GITHUB_OUTPUT
+          if [ "$BUILD_TYPE" == "Release" ]; then
+            echo "should_versioning=true" >> $GITHUB_OUTPUT
+            echo "build_type is 'Release'. Continuing with versioning."
+          else
+            echo "should_versioning=false" >> $GITHUB_OUTPUT
+            echo "build_type is '$BUILD_TYPE', not 'Release'. Skipping versioning."
+          fi
+
+  auto-release:
+    needs: check-build-type
     if: >-
-      github.event_name == 'push' &&
-      contains(join(github.event.commits.*.message, '\n'), '(:package:):') ||
-      github.event_name == 'pull_request'
+      steps.check_build_type.outputs.should_versioning == 'true' &&
+      github.event_name == 'push' && contains(join(github.event.commits.*.message, '\n'), '(:package:): ')
     name: Release
     runs-on: ubuntu-latest
     permissions:
