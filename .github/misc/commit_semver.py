@@ -156,7 +156,7 @@ def main():
     script_dir = Path(__file__).parent
     root_dir = script_dir.parent.parent
     metadata_path = root_dir / "metadata.json"
-    changelog_path = root_dir / "CHANGELOG.md"
+    changelog_path = root_dir / "Versioning.md"
 
     if not metadata_path.exists():
         print(f"Error: {metadata_path} not found")

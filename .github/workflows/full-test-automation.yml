@@ -7,7 +7,7 @@ on:
     branches: [ fcpp-dev ]
 
 env:
-  CONAN_HOME: ${{ github.workspace }}/conan_home
+  CONAN_HOME: ~/conan_home
 
 jobs:
   build-and-test:
