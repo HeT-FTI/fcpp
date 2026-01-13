@@ -44,9 +44,10 @@ jobs:
             m = json.load(f)
           pkg_name = str(m.get('name'))
           type = str(m.get('build_type'))
-          trigger = str(m.get('trigger_tests', False)).lower()
-          saving = str(m.get('saving_tests_log', False)).lower()
-          coverage = str(m.get('activate_code_coverage', False)).lower()
+          trigger = str(m.get('trigger_tests')).lower()
+          saving = str(m.get('saving_tests_log')).lower()
+          coverage = str(m.get('activate_code_coverage')).lower()
+          print('all values:', pkg_name, type, trigger, saving, coverage)
 
           print(f'::set-output name=pkg_name::{pkg_name}')
           print(f'::set-output name=type::{type}')
