@@ -58,7 +58,7 @@ jobs:
               f.write(f'coverage={coverage}\n')
           "
 
-          echo "the PKG_NAME: ${{ step.read_metadata.outputs.pkg_name }}"
+          echo "the PKG_NAME: ${{ steps.read_metadata.outputs.pkg_name }}"
 
       - name: Configure Conan
         run: |
