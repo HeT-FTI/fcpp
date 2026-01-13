@@ -62,7 +62,6 @@ jobs:
           echo "trigger=$trigger" >> "$GITHUB_OUTPUT"
           echo "saving=$saving" >> "$GITHUB_OUTPUT"
           echo "coverage=$coverage" >> "$GITHUB_OUTPUT"
-          echo "build type is ${{ needs.check-build-type.outputs.build_type }}"
 
       - name: Configure Conan
         run: |
