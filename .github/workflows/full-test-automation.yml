@@ -12,6 +12,8 @@ env:
 jobs:
   check-build-type:
     runs-on: ubuntu-latest
+    outputs:
+      build_type: ${{ steps.check_build_type.outputs.build_type }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -24,13 +26,6 @@ jobs:
         run: |
           BUILD_TYPE=$(jq -r '.build_type | tostring' metadata.json)
           echo "build_type=$BUILD_TYPE" >> $GITHUB_OUTPUT
-          if [ "$BUILD_TYPE" == "Release" ]; then
-            echo "should_versioning=true" >> $GITHUB_OUTPUT
-            echo "build_type is 'Release'. Continuing with versioning."
-          else
-            echo "should_versioning=false" >> $GITHUB_OUTPUT
-            echo "build_type is '$BUILD_TYPE', not 'Release'. Skipping versioning."
-          fi
   
   auto-testing:
     needs: check-build-type
@@ -120,4 +115,4 @@ jobs:
       - name: Clean up Conan packages
         if: always()
         run: |
-          conan remove "${{ steps.read_metadata.outputs.pkg_name }}/*" --confirm
+          conan remove "fcpp/*" --confirm
