@@ -7,7 +7,7 @@ on:
     branches: [ fcpp-dev ]
 
 env:
-  CONAN_HOME: ~/conan_home
+  CONAN_HOME: ~/.conan2
 
 jobs:
   check-build-type:
