@@ -7,6 +7,8 @@ on:
 jobs:
   check-build-type:
     runs-on: ubuntu-latest
+    outputs:
+      should_versioning: ${{ steps.check_build_type.outputs.should_versioning }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -17,7 +19,7 @@ jobs:
       - name: Check build_type
         id: check_build_type
         run: |
-          BUILD_TYPE=$(jq -r '.build_type' metadata.json)
+          BUILD_TYPE=$(jq -r '.build_type | tostring' metadata.json)
           echo "build_type=$BUILD_TYPE" >> $GITHUB_OUTPUT
           if [ "$BUILD_TYPE" == "Release" ]; then
             echo "should_versioning=true" >> $GITHUB_OUTPUT
@@ -30,7 +32,7 @@ jobs:
   auto-release:
     needs: check-build-type
     if: >-
-      ${{ needs.check_build_type.outputs.should_versioning == 'true' &&
+      ${{ needs.check-build-type.outputs.should_versioning == 'true' &&
           github.event_name == 'push' && 
           contains(join(github.event.commits.*.message, '\n'), '(:package:): ') }}
     name: Release
