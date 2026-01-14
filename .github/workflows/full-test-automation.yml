@@ -58,7 +58,7 @@ jobs:
           coverage=$(jq -r '.activate_code_coverage | tostring | ascii_downcase' metadata.json)
           echo "all values: $pkg_name $trigger $saving $coverage"
 
-          echo "pck_name=$pkg_name" >> "$GITHUB_OUTPUT"
+          echo "pkg_name=$pkg_name" >> "$GITHUB_OUTPUT"
           echo "trigger=$trigger" >> "$GITHUB_OUTPUT"
           echo "saving=$saving" >> "$GITHUB_OUTPUT"
           echo "coverage=$coverage" >> "$GITHUB_OUTPUT"
