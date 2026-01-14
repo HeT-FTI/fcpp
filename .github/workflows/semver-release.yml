@@ -35,7 +35,7 @@ jobs:
       ${{ needs.check-build-type.outputs.should_versioning == 'true' &&
           github.event_name == 'push' && 
           contains(join(github.event.commits.*.message, '\n'), '(:package:): ') }}
-    name: Release
+    name: Auto release
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -67,4 +67,4 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release --config .github/misc/.releaserc.json
+        run: npx semantic-release

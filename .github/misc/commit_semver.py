@@ -66,7 +66,7 @@ def analyze_commits():
     result = run("git log --grep='chore(release):' -n 1 --format=%H")
     since = result.stdout.strip()
 
-    format_str = "%s%n%b---ENDMSG---%h"
+    format_str = "%s|@|%H---ENDMSG---"
     if since:
         cmd = f"git log {since}..HEAD --format='{format_str}'"
     else:
@@ -76,7 +76,9 @@ def analyze_commits():
     if not result.stdout.strip():
         return 0, {}
 
-    raw_blocks = result.stdout.strip().split("---ENDMSG---")
+    raw_blocks = result.stdout.strip().split("---ENDMSG---\n")
+    raw_blocks = [_.split('|@|') for _ in raw_blocks]
+    clean_blocks = [[_[0].split('\n')[0], _[1] if "---ENDMSG---" not in _[1] else _[1][:-12]] for _ in raw_blocks]
 
     level = 0
     entries = {
@@ -107,18 +109,9 @@ def analyze_commits():
         "chore": ("Chore", 0)
     }
 
-    for i in range(len(raw_blocks) - 1):
-        full_msg = raw_blocks[i].strip()
-        current_hash = raw_blocks[i+1].splitlines()[0].strip()
-
-        if not full_msg or "[skip ci]" in full_msg:
-            continue
-
-        first_line = full_msg.splitlines()[0]
+    for (full_msg, _), (first_line, current_hash) in zip(raw_blocks, clean_blocks):
         clean_line = re.sub(r'^[a-z]+(\([^)]*\))?!?:\s*', '', first_line, flags=re.I)
-
-        current_msg_level = 0
-        category = None
+        current_msg_level, category = 0, None
 
         has_breaking_change = "BREAKING CHANGE" in full_msg
         has_exclamation = bool(re.match(r"^[a-z]+(\([^)]*\))!:", first_line))
@@ -137,18 +130,14 @@ def analyze_commits():
                 else:
                     current_msg_level = base_level
 
-        elif has_breaking_change:
-            current_msg_level = 3
-            category = "Breaking Changes"
-
-        elif has_exclamation:
+        elif has_breaking_change or has_exclamation:
             current_msg_level = 3
             category = "Breaking Changes"
 
         if category and (current_msg_level > 0 or category == "Breaking Changes"):
             if category in set(entries.keys()).difference({"Other", }):
                 level = max(level, current_msg_level)
-                entry = f"* {clean_line} ([{current_hash}]({repo_url}/commit/{current_hash}))"
+                entry = f"* {clean_line} ([{current_hash[:7]}]({repo_url}/commit/{current_hash}))"
                 entries[category].append(entry)
             else:
                 entries["Other"].append(entry)
@@ -193,7 +182,7 @@ def main():
         f.write("\n")
 
     if log_entries:
-        new_log = "#" * max(1, 3 - bump_level) + f" {new_version}({date.today().isoformat()})\n\n"
+        new_log = "#" * max(1, 3 - bump_level) + f" {new_version} ({date.today().isoformat()})\n\n"
         for category, items in log_entries.items():
             if items:
                 new_log += f"### {category}\n"

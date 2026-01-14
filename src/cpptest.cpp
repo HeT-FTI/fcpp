@@ -74,5 +74,3 @@ void test_cpp_zlib() {
               << "; Decompressed: " << reinterpret_cast<char*>(rec)
               << "; zlib in C++ test done!" << std::endl;
 }
-
-// test

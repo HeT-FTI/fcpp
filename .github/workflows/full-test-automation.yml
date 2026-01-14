@@ -2,9 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [ fcpp-dev ]
+    branches: [ main ]
   pull_request:
-    branches: [ fcpp-dev ]
+    branches: [ main ]
 
 env:
   CONAN_HOME: ~/.conan2
@@ -30,7 +30,7 @@ jobs:
   auto-testing:
     needs: check-build-type
     if: >-
-      ${{ needs.check-build-type.outputs.build_type == 'Debug' &&
+      ${{ needs.check-build-type.outputs.build_type == 'Debug' && 
           github.event_name == 'push' && 
           contains(join(github.event.commits.*.message, '\n'), ':beer:') }}
     name: Auto Testing

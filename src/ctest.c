@@ -46,3 +46,4 @@ void test_c_pcre() {
     printf(rc >= 0 ? "PCRE2 test: Match\n" : "PCRE2 test: No match\n");
     pcre2_code_free(re);
 }
+
