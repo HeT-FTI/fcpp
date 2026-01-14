@@ -32,7 +32,7 @@ jobs:
     if: >-
       ${{ needs.check-build-type.outputs.build_type == 'Debug' &&
           github.event_name == 'push' && 
-          contains(join(github.event.commits.*.message, '\n'), ':+1:') }}
+          contains(join(github.event.commits.*.message, '\n'), ':beer:') }}
     name: Auto Testing
     runs-on: ubuntu-latest
 
@@ -55,8 +55,7 @@ jobs:
           pkg_name=$(jq -r '.name | tostring' metadata.json)
           trigger=$(jq -r '.trigger_tests | tostring|  ascii_downcase' metadata.json)
           saving=$(jq -r '.saving_tests_log | tostring | ascii_downcase' metadata.json)
-          coverage=$(jq -r '.activate_code_coverage | tostring | ascii_downcase' metadata.json)
-          echo "all values: $pkg_name $trigger $saving $coverage"
+          coverage=$(jq -r '.activate_code_coverage | tostring | ascii_downcase' metadata.json) 
 
           echo "pkg_name=$pkg_name" >> "$GITHUB_OUTPUT"
           echo "trigger=$trigger" >> "$GITHUB_OUTPUT"
@@ -114,12 +113,8 @@ jobs:
         run: |
           python ./test_package/conanfile.py
 
-      - name: Test remove
-        run: |
-          echo "packages name is: ${{ steps.read_metadata.outputs.pkg_name }}"
-          conan remove "${{ steps.read_metadata.outputs.pkg_name }}/*" --confirm
-
-      - name: Clean up Conan packages
+      - name: Clean up Conan package
         if: always()
         run: |
-          conan remove "fcpp/*" --confirm
+          conan remove "${{ steps.read_metadata.outputs.pkg_name }}/*" --confirm
+

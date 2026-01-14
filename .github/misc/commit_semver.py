@@ -90,7 +90,8 @@ def analyze_commits():
         "CI": [],
         "Refactoring": [],
         "Style": [],
-        "Chore": []
+        "Chore": [],
+        "Other": []
     }
 
     type_mapping = {
@@ -145,9 +146,12 @@ def analyze_commits():
             category = "Breaking Changes"
 
         if category and (current_msg_level > 0 or category == "Breaking Changes"):
-            level = max(level, current_msg_level)
-            entry = f"- {clean_line} ([#{current_hash}]({repo_url}/commit/{current_hash}))"
-            entries[category].append(entry)
+            if category in set(entries.keys()).difference({"Other", }):
+                level = max(level, current_msg_level)
+                entry = f"* {clean_line} ([{current_hash}]({repo_url}/commit/{current_hash}))"
+                entries[category].append(entry)
+            else:
+                entries["Other"].append(entry)
 
     return level, entries
 
@@ -189,10 +193,10 @@ def main():
         f.write("\n")
 
     if log_entries:
-        new_log = f"## [{new_version}] - {date.today().isoformat()}\n\n"
+        new_log = "#" * max(1, 3 - bump_level) + f" {new_version}({date.today().isoformat()})\n\n"
         for category, items in log_entries.items():
             if items:
-                new_log += f"**{category}**\n"
+                new_log += f"### {category}\n"
                 new_log += "\n".join(items) + "\n\n"
 
         content = changelog_path.read_text(encoding="utf-8") if changelog_path.exists() else ""

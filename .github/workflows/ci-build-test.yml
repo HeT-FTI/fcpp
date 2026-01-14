@@ -38,10 +38,10 @@ jobs:
           pip install conan
 
       - name: Get package name
+        id: read_meta
         run: |
-          python -c "
-          
-          "
+          pkg_name=$(jq -r '.name | tostring' metadata.json)
+          echo "pkg_name=$pkg_name" >> $GITHUB_OUTPUT
 
       - name: Configure Conan
         run: |
@@ -73,4 +73,4 @@ jobs:
       - name: Clean up Conan packages
         if: always()
         run: |
-          conan remove "fcpp/*" --confirm
+          conan remove "${{ steps.read_meta.outputs.pkg_name }}/*" --confirm
