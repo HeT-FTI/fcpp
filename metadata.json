@@ -14,7 +14,7 @@
   "build_cppstd": "17",
   "build_cstd": "11",
   "build_type": "Debug",
-  "activate_code_coverage": true,
+  "activate_code_coverage": false,
   "is_shared": false,
   "generate_modules_inplace": false,
   "std_modules": "iostream",
