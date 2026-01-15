@@ -34,16 +34,25 @@ jobs:
           python-version: '3.12'
 
       - name: Install Conan
+        shell: bash
         run: |
           pip install conan
 
+      - name: Install jq (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          choco install jq -y
+
       - name: Get package name
         id: read_meta
+        shell: bash
         run: |
           pkg_name=$(jq -r '.name | tostring' metadata.json)
           echo "pkg_name=$pkg_name" >> $GITHUB_OUTPUT
 
       - name: Configure Conan
+        shell: bash
         run: |
           echo "CONAN_HOME=${{ env.CONAN_HOME }}" >> $GITHUB_ENV
           conan profile detect --force
@@ -62,15 +71,18 @@ jobs:
             conan-${{ runner.os }}-
 
       - name: Build and test with Conan
+        shell: bash
         run: |
           conan create . -pr:b=default -pr:h=default -s build_type=${{ matrix.build_type }} --build=missing
         timeout-minutes: 30
 
       - name: Clean up test_package builds
+        shell: bash
         run: |
           python ./test_package/conanfile.py
 
       - name: Clean up Conan packages
         if: always()
+        shell: bash
         run: |
           conan remove "${{ steps.read_meta.outputs.pkg_name }}/*" --confirm
