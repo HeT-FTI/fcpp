@@ -16,6 +16,7 @@
   "build_type": "Debug",
   "activate_code_coverage": false,
   "is_shared": false,
+  "is_header": false,
   "generate_modules_inplace": false,
   "std_modules": "iostream",
   "user_modules": "",

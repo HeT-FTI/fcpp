@@ -7,6 +7,7 @@ string(JSON BUILD_CPPSTD ERROR_VARIABLE json_error GET "${METADATA_JSON}" "build
 string(JSON BUILD_CSTD ERROR_VARIABLE json_error GET "${METADATA_JSON}" "build_cstd")
 string(JSON ENABLE_COVERAGE ERROR_VARIABLE json_error GET "${METADATA_JSON}" "activate_code_coverage")
 string(JSON IS_SHARED ERROR_VARIABLE json_error GET "${METADATA_JSON}" "is_shared")
+string(JSON IS_HEADER ERROR_VARIABLE json_error GET "${METADATA_JSON}" "is_header")
 string(JSON STD_MODULES ERROR_VARIABLE json_error GET "${METADATA_JSON}" "std_modules")
 set(LIB_NAME "${PROJECT_NAME_VALUE}")
 if(NOT TARGET_NAMESPACE_VALUE STREQUAL "auto")
@@ -102,176 +103,206 @@ file(GLOB_RECURSE MODULE_FILES
         PATHS "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 
-if(WIN32)
-    if(IS_SHARED)
-        set(IS_SHARED OFF)
-        message(WARNING "Shared build is not supported on Windows! use static instead")
-    endif()
-endif()
 
-if(IS_SHARED)
-    set(BUILD_TYPE "SHARED")
-else()
-    set(BUILD_TYPE "STATIC")
-endif()
+if(IS_HEADER)  # header-only package
 
-# dynamically create lib targets
-add_library(${LIB_NAME}_c ${BUILD_TYPE} ${C_SOURCES})
-add_library(${LIB_NAME}_cpp ${BUILD_TYPE} ${CPP_SOURCES} ${MODULE_FILES})
-add_library(${LIB_NAME} INTERFACE)
+  add_library(${LIB_NAME} INTERFACE)
 
-if(NOT C_DEPS STREQUAL "[]")
-    parse_conan_deps(C_DEPS PARSED_C_DEPS)
-    foreach (C_ITEM IN LISTS PARSED_C_DEPS)
-        split_conan_dependency(C_ITEM C_PKG_NAME C_PKG_TARGETS)
-        find_package(${C_PKG_NAME} REQUIRED)
-        target_link_libraries(${LIB_NAME}_c PUBLIC ${C_PKG_TARGETS})
-    endforeach ()
-endif()
+  target_include_directories(${LIB_NAME} INTERFACE
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+          $<INSTALL_INTERFACE:include>
+  )
 
-if(NOT CPP_DEPS STREQUAL "[]")
-    parse_conan_deps(CPP_DEPS PARSED_CPP_DEPS)
-    foreach (CPP_ITEM IN LISTS PARSED_CPP_DEPS)
-        split_conan_dependency(CPP_ITEM CPP_PKG_NAME CPP_PKG_TARGETS)
-        find_package(${CPP_PKG_NAME} REQUIRED)
-        target_link_libraries(${LIB_NAME}_cpp PUBLIC ${CPP_PKG_TARGETS})
-    endforeach ()
-endif()
-
-target_link_libraries(${LIB_NAME} INTERFACE ${LIB_NAME}_c ${LIB_NAME}_cpp)
-
-if(WIN32)
-    set(LIB_CXX_PREFIX "")
-else()
-    set(LIB_CXX_PREFIX "lib")
-endif()
-
-set_target_properties(${LIB_NAME}_c PROPERTIES
-        C_STANDARD ${BUILD_CSTD}
-        C_STANDARD_REQUIRED ON
-        C_EXTENSIONS OFF
-        PREFIX "${LIB_CXX_PREFIX}"
-        OUTPUT_NAME "${LIB_NAME}_c"
-)
-
-set_target_properties(${LIB_NAME}_cpp PROPERTIES
-        CXX_STANDARD ${BUILD_CPPSTD}
-        CXX_STANDARD_REQUIRED ON
-        CXX_EXTENSIONS OFF
-        PREFIX "${LIB_CXX_PREFIX}"
-        OUTPUT_NAME "${LIB_NAME}_cpp"
-)
-
-target_include_directories(${LIB_NAME}_c PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
-)
-
-target_include_directories(${LIB_NAME}_cpp PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
-)
+  if(NOT CPP_DEPS STREQUAL "[]")
+      parse_conan_deps(CPP_DEPS PARSED_CPP_DEPS)
+      foreach (CPP_ITEM IN LISTS PARSED_CPP_DEPS)
+          split_conan_dependency(CPP_ITEM CPP_PKG_NAME CPP_PKG_TARGETS)
+          find_package(${CPP_PKG_NAME} REQUIRED)
+          target_link_libraries(${LIB_NAME} PUBLIC ${CPP_PKG_TARGETS})
+      endforeach ()
+  endif()
 
 
-# code coverage options
-if(ENABLE_COVERAGE)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        set(COVERAGE_FLAGS "--coverage" "-O0" "-g")
-        set(LINK_FLAGS "--coverage")
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(COVERAGE_FLAGS "-fprofile-instr-generate" "-fcoverage-mapping" "-O0" "-g")
-        set(LINK_FLAGS "")
-    else()
-        message(FATAL_ERROR "Code coverage not support for compiler: ${CMAKE_CXX_COMPILER_ID}")
-    endif()
+else()  # general package
+
+  if(WIN32)
+      if(IS_SHARED)
+          set(IS_SHARED OFF)
+          message(WARNING "Shared build is not supported on Windows! use static instead")
+      endif()
+  endif()
+
+  if(IS_SHARED)
+      set(BUILD_TYPE "SHARED")
+  else()
+      set(BUILD_TYPE "STATIC")
+  endif()
+
+  # dynamically create lib targets
+  add_library(${LIB_NAME}_c ${BUILD_TYPE} ${C_SOURCES})
+  add_library(${LIB_NAME}_cpp ${BUILD_TYPE} ${CPP_SOURCES} ${MODULE_FILES})
+  add_library(${LIB_NAME} INTERFACE)
+
+  if(NOT C_DEPS STREQUAL "[]")
+      parse_conan_deps(C_DEPS PARSED_C_DEPS)
+      foreach (C_ITEM IN LISTS PARSED_C_DEPS)
+          split_conan_dependency(C_ITEM C_PKG_NAME C_PKG_TARGETS)
+          find_package(${C_PKG_NAME} REQUIRED)
+          target_link_libraries(${LIB_NAME}_c PUBLIC ${C_PKG_TARGETS})
+      endforeach ()
+  endif()
+
+  if(NOT CPP_DEPS STREQUAL "[]")
+      parse_conan_deps(CPP_DEPS PARSED_CPP_DEPS)
+      foreach (CPP_ITEM IN LISTS PARSED_CPP_DEPS)
+          split_conan_dependency(CPP_ITEM CPP_PKG_NAME CPP_PKG_TARGETS)
+          find_package(${CPP_PKG_NAME} REQUIRED)
+          target_link_libraries(${LIB_NAME}_cpp PUBLIC ${CPP_PKG_TARGETS})
+      endforeach ()
+  endif()
+
+  target_link_libraries(${LIB_NAME} INTERFACE ${LIB_NAME}_c ${LIB_NAME}_cpp)
+
+  if(WIN32)
+      set(LIB_CXX_PREFIX "")
+  else()
+      set(LIB_CXX_PREFIX "lib")
+  endif()
+
+  set_target_properties(${LIB_NAME}_c PROPERTIES
+          C_STANDARD ${BUILD_CSTD}
+          C_STANDARD_REQUIRED ON
+          C_EXTENSIONS OFF
+          PREFIX "${LIB_CXX_PREFIX}"
+          OUTPUT_NAME "${LIB_NAME}_c"
+  )
+
+  set_target_properties(${LIB_NAME}_cpp PROPERTIES
+          CXX_STANDARD ${BUILD_CPPSTD}
+          CXX_STANDARD_REQUIRED ON
+          CXX_EXTENSIONS OFF
+          PREFIX "${LIB_CXX_PREFIX}"
+          OUTPUT_NAME "${LIB_NAME}_cpp"
+  )
+
+  target_include_directories(${LIB_NAME}_c PUBLIC
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+          $<INSTALL_INTERFACE:include>
+  )
+
+  target_include_directories(${LIB_NAME}_cpp PUBLIC
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+          $<INSTALL_INTERFACE:include>
+  )
 
 
-    target_compile_options(${LIB_NAME}_c PRIVATE ${COVERAGE_FLAGS})
-    target_compile_options(${LIB_NAME}_cpp PRIVATE ${COVERAGE_FLAGS})
-
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        target_link_options(${LIB_NAME}_c PRIVATE ${LINK_FLAGS})
-        target_link_options(${LIB_NAME}_cpp PRIVATE ${LINK_FLAGS})
-    endif()
-
-endif()
-
-
-# module features are fully activated in C++23 or greater
-if(BUILD_CPPSTD VERSION_GREATER_EQUAL 23)
-
-    set_source_files_properties(${MODULE_FILES} PROPERTIES LANGUAGE CXX)
-
-    if(MSVC)
-        list(FILTER MODULE_FILES INCLUDE REGEX "\\.ixx$")
-    else()
-        list(FILTER MODULE_FILES INCLUDE REGEX "\\.cppm$")
-    endif()
-
-    if(MSVC)
-
-        target_compile_options(${LIB_NAME}_cpp PRIVATE
-                "$<$<VERSION_GREATER_EQUAL:${BUILD_CPPSTD},23>:/std:c++latest>"
-                "$<$<VERSION_LESS:${BUILD_CPPSTD},23>:/std:c++${BUILD_CPPSTD}>"
-        )
-
-        set(MODULE_INTERFACE_FILES "")
-        foreach(file IN LISTS MODULE_FILES)
-            if(file MATCHES "\\.ixx$")
-                list(APPEND MODULE_INTERFACE_FILES ${file})
-            endif()
-        endforeach()
-        set_source_files_properties(${MODULE_INTERFACE_FILES} PROPERTIES COMPILE_OPTIONS "/interface")
-
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-
-        target_compile_options(${LIB_NAME}_cpp PRIVATE
-                -fmodules-ts
-                $<$<CXX_COMPILER_ID:Clang>:-fimplicit-module-maps>
-        )
-
-        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND STD_MODULES)
-
-            separate_arguments(STD_MODULES_LIST NATIVE_COMMAND "${STD_MODULES}")
-            set(GCM_CACHE_DIR "${CMAKE_BINARY_DIR}/gcm.cache")
-            file(MAKE_DIRECTORY ${GCM_CACHE_DIR})
-
-            set(STD_GCM_FILES)
-            foreach(module IN LISTS STD_MODULES_LIST)
-                add_custom_command(
-                        OUTPUT "${GCM_CACHE_DIR}/${module}.gcm"
-                        COMMAND ${CMAKE_CXX_COMPILER}
-                        -fmodules-ts
-                        -x c++-system-header
-                        ${module}
-                        COMMENT "Pre-compiling system module: ${module}"
-                        VERBATIM
-                )
-                list(APPEND STD_GCM_FILES "${GCM_CACHE_DIR}/${module}.gcm")
-            endforeach()
-
-            add_custom_target(precompile_std_modules ALL DEPENDS ${STD_GCM_FILES})
-            add_dependencies(${LIB_NAME}_cpp precompile_std_modules)
-
-            target_compile_options(${LIB_NAME}_cpp PRIVATE
-                    "-fmodules-cache-path=${GCM_CACHE_DIR}"
-            )
-        endif()
-
-    endif()
-
-else()
-    message(STATUS "C++ standard ${BUILD_CPPSTD} < 23, disabling module support")
-endif()
+  # code coverage options
+  if(ENABLE_COVERAGE)
+      if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+          set(COVERAGE_FLAGS "--coverage" "-O0" "-g")
+          set(LINK_FLAGS "--coverage")
+      elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+          set(COVERAGE_FLAGS "-fprofile-instr-generate" "-fcoverage-mapping" "-O0" "-g")
+          set(LINK_FLAGS "")
+      else()
+          message(FATAL_ERROR "Code coverage not support for compiler: ${CMAKE_CXX_COMPILER_ID}")
+      endif()
 
 
-if(SHARED_MSG)
-    message(STATUS "${SHARED_MSG} use static instead!")
+      target_compile_options(${LIB_NAME}_c PRIVATE ${COVERAGE_FLAGS})
+      target_compile_options(${LIB_NAME}_cpp PRIVATE ${COVERAGE_FLAGS})
+
+      if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+          target_link_options(${LIB_NAME}_c PRIVATE ${LINK_FLAGS})
+          target_link_options(${LIB_NAME}_cpp PRIVATE ${LINK_FLAGS})
+      endif()
+
+  endif()
+
+
+  # module features are fully activated in C++23 or greater
+  if(BUILD_CPPSTD VERSION_GREATER_EQUAL 23)
+
+      set_source_files_properties(${MODULE_FILES} PROPERTIES LANGUAGE CXX)
+
+      if(MSVC)
+          list(FILTER MODULE_FILES INCLUDE REGEX "\\.ixx$")
+      else()
+          list(FILTER MODULE_FILES INCLUDE REGEX "\\.cppm$")
+      endif()
+
+      if(MSVC)
+
+          target_compile_options(${LIB_NAME}_cpp PRIVATE
+                  "$<$<VERSION_GREATER_EQUAL:${BUILD_CPPSTD},23>:/std:c++latest>"
+                  "$<$<VERSION_LESS:${BUILD_CPPSTD},23>:/std:c++${BUILD_CPPSTD}>"
+          )
+
+          set(MODULE_INTERFACE_FILES "")
+          foreach(file IN LISTS MODULE_FILES)
+              if(file MATCHES "\\.ixx$")
+                  list(APPEND MODULE_INTERFACE_FILES ${file})
+              endif()
+          endforeach()
+          set_source_files_properties(${MODULE_INTERFACE_FILES} PROPERTIES COMPILE_OPTIONS "/interface")
+
+      elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+
+          target_compile_options(${LIB_NAME}_cpp PRIVATE
+                  -fmodules-ts
+                  $<$<CXX_COMPILER_ID:Clang>:-fimplicit-module-maps>
+          )
+
+          if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND STD_MODULES)
+
+              separate_arguments(STD_MODULES_LIST NATIVE_COMMAND "${STD_MODULES}")
+              set(GCM_CACHE_DIR "${CMAKE_BINARY_DIR}/gcm.cache")
+              file(MAKE_DIRECTORY ${GCM_CACHE_DIR})
+
+              set(STD_GCM_FILES)
+              foreach(module IN LISTS STD_MODULES_LIST)
+                  add_custom_command(
+                          OUTPUT "${GCM_CACHE_DIR}/${module}.gcm"
+                          COMMAND ${CMAKE_CXX_COMPILER}
+                          -fmodules-ts
+                          -x c++-system-header
+                          ${module}
+                          COMMENT "Pre-compiling system module: ${module}"
+                          VERBATIM
+                  )
+                  list(APPEND STD_GCM_FILES "${GCM_CACHE_DIR}/${module}.gcm")
+              endforeach()
+
+              add_custom_target(precompile_std_modules ALL DEPENDS ${STD_GCM_FILES})
+              add_dependencies(${LIB_NAME}_cpp precompile_std_modules)
+
+              target_compile_options(${LIB_NAME}_cpp PRIVATE
+                      "-fmodules-cache-path=${GCM_CACHE_DIR}"
+              )
+          endif()
+
+      endif()
+
+  else()
+      message(STATUS "C++ standard ${BUILD_CPPSTD} < 23, disabling module support")
+  endif()
+
+
+  if(SHARED_MSG)
+      message(STATUS "${SHARED_MSG} use static instead!")
+  endif()
+
 endif()
 
 
 # install targets
-install(TARGETS ${LIB_NAME}_c ${LIB_NAME}_cpp
+if(IS_HEADER)
+  set(INSTALL_TARGETS ${LIB_NAME})
+else()
+  set(INSTALL_TARGETS ${LIB_NAME}_c ${LIB_NAME}_cpp ${LIB_NAME})
+endif()
+
+install(TARGETS ${INSTALL_TARGETS}
         EXPORT ${LIB_NAME}Targets
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
