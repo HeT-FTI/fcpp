@@ -1,5 +1,5 @@
 from conan import ConanFile
-form conan.tools.files import copy
+from conan.tools.files import copy
 from conan.tools.cmake import CMakeToolchain, CMake, CMakeDeps, cmake_layout
 from typing import Literal
 from pathlib import Path
