@@ -9,6 +9,7 @@ string(JSON ENABLE_COVERAGE ERROR_VARIABLE json_error GET "${METADATA_JSON}" "ac
 string(JSON IS_SHARED ERROR_VARIABLE json_error GET "${METADATA_JSON}" "is_shared")
 string(JSON IS_HEADER ERROR_VARIABLE json_error GET "${METADATA_JSON}" "is_header")
 string(JSON STD_MODULES ERROR_VARIABLE json_error GET "${METADATA_JSON}" "std_modules")
+string(JSON ENABLE_PYBIND ERROR_VARIABLE json_error GET "${METADATA_JSON}" "enable_python_bindings")
 set(LIB_NAME "${PROJECT_NAME_VALUE}")
 if(NOT TARGET_NAMESPACE_VALUE STREQUAL "auto")
     set(PROJECT_NAMESPACE "${TARGET_NAMESPACE_VALUE}")
@@ -158,7 +159,7 @@ else()  # general package
           split_conan_dependency(CPP_ITEM CPP_PKG_NAME CPP_PKG_TARGETS)
           find_package(${CPP_PKG_NAME} REQUIRED)
           target_link_libraries(${LIB_NAME}_cpp PUBLIC ${CPP_PKG_TARGETS})
-      endforeach ()
+      endforeach()
   endif()
 
   target_link_libraries(${LIB_NAME} INTERFACE ${LIB_NAME}_c ${LIB_NAME}_cpp)
@@ -287,6 +288,35 @@ else()  # general package
       message(STATUS "C++ standard ${BUILD_CPPSTD} < 23, disabling module support")
   endif()
 
+  if(ENABLE_PYBIND)
+    message(STATUS "Python binding branch here...===========================1111111111111111111111111111111111111")
+    set(PYTHON_MODULE_NAME "${LIB_NAME}_python")
+
+    find_package(pybind11 CONFIG REQUIRED)
+    set(PYTHON_BINDINGS_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/api/python_bindings.cpp")
+
+    if(NOT EXISTS "${PYTHON_BINDINGS_SOURCE}")
+      message(FATAL_ERROR "Python bindings enabled but source file missing: ${PYTHON_BINDINGS_SOURCE}")
+    endif()
+
+    set(PY_TARGET_INTERNAL "${LIB_NAME}_py_internal")
+    pybind11_add_module(${PY_TARGET_INTERNAL} ${PYTHON_BINDINGS_SOURCE})
+    target_link_libraries(${PY_TARGET_INTERNAL} PRIVATE ${LIB_NAME})
+
+    set_target_properties(${PY_TARGET_INTERNAL} PROPERTIES
+      OUTPUT_NAME "${PYTHON_MODULE_NAME}"
+      LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
+
+    install(TARGETS ${PY_TARGET_INTERNAL}
+      LIBRARY DESTINATION lib
+      COMPONENT python_bindings
+    )
+    
+    message(STATUS "Python module '${PYTHON_MODULE_NAME}' will be built")
+  else()
+    message(STATUS "Python bindings disabledPython bindings disabled")
+  endif()
 
   if(SHARED_MSG)
       message(STATUS "${SHARED_MSG} use static instead!")

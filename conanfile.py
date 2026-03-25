@@ -94,7 +94,7 @@ class PackageRecipe(ConanFile):
     default_options = {"shared": _metadata.get('is_shared'), "fPIC": True}  # inherit from config
 
     # Sources are located in the same place as this recipe, copy them to the recipe
-    exports_sources = ["CMakeLists.txt", "src/*", "include/*", "metadata.json", "LICENSE"]
+    exports_sources = ["CMakeLists.txt", "src/*", "include/*", "api/*", "metadata.json", "LICENSE"]
     exports = ["conandata.yml", "metadata.json", "LICENSE"]
 
     generators = "VirtualBuildEnv", "VirtualRunEnv"
