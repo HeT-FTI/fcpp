@@ -45,6 +45,7 @@ endfunction()
 
 function(link_to_resources EXECUTE_FILE)
   if(DEFINED RESOURCES_PATH)
+    string(REPLACE "\\" "/" RESOURCES_PATH "${RESOURCES_PATH}")
     target_compile_definitions(${EXECUTE_FILE} PRIVATE RESOURCES_PATH="${RESOURCES_PATH}")
   endif()
 endfunction()

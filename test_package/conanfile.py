@@ -79,8 +79,8 @@ class PackageTestConan(ConanFile):
         tc.variables["RESOURCES_PATH"] = os.path.join(self.build_folder, "resources")
         tc.generate()
 
-        src_folder = os.path.join(self.recipe_folder, "resources")
-        dst_folder = os.path.join(self.build_folder, "resources")
+        src_folder = os.path.join(self.recipe_folder, "resources").replace("\\", "/")
+        dst_folder = os.path.join(self.build_folder, "resources").replace("\\", "/")
         os.makedirs(dst_folder, exist_ok=True)
         copy(self, "*", src=src_folder, dst=dst_folder, keep_path=True)
 
