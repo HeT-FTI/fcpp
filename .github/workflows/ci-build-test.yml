@@ -2,9 +2,9 @@ name: Build CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ fcpp-dev ]
   pull_request:
-    branches: [ main ]
+    branches: [ fcpp-dev ]
 
 env:
   CONAN_HOME: ~/.conan2
