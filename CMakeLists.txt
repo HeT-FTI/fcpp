@@ -289,7 +289,6 @@ else()  # general package
   endif()
 
   if(ENABLE_PYBIND)
-    message(STATUS "Python binding branch here...===========================1111111111111111111111111111111111111")
     set(PYTHON_MODULE_NAME "${LIB_NAME}_python")
 
     find_package(pybind11 CONFIG REQUIRED)
