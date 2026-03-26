@@ -43,9 +43,17 @@ function(split_conan_dependency INPUT_STR PACKAGE_NAME TARGETS)
 endfunction()
 
 
+function(link_to_resources EXECUTE_FILE)
+  if(DEFINED RESOURCES_PATH)
+    target_compile_definitions(${EXECUTE_FILE} PRIVATE RESOURCES_PATH="${RESOURCES_PATH}")
+  endif()
+endfunction()
+
+
 function(apply_unit_coverage U_NAME U_FILE)
     find_package(GTest REQUIRED)
     add_executable(${U_NAME} ${U_FILE})
+    link_to_resources(${U_NAME})
     target_link_libraries(${U_NAME} PRIVATE ${MAIN_LIB_TARGET} GTest::gtest)
     gtest_discover_tests(${U_NAME})
 
@@ -92,6 +100,8 @@ endfunction()
 
 
 add_executable(main main.cpp)
+link_to_resources(main)
+
 
 if(TRIGGER_TESTS AND ENABLE_COVERAGE)
     enable_main_coverage()
@@ -117,6 +127,7 @@ if(TRIGGER_TESTS)
     if(NOT ENABLE_COVERAGE)
       file(GLOB_RECURSE TEST_SOURCES_S "test/stress/*.cpp")
       add_executable(stress_tests ${TEST_SOURCES_S})
+      link_to_resources(stress_tests)
       target_link_libraries(stress_tests PRIVATE ${MAIN_LIB_TARGET} GTest::gtest)
       gtest_discover_tests(stress_tests)
     endif()
@@ -124,6 +135,7 @@ if(TRIGGER_TESTS)
     file(GLOB_RECURSE TEST_SOURCES_U "test/unit/*.cpp")
     if(NOT ENABLE_COVERAGE)
         add_executable(unit_tests ${TEST_SOURCES_U})
+        link_to_resources(unit_tests)
         target_link_libraries(unit_tests PRIVATE ${MAIN_LIB_TARGET} GTest::gtest)
         gtest_discover_tests(unit_tests)
     else()

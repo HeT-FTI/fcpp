@@ -1,6 +1,7 @@
 from conan import ConanFile
 from conan.tools.cmake import CMake, cmake_layout, CMakeToolchain
 from conan.tools.build import can_run, cross_building
+from conan.tools.files import copy
 from conan.tools.env import VirtualRunEnv, VirtualBuildEnv
 from pathlib import Path
 import subprocess
@@ -42,6 +43,7 @@ def _entry_lists() -> list[str]:
 
 class PackageTestConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
+    export_sources = "resources/*"
     generators = "CMakeDeps"
 
     conandata, metadata = None, None
@@ -74,14 +76,13 @@ class PackageTestConan(ConanFile):
         tc.variables['ENABLE_COVERAGE'] = self.metadata.get('activate_code_coverage')
         tc.variables["MAIN_LIB_TARGET"] = [_a := self.metadata.get('target'),
                                            f'{lib_name}::{lib_name}' if _a == 'auto' else _a][-1]
+        tc.variables["RESOURCES_PATH"] = os.path.join(self.build_folder, "resources")
         tc.generate()
 
-        from conan.tools.files import copy
         src_folder = os.path.join(self.recipe_folder, "resources")
-        if os.path.exists(src_folder):
-            dst_folder = os.path.join(self.build_folder, "resources")
-            os.makedirs(dst_folder)
-            copy(self, "*", src=src_folder, dst=dst_folder, keep_path=True)
+        dst_folder = os.path.join(self.build_folder, "resources")
+        os.makedirs(dst_folder, exist_ok=True)
+        copy(self, "*", src=src_folder, dst=dst_folder, keep_path=True)
 
     def _preparing_deps_links(self):
         _common, _c, _cpp, _infra = [self.metadata.get('dependencies').get(_) for _ in ['common', 'c', 'cpp', 'infra']]
