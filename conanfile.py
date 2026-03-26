@@ -1,4 +1,5 @@
 from conan import ConanFile
+from conan.tools.files import copy
 from conan.tools.cmake import CMakeToolchain, CMake, CMakeDeps, cmake_layout
 from typing import Literal
 from pathlib import Path
@@ -85,7 +86,7 @@ def _pragma_in_import(x: list[str]) -> tuple[bool, int]:
 
 class PackageRecipe(ConanFile):
 
-    package_type = "library"
+    package_type = "header-library" if _metadata.get("is_header") else "library"
 
     # Binary configuration
     settings = "os", "compiler", "build_type", "arch"
@@ -93,7 +94,7 @@ class PackageRecipe(ConanFile):
     default_options = {"shared": _metadata.get('is_shared'), "fPIC": True}  # inherit from config
 
     # Sources are located in the same place as this recipe, copy them to the recipe
-    exports_sources = ["CMakeLists.txt", "src/*", "include/*", "metadata.json", "LICENSE"]
+    exports_sources = ["CMakeLists.txt", "src/*", "include/*", "api/*", "metadata.json", "LICENSE"]
     exports = ["conandata.yml", "metadata.json", "LICENSE"]
 
     generators = "VirtualBuildEnv", "VirtualRunEnv"
@@ -228,13 +229,13 @@ class PackageRecipe(ConanFile):
         deps.generate()
 
     def _preparing_deps_links(self):
-        _common, _c, _cpp, _test = [self.meta.get('dependencies').get(_) for _ in ['common', 'c', 'cpp', 'test']]
+        _common, _c, _cpp, _infra = [self.meta.get('dependencies').get(_) for _ in ['common', 'c', 'cpp', 'infra']]
         _c = {k: v if k not in _common.keys() else list(set(v).union(set(_common.get(k)))) for k, v in _c.items()}
         _cpp = {k: v if k not in _common.keys() else list(set(v).union(set(_common.get(k)))) for k, v in _cpp.items()}
-        _test_deps = [f"{k}@{' '.join(v)}" for k, v in _test.items()]
+        _infra_deps = [f"{k}@{' '.join(v)}" for k, v in _infra.items()]
         _c_deps = [f"{k}@{' '.join(v)}" for k, v in {**_common, **_c}.items()]
         _cpp_deps = [f"{k}@{' '.join(v)}" for k, v in {**_common, **_cpp}.items()]
-        return _c_deps, list(set(_cpp_deps).union(set(_test_deps)))
+        return _c_deps, list(set(_cpp_deps).union(set(_infra_deps)))
 
     def build(self):
         cmake = CMake(self)
@@ -286,21 +287,28 @@ class PackageRecipe(ConanFile):
                 _get_export_objects(_other_context, '@attacher'))
 
     def package(self):
-        cmake = CMake(self)
-        cmake.install()
+        if self.meta.get('is_header'):
+            copy(self, "*.hpp", self.source_folder, self.package_folder)
+        else:
+            cmake = CMake(self)
+            cmake.install()
 
     def package_info(self):
         self.cpp_info.libs = [self.name]
         _c, _cpp = self._preparing_deps_links()
 
-        self.cpp_info.components[f"{self.name}_c"].libs = [f"{self.name}_c"]
-        self.cpp_info.components[f"{self.name}_c"].requires = [[_t := _.split('@')[1],
-                                                                conan_targets[_t] if _t in conan_targets.keys()
-                                                                else _t][-1] for _ in _c]
-        self.cpp_info.components[f"{self.name}_cpp"].libs = [f"{self.name}_cpp"]
-        self.cpp_info.components[f"{self.name}_cpp"].requires = [[_t := _.split('@')[1],
-                                                                  conan_targets[_t] if _t in conan_targets.keys()
-                                                                  else _t][-1] for _ in _cpp]
+        if self.meta.get('is_header'):
+            self.cpp_info.bindirs = []
+            self.cpp_info.libdirs = []
+        else:
+            self.cpp_info.components[f"{self.name}_c"].libs = [f"{self.name}_c"]
+            self.cpp_info.components[f"{self.name}_c"].requires = [[_t := _.split('@')[1],
+                                                                    conan_targets[_t] if _t in conan_targets.keys()
+                                                                    else _t][-1] for _ in _c]
+            self.cpp_info.components[f"{self.name}_cpp"].libs = [f"{self.name}_cpp"]
+            self.cpp_info.components[f"{self.name}_cpp"].requires = [[_t := _.split('@')[1],
+                                                                      conan_targets[_t] if _t in conan_targets.keys()
+                                                                      else _t][-1] for _ in _cpp]
 
     @staticmethod
     def _call_syntax_suggestion():

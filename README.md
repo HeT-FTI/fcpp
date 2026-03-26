@@ -108,40 +108,44 @@ built ones. If the later one, at least you need a locale Conan server for managi
 
 ```
 project-root/
-├── conanfile.py             # Conan recipe
-├── CMakeLists.txt           # CMake build framework
-├── metadata.json            # Project metadata configuration (name, version, etc)
-├── conandata.yml            # Dependency specifications, Conan plugin support
-├── LICENSE                  # Project license
-├── include/                 # Public headers
-│   ├── *.h                  # C interface headers
-│   └── *.hpp                # C++ interface headers
-├── src/                     # Implementation files
-│   ├── *.c                  # C sources
-│   ├── *.cpp                # C++ sources
-│   └── *.ixx/*.cppm         # Auto-generated Module files (in experimental)
-├── docs/                    # Documentations root
-│   ├── doxygen/             # Doxygen system main root
-│   │   ├── dox/             # Pure documentations' folder
-│   │   │   ├── demos/       # Examples catelogue
-│   │   │   │   ├── *.dox    # Documenting docstring
-│   │   │   │   └── *.cxx    # Example codes
-│   │   │   └── *.dox        # Main pages and etc
+├── conanfile.py              # Conan recipe
+├── CMakeLists.txt            # CMake build framework
+├── metadata.json             # Project metadata configuration (name, version, etc)
+├── conandata.yml             # Dependency specifications, Conan plugin support
+├── LICENSE                   # Apache v2 Project license
+├── NOTICE                    # Notice file of Apache v2
+├── api/                      # Interface to advanced programming language
+│    └── python_bindings.cpp  # Python bindings interface
+├── include/                  # Public headers
+│   ├── *.h                   # C interface headers
+│   └── *.hpp                 # C++ interface headers
+├── src/                      # Implementation files
+│   ├── *.c                   # C sources
+│   ├── *.cpp                 # C++ sources
+│   └── *.ixx/*.cppm          # Auto-generated Module files (in experimental)
+├── docs/                     # Documentations root
+│   ├── doxygen/              # Doxygen system main root
+│   │   ├── dox/              # Pure documentations' folder
+│   │   │   ├── demos/        # Examples catelogue
+│   │   │   │   ├── *.dox     # Documenting docstring
+│   │   │   │   └── *.cxx     # Example codes
+│   │   │   └── *.dox         # Main pages and etc
 │   │   └── ...
-│   ├── sphinx/              # Sphinx system main root
-│   │   ├── source/          # Source files of sphinx system
-│   │   ├── locales/         # Pot files for internalization
+│   ├── sphinx/               # Sphinx system main root
+│   │   ├── source/           # Source files of sphinx system
+│   │   ├── locales/          # Pot files for internalization
 │   │   └── ...
-│   └── images/              # Static images for doxygen/sphinx system
-└── test_pacakge/            # Test project
-    ├── export/              # Log for testing results
+│   └── images/               # Static images for doxygen/sphinx system
+└── test_pacakge/             # Test project
+    ├── export/               # Log for testing results
+    ├── resources/            # Test resources for test_package/ programs
     ├── stress/ 
-    │   └── *.cpp            # Scripts for stress testing
+    │   └── *.cpp             # Scripts for stress testing
     ├── unit/
-    │   └── *.cpp            # Scripts for unit testing
-    ├── main.cpp             # Validation program for package
-    ├── conanfile.py         # Conan recipe for test_package
-    └── CMakeLists.txt       # CMake build workflow for test_package
+    │   └── *.cpp             # Scripts for unit testing
+    ├── main.cpp              # Validation program for package
+    ├── conanfile.py          # Conan recipe for test_package
+    └── CMakeLists.txt        # CMake build workflow for test_package
 ```
 
 ## Module Generation (experimental)

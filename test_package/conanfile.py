@@ -1,6 +1,7 @@
 from conan import ConanFile
 from conan.tools.cmake import CMake, cmake_layout, CMakeToolchain
-from conan.tools.build import can_run
+from conan.tools.build import can_run, cross_building
+from conan.tools.files import copy
 from conan.tools.env import VirtualRunEnv, VirtualBuildEnv
 from pathlib import Path
 import subprocess
@@ -42,6 +43,7 @@ def _entry_lists() -> list[str]:
 
 class PackageTestConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
+    export_sources = "resources/*"
     generators = "CMakeDeps"
 
     conandata, metadata = None, None
@@ -74,16 +76,22 @@ class PackageTestConan(ConanFile):
         tc.variables['ENABLE_COVERAGE'] = self.metadata.get('activate_code_coverage')
         tc.variables["MAIN_LIB_TARGET"] = [_a := self.metadata.get('target'),
                                            f'{lib_name}::{lib_name}' if _a == 'auto' else _a][-1]
+        tc.variables["RESOURCES_PATH"] = os.path.join(self.build_folder, "resources").replace("\\", "/")
         tc.generate()
 
+        src_folder = os.path.join(self.recipe_folder, "resources").replace("\\", "/")
+        dst_folder = os.path.join(self.build_folder, "resources").replace("\\", "/")
+        os.makedirs(dst_folder, exist_ok=True)
+        copy(self, "*", src=src_folder, dst=dst_folder, keep_path=True)
+
     def _preparing_deps_links(self):
-        _common, _c, _cpp, _test = [self.metadata.get('dependencies').get(_) for _ in ['common', 'c', 'cpp', 'test']]
+        _common, _c, _cpp, _infra = [self.metadata.get('dependencies').get(_) for _ in ['common', 'c', 'cpp', 'infra']]
         _c = {k: v if k not in _common.keys() else list(set(v).union(set(_common.get(k)))) for k, v in _c.items()}
         _cpp = {k: v if k not in _common.keys() else list(set(v).union(set(_common.get(k)))) for k, v in _cpp.items()}
-        _test_deps = [f"{k}@{' '.join(v)}" for k, v in _test.items()]
+        _infra_deps = [f"{k}@{' '.join(v)}" for k, v in _infra.items()]
         _c_deps = [f"{k}@{' '.join(v)}" for k, v in {**_common, **_c}.items()]
         _cpp_deps = [f"{k}@{' '.join(v)}" for k, v in {**_common, **_cpp}.items()]
-        return list(set(_c_deps).union(set(_cpp_deps)).union(set(_test_deps)))
+        return list(set(_c_deps).union(set(_cpp_deps)).union(set(_infra_deps)))
 
     def _get_targets(self):
         _targets, _name = self.metadata.get('target'), self.metadata.get('name')
@@ -111,6 +119,11 @@ class PackageTestConan(ConanFile):
             compiler.cppstd = _build_std
 
     def test(self):
+        
+        # defensive logic for cross_building
+        if cross_building(self):
+            self.output.info("Cross-compilation detect. Skipping test execution.")
+            return
 
         # scripting in test_package/main.cpp
         if can_run(self):

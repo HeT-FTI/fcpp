@@ -16,6 +16,7 @@
   "build_type": "Debug",
   "activate_code_coverage": false,
   "is_shared": false,
+  "is_header": false,
   "generate_modules_inplace": false,
   "std_modules": "iostream",
   "user_modules": "",
@@ -26,7 +27,7 @@
       "Eigen3": ["Eigen3::Eigen"],
       "dlib": ["dlib::dlib"]
     },
-    "test": {"GTest": ["gtest::gtest"]}
+    "infra": {"GTest": ["gtest::gtest"], "pybind11": ["pybind11::module"]}
   },
   "graphviz_bin": "/usr/bin",
   "doc_languages": ["en", "zh"],
@@ -34,5 +35,6 @@
   "doc_doxygen_folders": ["include", "src", "docs/doxygen/dox"],
   "doc_doxygen_suffix": ["h", "c", "hpp", "cpp", "dox", "cxx"],
   "trigger_tests": true,
-  "saving_tests_log": true
+  "saving_tests_log": true,
+  "enable_python_bindings": false
 }
