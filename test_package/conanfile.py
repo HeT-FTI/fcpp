@@ -76,7 +76,7 @@ class PackageTestConan(ConanFile):
         tc.variables['ENABLE_COVERAGE'] = self.metadata.get('activate_code_coverage')
         tc.variables["MAIN_LIB_TARGET"] = [_a := self.metadata.get('target'),
                                            f'{lib_name}::{lib_name}' if _a == 'auto' else _a][-1]
-        tc.variables["RESOURCES_PATH"] = os.path.join(self.build_folder, "resources")
+        tc.variables["RESOURCES_PATH"] = os.path.join(self.build_folder, "resources").replace("\\", "/")
         tc.generate()
 
         src_folder = os.path.join(self.recipe_folder, "resources").replace("\\", "/")
