@@ -1,4 +1,6 @@
 name: github
+permissions:
+  contents: read
 
 on:
   push:

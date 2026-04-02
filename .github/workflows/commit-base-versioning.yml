@@ -1,12 +1,10 @@
 name: Versioning
-
+permissions:
+  contents: read
 on:
   push:
     branches:
       - main
-
-permissions:
-  contents: write
 
 jobs:
   check-build-type:
@@ -40,6 +38,9 @@ jobs:
           github.event_name == 'push' &&
           !contains(join(github.event.commits.*.message, '\n'), '(:package:): ') }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -56,6 +57,11 @@ jobs:
         run: |
           chmod +x .github/misc/commit_semver.py
           python3 .github/misc/commit_semver.py
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Push Changes
         run: |
