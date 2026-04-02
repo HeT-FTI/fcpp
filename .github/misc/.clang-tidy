@@ -1,0 +1,19 @@
+---
+Checks: >
+  -*,
+  # Generic
+  bugprone-*,
+  performance-*,
+
+  # CPP specific
+  cppcoreguidelines-avoid-magic-numbers,
+  cppcoreguidelines-macro-usage
+
+CheckOptions:
+  - key: HeaderFileExtensions
+    value: ".h,.hpp"
+  - key: cppcoreguidelines-avoid-magic-numbers.CheckStrings
+    value: '0'
+WarningsAsErrors: '*'
+HeaderFilterRegex: "include/.*"
+
