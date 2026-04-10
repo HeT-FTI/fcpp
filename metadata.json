@@ -36,5 +36,13 @@
   "doc_doxygen_suffix": ["h", "c", "hpp", "cpp", "dox", "cxx"],
   "trigger_tests": true,
   "saving_tests_log": true,
-  "enable_python_bindings": false
+  "enable_python_bindings": false,
+  "workflow_triggers": {
+    "_comment": "Controls which workflows can be triggered via emoji in commits",
+    "build": true,
+    "tests": true,
+    "release": true,
+    "docs": true,
+    "versioning": true
+  }
 }

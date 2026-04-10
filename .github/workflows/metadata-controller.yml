@@ -91,6 +91,13 @@ jobs:
           saving_tests_log=$(jq -r '.saving_tests_log // false | tostring | ascii_downcase' metadata.json)
           activate_code_coverage=$(jq -r '.activate_code_coverage // false | tostring | ascii_downcase' metadata.json)
           
+          # Read workflow_triggers flags (default to true for backward compatibility)
+          wf_build=$(jq -r '.workflow_triggers.build // true | tostring | ascii_downcase' metadata.json)
+          wf_tests=$(jq -r '.workflow_triggers.tests // true | tostring | ascii_downcase' metadata.json)
+          wf_release=$(jq -r '.workflow_triggers.release // true | tostring | ascii_downcase' metadata.json)
+          wf_docs=$(jq -r '.workflow_triggers.docs // true | tostring | ascii_downcase' metadata.json)
+          wf_versioning=$(jq -r '.workflow_triggers.versioning // true | tostring | ascii_downcase' metadata.json)
+          
           # Output all values
           echo "pkg_name=$pkg_name" >> $GITHUB_OUTPUT
           echo "version=$version" >> $GITHUB_OUTPUT
@@ -98,6 +105,11 @@ jobs:
           echo "trigger_tests=$trigger_tests" >> $GITHUB_OUTPUT
           echo "saving_tests_log=$saving_tests_log" >> $GITHUB_OUTPUT
           echo "activate_code_coverage=$activate_code_coverage" >> $GITHUB_OUTPUT
+          echo "wf_build=$wf_build" >> $GITHUB_OUTPUT
+          echo "wf_tests=$wf_tests" >> $GITHUB_OUTPUT
+          echo "wf_release=$wf_release" >> $GITHUB_OUTPUT
+          echo "wf_docs=$wf_docs" >> $GITHUB_OUTPUT
+          echo "wf_versioning=$wf_versioning" >> $GITHUB_OUTPUT
           
           # Log for debugging
           echo "📦 Package: $pkg_name v$version"
@@ -105,6 +117,7 @@ jobs:
           echo "🧪 Trigger Tests: $trigger_tests"
           echo "📝 Saving Test Logs: $saving_tests_log"
           echo "📊 Code Coverage: $activate_code_coverage"
+          echo "🎛️  Workflow Toggles: build=$wf_build tests=$wf_tests release=$wf_release docs=$wf_docs versioning=$wf_versioning"
 
       - name: Compute workflow triggers
         id: compute_triggers
@@ -113,6 +126,11 @@ jobs:
           COMMIT_MESSAGES: ${{ inputs.commit_messages }}
           BUILD_TYPE: ${{ steps.read_metadata.outputs.build_type }}
           TRIGGER_TESTS_FLAG: ${{ steps.read_metadata.outputs.trigger_tests }}
+          WF_BUILD: ${{ steps.read_metadata.outputs.wf_build }}
+          WF_TESTS: ${{ steps.read_metadata.outputs.wf_tests }}
+          WF_RELEASE: ${{ steps.read_metadata.outputs.wf_release }}
+          WF_DOCS: ${{ steps.read_metadata.outputs.wf_docs }}
+          WF_VERSIONING: ${{ steps.read_metadata.outputs.wf_versioning }}
         run: |
           # Initialize trigger flags
           trigger_build="false"
@@ -144,32 +162,32 @@ jobs:
           fi
           
           # Compute build trigger
-          # Build triggers on :building_construction: emoji on push
-          if [[ "$EVENT_NAME" == "push" && "$has_build_emoji" == "true" ]]; then
+          # Build triggers on :building_construction: emoji on push AND workflow_triggers.build is true
+          if [[ "$EVENT_NAME" == "push" && "$has_build_emoji" == "true" && "$WF_BUILD" == "true" ]]; then
             trigger_build="true"
           fi
           
           # Compute test trigger
-          # Tests trigger on :beer: emoji on push AND build_type is Debug AND trigger_tests is true
-          if [[ "$EVENT_NAME" == "push" && "$has_test_emoji" == "true" && "$BUILD_TYPE" == "Debug" && "$TRIGGER_TESTS_FLAG" == "true" ]]; then
+          # Tests trigger on :beer: emoji on push AND build_type is Debug AND trigger_tests is true AND workflow_triggers.tests is true
+          if [[ "$EVENT_NAME" == "push" && "$has_test_emoji" == "true" && "$BUILD_TYPE" == "Debug" && "$TRIGGER_TESTS_FLAG" == "true" && "$WF_TESTS" == "true" ]]; then
             trigger_tests="true"
           fi
           
           # Compute release trigger
-          # Release triggers on (:package:): emoji on push AND build_type is Release
-          if [[ "$EVENT_NAME" == "push" && "$has_release_emoji" == "true" && "$BUILD_TYPE" == "Release" ]]; then
+          # Release triggers on (:package:): emoji on push AND build_type is Release AND workflow_triggers.release is true
+          if [[ "$EVENT_NAME" == "push" && "$has_release_emoji" == "true" && "$BUILD_TYPE" == "Release" && "$WF_RELEASE" == "true" ]]; then
             trigger_release="true"
           fi
           
           # Compute versioning trigger
-          # Versioning triggers on push with build_type Release AND NO release emoji
-          if [[ "$EVENT_NAME" == "push" && "$has_release_emoji" == "false" && "$BUILD_TYPE" == "Release" ]]; then
+          # Versioning triggers on push with build_type Release AND NO release emoji AND workflow_triggers.versioning is true
+          if [[ "$EVENT_NAME" == "push" && "$has_release_emoji" == "false" && "$BUILD_TYPE" == "Release" && "$WF_VERSIONING" == "true" ]]; then
             trigger_versioning="true"
           fi
           
           # Compute docs trigger
-          # Docs trigger on :book: emoji on push
-          if [[ "$EVENT_NAME" == "push" && "$has_docs_emoji" == "true" ]]; then
+          # Docs trigger on :book: emoji on push AND workflow_triggers.docs is true
+          if [[ "$EVENT_NAME" == "push" && "$has_docs_emoji" == "true" && "$WF_DOCS" == "true" ]]; then
             trigger_docs="true"
           fi
           
