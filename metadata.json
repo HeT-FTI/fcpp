@@ -38,7 +38,7 @@
   "saving_tests_log": true,
   "enable_python_bindings": false,
   "workflow_triggers": {
-    "_comment": "Controls which workflows can be triggered via emoji in commits",
+    "_comment": "Master switches to enable/disable workflow triggers. Each workflow also requires specific emoji patterns in commit messages to trigger.",
     "build": true,
     "tests": true,
     "release": true,

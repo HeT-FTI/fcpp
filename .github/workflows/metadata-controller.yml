@@ -57,6 +57,8 @@ jobs:
   analyze:
     name: Analyze Metadata
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       # Package metadata
       pkg_name: ${{ steps.read_metadata.outputs.pkg_name }}
@@ -87,7 +89,7 @@ jobs:
           pkg_name=$(jq -r '.name // "unknown"' metadata.json)
           version=$(jq -r '.version // "0.0.0"' metadata.json)
           build_type=$(jq -r '.build_type // "Debug"' metadata.json)
-          trigger_tests=$(jq -r '.trigger_tests // true | tostring | ascii_downcase' metadata.json)
+          trigger_tests=$(jq -r '.trigger_tests // false | tostring | ascii_downcase' metadata.json)
           saving_tests_log=$(jq -r '.saving_tests_log // false | tostring | ascii_downcase' metadata.json)
           activate_code_coverage=$(jq -r '.activate_code_coverage // false | tostring | ascii_downcase' metadata.json)
           

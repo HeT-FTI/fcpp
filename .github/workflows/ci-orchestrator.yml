@@ -21,7 +21,8 @@ jobs:
     uses: ./.github/workflows/metadata-controller.yml
     with:
       event_name: ${{ github.event_name }}
-      commit_messages: ${{ join(github.event.commits.*.message, '\n') }}
+      # For push events, join commit messages. For PRs, use an empty string
+      commit_messages: ${{ github.event_name == 'push' && join(github.event.commits.*.message, '\n') || '' }}
 
   # Step 2: Log the decisions (for debugging)
   log-decisions:
