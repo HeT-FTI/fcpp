@@ -14,7 +14,7 @@ name: MegaLinter
 #       - main
 
 on:
-  workflow_dispatch:
+  push:
     branches:
       - fcpp-dev
 
