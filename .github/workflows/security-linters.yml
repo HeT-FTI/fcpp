@@ -15,8 +15,8 @@ name: MegaLinter
 
 on:
   workflow_dispatch:
-  branches:
-    - fcpp-dev
+    branches:
+      - fcpp-dev
 
 # Comment env block if you do not want to apply fixes
 env:
