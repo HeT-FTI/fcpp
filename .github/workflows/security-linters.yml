@@ -2,15 +2,21 @@ name: MegaLinter
 
 # Trigger mega-linter at every push. Action will also be visible from Pull
 # Requests to main
-on: # yamllint disable-line rule:truthy - false positive
-  # Comment this line to trigger action only on pull-requests
-  # (not recommended if you don't pay for GH Actions)
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+
+# on: # yamllint disable-line rule:truthy - false positive
+#   # Comment this line to trigger action only on pull-requests
+#   # (not recommended if you don't pay for GH Actions)
+#   push:
+#     branches:
+#       - main
+#   pull_request:
+#     branches:
+#       - main
+
+on:
+  workflow_dispatch:
+  branches:
+    - fcpp-dev
 
 # Comment env block if you do not want to apply fixes
 env:
@@ -89,6 +95,15 @@ jobs:
             }}
 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          API_REPORTER: true
+          API_REPORTER_URL: ${{ secrets.API_REPORTER_URL }}
+          API_REPORTER_BASIC_AUTH_USERNAME: ${{ secrets.API_REPORTER_BASIC_AUTH_USERNAME }}
+          API_REPORTER_BASIC_AUTH_PASSWORD: ${{ secrets.API_REPORTER_BASIC_AUTH_PASSWORD }}
+          API_REPORTER_METRICS_URL: ${{ secrets.API_REPORTER_METRICS_URL }}
+          API_REPORTER_METRICS_BASIC_AUTH_USERNAME: ${{ secrets.API_REPORTER_METRICS_BASIC_AUTH_USERNAME }}
+          API_REPORTER_METRICS_BASIC_AUTH_PASSWORD: ${{ secrets.API_REPORTER_METRICS_BASIC_AUTH_PASSWORD }}
+          API_REPORTER_DEBUG: false
 
           # ADD YOUR CUSTOM ENV VARIABLES HERE OR DEFINE THEM IN A FILE
           # .mega-linter.yml AT THE ROOT OF YOUR REPOSITORY
