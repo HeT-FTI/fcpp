@@ -71,8 +71,9 @@ jobs:
 
       - name: Build and test with Conan
         run: |
-          conan create . -pr:b=default -pr:h=default -s build_type=Debug --build=missing
-        timeout-minutes: 30
+          conan create . -pr:b=default -pr:h=default -s build_type=Debug --build=missing \
+          -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=True
+        timeout-minutes: 55
 
       - name: Set timestamp
         id: timestamp

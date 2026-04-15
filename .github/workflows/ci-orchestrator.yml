@@ -47,6 +47,7 @@ jobs:
           echo "  📦 Release:    ${{ needs.controller.outputs.trigger_release }}"
           echo "  🔢 Versioning: ${{ needs.controller.outputs.trigger_versioning }}"
           echo "  📚 Docs:       ${{ needs.controller.outputs.trigger_docs }}"
+          echo "  🛡️  Security:  ${{ needs.controller.outputs.trigger_security }}"
           echo ""
           echo "⚙️  Test Configuration:"
           echo "  Save Logs: ${{ needs.controller.outputs.saving_tests_log }}"
@@ -93,3 +94,12 @@ jobs:
     needs: controller
     if: needs.controller.outputs.trigger_docs == 'true'
     uses: ./.github/workflows/docs-build.yml
+
+  security:
+    name: Security Scan
+    needs: controller
+    if: needs.controller.outputs.trigger_security == 'true'
+    uses: ./.github/workflows/security-linters.yml
+    with:
+      validate_all_codebase: ${{ github.event_name == 'push' && 'true' || 'false' }}
+    secrets: inherit

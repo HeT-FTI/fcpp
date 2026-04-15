@@ -32,6 +32,11 @@ jobs:
           chmod +x .github/misc/commit_semver.py
           python3 .github/misc/commit_semver.py
 
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Push Changes
         run: |
           git push origin main

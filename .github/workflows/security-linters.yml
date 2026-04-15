@@ -1,0 +1,63 @@
+name: MegaLinter
+
+# This workflow is called by ci-orchestrator.yml when the :shield: gitmoji
+# is present in commit messages.
+#
+# NOTE: The fcpp-dev branch has this workflow in debugging mode (triggers on
+# push to fcpp-dev only). In the ci-orchestrator system, this workflow is
+# triggered via workflow_call, and the gitmoji trigger logic is centralized
+# in the metadata-controller.
+
+on:
+  workflow_call:
+    inputs:
+      validate_all_codebase:
+        description: 'Whether to validate all source code or just the diff'
+        required: false
+        type: string
+        default: 'false'
+
+# Comment env block if you do not want to apply fixes
+env:
+  # Apply linter fixes configuration
+  APPLY_FIXES: all
+  APPLY_FIXES_EVENT: pull_request
+  APPLY_FIXES_MODE: commit
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}-security
+  cancel-in-progress: true
+
+jobs:
+  megalinter:
+    name: MegaLinter
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: MegaLinter
+        uses: oxsecurity/megalinter@v8
+        continue-on-error: true
+        id: ml
+        env:
+          VALIDATE_ALL_CODEBASE: ${{ inputs.validate_all_codebase }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Archive production artifacts
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MegaLinter reports
+          include-hidden-files: "true"
+          path: |
+            megalinter-reports
+            mega-linter.log
