@@ -38,12 +38,11 @@
   "saving_tests_log": true,
   "enable_python_bindings": false,
   "workflow_triggers": {
-    "_comment": "Master switches to enable/disable workflow triggers. Each workflow also requires specific gitmoji patterns in commit messages to trigger.",
-    "build": true,
-    "tests": true,
-    "release": true,
-    "docs": true,
-    "versioning": true,
-    "security_scan": true
+    "build": false,
+    "tests": false,
+    "release": false,
+    "docs": false,
+    "versioning": false,
+    "security_scan": false
   }
 }

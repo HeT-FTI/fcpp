@@ -228,9 +228,9 @@ jobs:
           
           # Log trigger decisions
           echo "📋 Workflow Trigger Decisions:"
-          echo "  🏗️  Build: $trigger_build"
+          echo "  🏗️ Build: $trigger_build"
           echo "  🧪 Tests: $trigger_tests"
           echo "  📦 Release: $trigger_release"
           echo "  🔢 Versioning: $trigger_versioning"
           echo "  📚 Docs: $trigger_docs"
-          echo "  🛡️  Security: $trigger_security"
+          echo "  🛡️ Security: $trigger_security"
