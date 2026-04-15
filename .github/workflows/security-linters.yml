@@ -1,0 +1,99 @@
+name: MegaLinter
+
+# This workflow is called by ci-orchestrator.yml when the :shield: gitmoji
+# is present in commit messages.
+#
+# NOTE: The fcpp-dev branch has this workflow in debugging mode (triggers on
+# push to fcpp-dev only). In the ci-orchestrator system, this workflow is
+# triggered via workflow_call, and the gitmoji trigger logic is centralized
+# in the metadata-controller.
+
+on:
+  workflow_call:
+    inputs:
+      validate_all_codebase:
+        description: 'Whether to validate all source code or just the diff'
+        required: false
+        type: string
+        default: 'false'
+
+# Comment env block if you do not want to apply fixes
+env:
+  # Apply linter fixes configuration
+  APPLY_FIXES: all
+  APPLY_FIXES_EVENT: pull_request
+  APPLY_FIXES_MODE: commit
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}-security
+  cancel-in-progress: true
+
+jobs:
+  megalinter:
+    name: MegaLinter
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Check Grafana API reporter secrets
+        id: check_grafana
+        run: |
+          if [[ -n "$API_URL" && -n "$API_USER" && -n "$API_PASS" ]]; then
+            echo "available=true" >> $GITHUB_OUTPUT
+            echo "✅ Grafana API reporter secrets are configured"
+          else
+            echo "available=false" >> $GITHUB_OUTPUT
+            echo "ℹ️  Grafana API reporter secrets not configured — will fallback to artifact upload"
+          fi
+        env:
+          API_URL: ${{ secrets.API_REPORTER_URL }}
+          API_USER: ${{ secrets.API_REPORTER_BASIC_AUTH_USERNAME }}
+          API_PASS: ${{ secrets.API_REPORTER_BASIC_AUTH_PASSWORD }}
+
+      # Run MegaLinter WITH Grafana API reporter when secrets are available
+      - name: MegaLinter (with Grafana reporter)
+        if: steps.check_grafana.outputs.available == 'true'
+        uses: oxsecurity/megalinter@v8
+        continue-on-error: true
+        id: ml_grafana
+        env:
+          VALIDATE_ALL_CODEBASE: ${{ inputs.validate_all_codebase }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          API_REPORTER: true
+          API_REPORTER_URL: ${{ secrets.API_REPORTER_URL }}
+          API_REPORTER_BASIC_AUTH_USERNAME: ${{ secrets.API_REPORTER_BASIC_AUTH_USERNAME }}
+          API_REPORTER_BASIC_AUTH_PASSWORD: ${{ secrets.API_REPORTER_BASIC_AUTH_PASSWORD }}
+          API_REPORTER_METRICS_URL: ${{ secrets.API_REPORTER_METRICS_URL }}
+          API_REPORTER_METRICS_BASIC_AUTH_USERNAME: ${{ secrets.API_REPORTER_METRICS_BASIC_AUTH_USERNAME }}
+          API_REPORTER_METRICS_BASIC_AUTH_PASSWORD: ${{ secrets.API_REPORTER_METRICS_BASIC_AUTH_PASSWORD }}
+          API_REPORTER_DEBUG: false
+
+      # Run MegaLinter WITHOUT Grafana API reporter as fallback
+      - name: MegaLinter (artifact-only)
+        if: steps.check_grafana.outputs.available != 'true'
+        uses: oxsecurity/megalinter@v8
+        continue-on-error: true
+        id: ml_fallback
+        env:
+          VALIDATE_ALL_CODEBASE: ${{ inputs.validate_all_codebase }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Always upload artifacts as a safety net (works for both paths)
+      - name: Archive production artifacts
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MegaLinter reports
+          include-hidden-files: "true"
+          path: |
+            megalinter-reports
+            mega-linter.log

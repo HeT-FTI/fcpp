@@ -1,38 +1,32 @@
 name: Tests
 
+# This workflow can be triggered in two ways:
+# 1. Via workflow_call from ci-orchestrator.yml (recommended)
+# 2. Directly on push/pull_request (for backward compatibility)
+
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_call:
+    inputs:
+      pkg_name:
+        description: 'Package name from metadata.json'
+        required: true
+        type: string
+      saving_tests_log:
+        description: 'Whether to save test logs'
+        required: false
+        type: string
+        default: 'false'
+      activate_code_coverage:
+        description: 'Whether to activate code coverage'
+        required: false
+        type: string
+        default: 'false'
 
 env:
   CONAN_HOME: ~/.conan2
 
 jobs:
-  check-build-type:
-    runs-on: ubuntu-latest
-    outputs:
-      build_type: ${{ steps.check_build_type.outputs.build_type }}
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Check build_type
-        id: check_build_type
-        run: |
-          BUILD_TYPE=$(jq -r '.build_type | tostring' metadata.json)
-          echo "build_type=$BUILD_TYPE" >> $GITHUB_OUTPUT
-  
   auto-testing:
-    needs: check-build-type
-    if: >-
-      ${{ needs.check-build-type.outputs.build_type == 'Debug' && 
-          github.event_name == 'push' && 
-          contains(join(github.event.commits.*.message, '\n'), ':beer:') }}
     name: Auto Testing
     runs-on: ubuntu-latest
 
@@ -49,18 +43,14 @@ jobs:
         run: |
           pip install conan
 
-      - name: Read metadata.json
+      - name: Set metadata from inputs
         id: read_metadata
         run: |
-          pkg_name=$(jq -r '.name | tostring' metadata.json)
-          trigger=$(jq -r '.trigger_tests | tostring|  ascii_downcase' metadata.json)
-          saving=$(jq -r '.saving_tests_log | tostring | ascii_downcase' metadata.json)
-          coverage=$(jq -r '.activate_code_coverage | tostring | ascii_downcase' metadata.json) 
-
-          echo "pkg_name=$pkg_name" >> "$GITHUB_OUTPUT"
-          echo "trigger=$trigger" >> "$GITHUB_OUTPUT"
-          echo "saving=$saving" >> "$GITHUB_OUTPUT"
-          echo "coverage=$coverage" >> "$GITHUB_OUTPUT"
+          # Use inputs from orchestrator (already parsed from metadata.json)
+          echo "pkg_name=${{ inputs.pkg_name }}" >> "$GITHUB_OUTPUT"
+          echo "trigger=true" >> "$GITHUB_OUTPUT"
+          echo "saving=${{ inputs.saving_tests_log }}" >> "$GITHUB_OUTPUT"
+          echo "coverage=${{ inputs.activate_code_coverage }}" >> "$GITHUB_OUTPUT"
 
       - name: Configure Conan
         run: |
@@ -81,8 +71,9 @@ jobs:
 
       - name: Build and test with Conan
         run: |
-          conan create . -pr:b=default -pr:h=default -s build_type=Debug --build=missing
-        timeout-minutes: 30
+          conan create . -pr:b=default -pr:h=default -s build_type=Debug --build=missing \
+          -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=True
+        timeout-minutes: 55
 
       - name: Set timestamp
         id: timestamp

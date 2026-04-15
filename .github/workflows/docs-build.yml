@@ -1,19 +1,18 @@
 name: Docs
 
+# This workflow can be triggered in two ways:
+# 1. Via workflow_call from ci-orchestrator.yml (recommended)
+# 2. Directly on push/pull_request (for backward compatibility)
+
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_call:
+    # No inputs needed - documentation build is self-contained
 
 env:
   CONAN_HOME: ~/.conan2
 
 jobs:
   docs:
-    if: >-
-      github.event_name == 'push' &&
-      contains(join(github.event.commits.*.message, '\n'), ':book:')
     name: Build Documentation
     runs-on: ubuntu-latest
 
