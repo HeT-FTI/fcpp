@@ -44,14 +44,50 @@ jobs:
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
-      - name: MegaLinter
+      - name: Check Grafana API reporter secrets
+        id: check_grafana
+        run: |
+          if [[ -n "$API_URL" && -n "$API_USER" && -n "$API_PASS" ]]; then
+            echo "available=true" >> $GITHUB_OUTPUT
+            echo "✅ Grafana API reporter secrets are configured"
+          else
+            echo "available=false" >> $GITHUB_OUTPUT
+            echo "ℹ️  Grafana API reporter secrets not configured — will fallback to artifact upload"
+          fi
+        env:
+          API_URL: ${{ secrets.API_REPORTER_URL }}
+          API_USER: ${{ secrets.API_REPORTER_BASIC_AUTH_USERNAME }}
+          API_PASS: ${{ secrets.API_REPORTER_BASIC_AUTH_PASSWORD }}
+
+      # Run MegaLinter WITH Grafana API reporter when secrets are available
+      - name: MegaLinter (with Grafana reporter)
+        if: steps.check_grafana.outputs.available == 'true'
         uses: oxsecurity/megalinter@v8
         continue-on-error: true
-        id: ml
+        id: ml_grafana
+        env:
+          VALIDATE_ALL_CODEBASE: ${{ inputs.validate_all_codebase }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          API_REPORTER: true
+          API_REPORTER_URL: ${{ secrets.API_REPORTER_URL }}
+          API_REPORTER_BASIC_AUTH_USERNAME: ${{ secrets.API_REPORTER_BASIC_AUTH_USERNAME }}
+          API_REPORTER_BASIC_AUTH_PASSWORD: ${{ secrets.API_REPORTER_BASIC_AUTH_PASSWORD }}
+          API_REPORTER_METRICS_URL: ${{ secrets.API_REPORTER_METRICS_URL }}
+          API_REPORTER_METRICS_BASIC_AUTH_USERNAME: ${{ secrets.API_REPORTER_METRICS_BASIC_AUTH_USERNAME }}
+          API_REPORTER_METRICS_BASIC_AUTH_PASSWORD: ${{ secrets.API_REPORTER_METRICS_BASIC_AUTH_PASSWORD }}
+          API_REPORTER_DEBUG: false
+
+      # Run MegaLinter WITHOUT Grafana API reporter as fallback
+      - name: MegaLinter (artifact-only)
+        if: steps.check_grafana.outputs.available != 'true'
+        uses: oxsecurity/megalinter@v8
+        continue-on-error: true
+        id: ml_fallback
         env:
           VALIDATE_ALL_CODEBASE: ${{ inputs.validate_all_codebase }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Always upload artifacts as a safety net (works for both paths)
       - name: Archive production artifacts
         if: success() || failure()
         uses: actions/upload-artifact@v4
