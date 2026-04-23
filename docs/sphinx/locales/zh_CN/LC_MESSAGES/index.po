@@ -41,7 +41,7 @@ msgstr ""
 
 #: ../../source/index.rst:5 d1788d27550c465b805f5235b8fe800c
 msgid "_`Introduction`"
-msgstr ""
+msgstr "介绍"
 
 #: ../../source/index.rst:7 ff286ba22fc04d09b38e5e0dd49ba42f
 msgid ""
