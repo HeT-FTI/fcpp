@@ -44,10 +44,9 @@ msgid ""
 "estimating pixel labels via graph cuts and refining the GMM parameters, "
 "converging to an optimal segmentation."
 msgstr ""
-"fcpp 中的分割是一种迭代式图像分割算法，它利用用户输入（例如边界框）
-将前景从背景中分离出来。它使用高斯混合模型 (GMMs) 对前景和背景的颜色分布进行
-建模，并将分割表述为图上的能量最小化问题。该算法在通过图割估计像素标签和细化 
-GMM 参数之间交替进行，最终收敛至最优分割结果。"
+"fcpp 中的分割是一种迭代式图像分割算法，它利用用户输入（例如边界框）将前景从背景中分离出来。"
+"它使用高斯混合模型 (GMMs) 对前景和背景的颜色分布进行建模，并将分割表述为图上的能量最小化问"
+"题。该算法在通过图割估计像素标签和细化 GMM 参数之间交替进行，最终收敛至最优分割结果。"
 
 #: ../../source/export.rst:15 20afe45e43a344eca5087a08277cdf98
 msgid ""
@@ -68,9 +67,9 @@ msgid ""
 ":math:`\\Theta_{l_p}`, while :math:`w_{p, q}` is the edge weight between "
 "pixel :math:`p` and :math:`q`."
 msgstr ""
-"总能量由数据项（像素分配代价）和平滑项（相邻像素标签差异的惩罚）组成。一元项 
-:D_p(l_p) = -log P(I_p | Theta_{l_p})描述了像素p的颜色I_p在前台或后台 GMM 模型
-'Theta_{l_p}' 下的负对数似然，而w_{p, q} 是像素p和q之间的边权重。"
+"总能量由数据项（像素分配代价）和平滑项（相邻像素标签差异的惩罚）组成。一元项 "
+":math:`D_p(l_p) = -\\log P(I_p | \\Theta_{l_p})` 下的负对数似然，"
+"而w_{p, q} 是像素p和q之间的边权重。"
 
 #: ../../source/export.rst:25 8873b3182db54e8b90ff885380c29a04
 msgid "This part is optional."
@@ -90,10 +89,9 @@ msgid ""
 "extracting the main object while suppressing borders. Ideal for automated"
 " foreground extraction without user input."
 msgstr ""
-"分割函数通过自动定义一个边距与图像大小成比例的边界框来分割输入图像 x。
-它初始化前景和背景模型，然后以矩形模式运行内部 GrabCut 算法 5 次迭代。
-输出掩码经过细化以区分前景 (True) 和背景 (False)，在有效提取主体的同时
-抑制边缘。非常适用于无需用户输入的自动化前景提取。"
+"分割函数通过自动定义一个边距与图像大小成比例的边界框来分割输入图像 x。它初始化前景和背景"
+"模型，然后以矩形模式运行内部 GrabCut 算法 5 次迭代。输出掩码经过细化以区分前景 (True) "
+"和背景 (False)，在有效提取主体的同时抑制边缘。非常适用于无需用户输入的自动化前景提取。"
 
 #: ../../source/export.rst:36 101f797d606d441c8ea8cab05a569436
 msgid "segmentation demo"
@@ -115,7 +113,7 @@ msgid ""
 "contours and areas (as shown in :numref:`Figure %s <images "
 "segmentation>`)."
 msgstr ""
-"下图以玩偶、人物和鸡翅的照片作为输入。该算法可以自动计算它们的轮廓和面积（如图:images segmentation）。"
+"下图以玩偶、人物和鸡翅的照片作为输入。该算法可以自动计算它们的轮廓和面积（如下图像分割图）。"
 
 #: ../../source/export.rst:64 f55a44814d044cee891dd1674b138e5c
 msgid "Image segmentation illustration"
@@ -129,8 +127,8 @@ msgid ""
 "segmentations>` illustrated, the proper binding boxes can extract the "
 "main food objects, which step is helpful for downstream analysis."
 msgstr ""
-"利用此分割算法，您可以在图片中通过边界框提取主要物体。如:食物分割示意图，
-合适的边界框可以提取出主要食物对象，这一步骤有助于下游分析。"
+"利用此分割算法，您可以在图片中通过边界框提取主要物体。如:食物分割示意图，合适的边界框"
+"可以提取出主要食物对象，这一步骤有助于下游分析。"
 
 #: ../../source/export.rst:75 d29fca40da8a4cee93a63d7f8c68b227
 msgid "Get foods from original figure"
@@ -144,8 +142,8 @@ msgid ""
 "implementation of :code:`// downstream tasks` in :numref:`background "
 "blur`), showed in :numref:`Figure %s <background blur>`."
 msgstr ""
-"或者进一步与其他图像处理流程相结合，以实现更复杂的应用，如背景模糊处理
-（在背景模糊中填写下游任务的真正实现），如 <background blur> 所示。"
+"或者进一步与其他图像处理流程相结合，以实现更复杂的应用，如背景模糊处理（在背景模糊中填"
+"写下游任务的真正实现），如背景模糊图所示。"
 
 #: ../../source/export.rst:86 a7e0dff4e3d74a4caf41a8be3e99c894
 msgid "Background blur via segmentation algorithm"
@@ -161,7 +159,8 @@ msgid ""
 "both in fields of **unit** and **stress**, are ideal choices if "
 "necessary."
 msgstr ""
-"下表展示了我们的测试矩阵。在 **单元测试** 和 **压力测试** 领域均已验证的平台，如有需要，是理想的选择。"
+"下表展示了我们的测试矩阵。在 **单元测试** 和 **压力测试** 领域均已验证的平台，"
+"如有需要，是理想的选择。"
 
 #: ../../source/export.rst:94 21334c8fcfbe408cbfc98669e2d398f4
 msgid "test result among platforms"
