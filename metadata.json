@@ -36,5 +36,13 @@
   "doc_doxygen_suffix": ["h", "c", "hpp", "cpp", "dox", "cxx"],
   "trigger_tests": true,
   "saving_tests_log": true,
-  "enable_python_bindings": false
+  "enable_python_bindings": false,
+  "workflow_triggers": {
+    "build": false,
+    "tests": false,
+    "release": false,
+    "docs": false,
+    "versioning": false,
+    "security_scan": false
+  }
 }

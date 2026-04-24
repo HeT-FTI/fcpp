@@ -1,46 +1,20 @@
 name: Versioning
-permissions:
-  contents: read
+
+# This workflow can be triggered in two ways:
+# 1. Via workflow_call from ci-orchestrator.yml (recommended)
+# 2. Directly on push (for backward compatibility)
+
 on:
-  push:
-    branches:
-      - main
+  workflow_call:
+    # No inputs needed - this workflow uses secrets and git operations
+
+permissions:
+  contents: write
 
 jobs:
-  check-build-type:
-    runs-on: ubuntu-latest
-    outputs:
-      should_versioning: ${{ steps.check_build_type.outputs.should_versioning }}
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Check build_type
-        id: check_build_type
-        run: |
-          BUILD_TYPE=$(jq -r '.build_type | tostring' metadata.json)
-          echo "build_type=$BUILD_TYPE" >> $GITHUB_OUTPUT
-          if [ "$BUILD_TYPE" == "Release" ]; then
-            echo "should_versioning=true" >> $GITHUB_OUTPUT
-            echo "build_type is 'Release'. Continuing with versioning."
-          else
-            echo "should_versioning=false" >> $GITHUB_OUTPUT
-            echo "build_type is '$BUILD_TYPE', not 'Release'. Skipping versioning."
-          fi
-
   auto-versioning:
-    needs: check-build-type
-    if: >-
-      ${{ needs.check-build-type.outputs.should_versioning == 'true' &&
-          github.event_name == 'push' &&
-          !contains(join(github.event.commits.*.message, '\n'), '(:package:): ') }}
+    name: Auto Versioning
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
