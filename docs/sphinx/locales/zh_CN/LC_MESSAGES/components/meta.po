@@ -21,11 +21,11 @@ msgstr ""
 
 #: ../../source/components/meta.rst:2 e038fd36b2844c2f837dc9332b04cfc8
 msgid "_`Metadata Configuration`"
-msgstr ""
+msgstr "元数据配置"
 
 #: ../../source/components/meta.rst:5 8ffc98a6547145b083c06687b0fd93dd
 msgid "_`Project-level Settings`"
-msgstr ""
+msgstr "项目级设置"
 
 #: ../../source/components/meta.rst:7 7cc351e81aa641889931f4d341b1294f
 msgid ""
@@ -33,10 +33,12 @@ msgid ""
 "project, including basic project information, build configuration, and "
 "dependency definitions."
 msgstr ""
+"metadata.json 文件包含 fcpp 项目的元数据配置，包括基本项目信息、构建配置和"
+"依赖定义。"
 
 #: ../../source/components/meta.rst:11 2a63b984d8be4c0595f65d0af4bd364a
 msgid "_`File Structure`"
-msgstr ""
+msgstr "文件结构"
 
 #: ../../source/components/meta.rst:13 c129fc51da494d4f9b97452c658ce102
 msgid ""
@@ -45,10 +47,12 @@ msgid ""
 "configuration (CMake version, C/C++ standards), module settings, "
 "dependency definitions, and documentation configuration."
 msgstr ""
+"该 JSON 文件包含基本项目信息（名称、版本、许可证、描述）、作者和维护者、"
+"构建配置（CMake 版本、C/C++ 标准）、模块设置、依赖定义以及文档配置等部分。"
 
 #: ../../source/components/meta.rst:18 1642bd1c563b4f07864db733210c174f
 msgid "_`Key Settings`"
-msgstr ""
+msgstr "关键设置"
 
 #: ../../source/components/meta.rst:20 8f6171353602444d8058ca571a7c82c6
 msgid ""
@@ -58,6 +62,9 @@ msgid ""
 "categorized into common, C-specific, and C++-specific requirements. "
 "Documentation settings configure Doxygen generation."
 msgstr ""
+"基本项目信息定义了包的身份标识。构建配置指定了工具版本和语言标准。模块"
+"设置控制标准和用户模块的使用。依赖项被归类为通用、C 专用和 C++ 专用需求。"
+"文档设置用于配置 Doxygen 生成。"
 
 #: ../../source/components/meta.rst:24 a1dc0c323d4643299ad758742d74cdc4
 msgid ""
@@ -65,4 +72,5 @@ msgid ""
 "support, module generation, and common dependencies like Boost and "
 "OpenCV."
 msgstr ""
-
+"示例配置展示了如何设置一个支持 C++20、模块生成以及包含 Boost 和 OpenCV "
+"等通用依赖的项目。"
