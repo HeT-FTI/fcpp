@@ -75,7 +75,6 @@ jobs:
           API_REPORTER_METRICS_URL: ${{ secrets.API_REPORTER_METRICS_URL }}
           API_REPORTER_METRICS_BASIC_AUTH_USERNAME: ${{ secrets.API_REPORTER_METRICS_BASIC_AUTH_USERNAME }}
           API_REPORTER_METRICS_BASIC_AUTH_PASSWORD: ${{ secrets.API_REPORTER_METRICS_BASIC_AUTH_PASSWORD }}
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           API_REPORTER_DEBUG: false
 
       # Run MegaLinter WITHOUT Grafana API reporter as fallback
@@ -87,6 +86,7 @@ jobs:
         env:
           VALIDATE_ALL_CODEBASE: ${{ inputs.validate_all_codebase }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
 
       # Always upload artifacts as a safety net (works for both paths)
       - name: Archive production artifacts
