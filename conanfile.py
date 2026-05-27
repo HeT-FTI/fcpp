@@ -1,11 +1,13 @@
 from conan import ConanFile
-from conan.tools.files import copy
 from conan.tools.cmake import CMakeToolchain, CMake, CMakeDeps, cmake_layout
 from typing import Literal
 from pathlib import Path
 import yaml
 import json
 import os
+import shutil
+import subprocess
+import tempfile
 sep = os.path.sep
 _get_root_path_list = (lambda : (Path(__file__).__str__()).split(sep)[:-1])
 
@@ -86,7 +88,7 @@ def _pragma_in_import(x: list[str]) -> tuple[bool, int]:
 
 class PackageRecipe(ConanFile):
 
-    package_type = "header-library" if _metadata.get("is_header") else "library"
+    package_type = "library"
 
     # Binary configuration
     settings = "os", "compiler", "build_type", "arch"
@@ -94,7 +96,7 @@ class PackageRecipe(ConanFile):
     default_options = {"shared": _metadata.get('is_shared'), "fPIC": True}  # inherit from config
 
     # Sources are located in the same place as this recipe, copy them to the recipe
-    exports_sources = ["CMakeLists.txt", "src/*", "include/*", "api/*", "metadata.json", "LICENSE"]
+    exports_sources = ["CMakeLists.txt", "src/*", "include/*", "metadata.json", "LICENSE"]
     exports = ["conandata.yml", "metadata.json", "LICENSE"]
 
     generators = "VirtualBuildEnv", "VirtualRunEnv"
@@ -216,6 +218,9 @@ class PackageRecipe(ConanFile):
 
     def requirements(self):
         for req in self.conandata.get('requirements'):
+            # baremetal 环境下跳过测试框架
+            if self.settings.os == "baremetal" and "gtest" in req.lower():
+                continue
             self.requires(req)
 
     def layout(self):
@@ -224,23 +229,187 @@ class PackageRecipe(ConanFile):
     def generate(self):
         tc = CMakeToolchain(self)
         tc.variables['C_DEPS'], tc.variables['CPP_DEPS'] = self._preparing_deps_links()
+        # 裸机交叉编译：跳过 CMake 的链接测试
+        if self.settings.os == "baremetal":
+            tc.variables["CMAKE_TRY_COMPILE_TARGET_TYPE"] = "STATIC_LIBRARY"
+        
         tc.generate()
         deps = CMakeDeps(self)
         deps.generate()
 
     def _preparing_deps_links(self):
-        _common, _c, _cpp, _infra = [self.meta.get('dependencies').get(_) for _ in ['common', 'c', 'cpp', 'infra']]
+        _common, _c, _cpp, _test = [self.meta.get('dependencies').get(_) for _ in ['common', 'c', 'cpp', 'test']]
         _c = {k: v if k not in _common.keys() else list(set(v).union(set(_common.get(k)))) for k, v in _c.items()}
         _cpp = {k: v if k not in _common.keys() else list(set(v).union(set(_common.get(k)))) for k, v in _cpp.items()}
-        _infra_deps = [f"{k}@{' '.join(v)}" for k, v in _infra.items()]
+
+        # baremetal 环境下跳过测试依赖
+        if self.settings.os == "baremetal":
+            _test = {}
+
+        _test_deps = [f"{k}@{' '.join(v)}" for k, v in _test.items()]
         _c_deps = [f"{k}@{' '.join(v)}" for k, v in {**_common, **_c}.items()]
         _cpp_deps = [f"{k}@{' '.join(v)}" for k, v in {**_common, **_cpp}.items()]
-        return _c_deps, list(set(_cpp_deps).union(set(_infra_deps)))
+        return _c_deps, list(set(_cpp_deps).union(set(_test_deps)))
 
     def build(self):
         cmake = CMake(self)
         cmake.configure()
         cmake.build()
+        self._validate_built_archives()
+
+    def _validate_built_archives(self):
+        archive_names = [f"lib{self.name}_c.a", f"lib{self.name}_cpp.a"]
+        build_dir = Path(self.build_folder)
+
+        readelf_path = self._find_binutil("readelf")
+        ar_path = self._find_binutil("ar")
+
+        reports = []
+        failures = []
+
+        for archive_name in archive_names:
+            archive_path = build_dir / archive_name
+            if not archive_path.exists():
+                continue
+
+            report = self._inspect_archive(archive_path, ar_path, readelf_path)
+            reports.append(report)
+
+            verdict = self._evaluate_archive_compatibility(report)
+            report["verdict"] = verdict
+            if not verdict["ok"]:
+                failures.append((archive_path, verdict))
+
+        report_path = build_dir / "compatibility_report.json"
+        report_path.write_text(json.dumps(reports, indent=2, ensure_ascii=False), encoding="utf-8")
+        self.output.info(f"Compatibility report written: {report_path}")
+
+        for report in reports:
+            verdict = report["verdict"]
+            status = "PASS" if verdict["ok"] else "FAIL"
+            self.output.info(
+                f"[compat:{status}] {report['archive']} target={verdict['target']} sample={report['sample_object']}"
+            )
+            self.output.info(f"  attrs: {report['attributes']}")
+            self.output.info(f"  summary: {verdict['summary']}")
+
+        if failures:
+            details = [f"{path.name}: {verdict['summary']}" for path, verdict in failures]
+            raise RuntimeError("Archive compatibility validation failed: " + " | ".join(details))
+
+    def _find_binutil(self, name: str) -> str:
+        compiler_conf = self.conf.get("tools.build:compiler_executables", default={}, check_type=dict)
+        compiler_path = compiler_conf.get("c") if compiler_conf else None
+
+        candidates = []
+        if compiler_path:
+            compiler_bin = Path(compiler_path)
+            bin_dir = compiler_bin.parent
+            prefix = compiler_bin.name
+            if prefix.endswith("gcc"):
+                prefix = prefix[:-3]
+            candidates.append(str(bin_dir / f"{prefix}{name}"))
+
+        resolved = next((candidate for candidate in candidates if Path(candidate).exists()), None)
+        if resolved:
+            return resolved
+
+        path_tool = shutil.which(name)
+        if path_tool:
+            return path_tool
+
+        prefixed = shutil.which(f"arm-none-eabi-{name}")
+        if prefixed:
+            return prefixed
+
+        raise RuntimeError(f"Unable to locate binutil: {name}")
+
+    def _inspect_archive(self, archive_path: Path, ar_path: str, readelf_path: str) -> dict:
+        with tempfile.TemporaryDirectory(prefix="smt-compat-") as temp_dir:
+            subprocess.run([ar_path, "x", str(archive_path)], cwd=temp_dir, check=True, capture_output=True, text=True)
+            members = sorted(Path(temp_dir).glob("*.obj"))
+            if not members:
+                members = sorted(Path(temp_dir).iterdir())
+            if not members:
+                raise RuntimeError(f"Archive has no members: {archive_path}")
+
+            sample = self._select_representative_member(members)
+            attrs = self._read_elf_attributes(sample, readelf_path)
+
+        return {
+            "archive": archive_path.name,
+            "sample_object": sample.name,
+            "attributes": attrs,
+        }
+
+    def _select_representative_member(self, members: list[Path]) -> Path:
+        for member in members:
+            if "CompilerId" not in member.name:
+                return member
+        return members[0]
+
+    def _read_elf_attributes(self, obj_path: Path, readelf_path: str) -> dict:
+        result = subprocess.run(
+            [readelf_path, "-A", str(obj_path)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        attrs = {}
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if not line.startswith("Tag_"):
+                continue
+            if ":" not in line:
+                continue
+            key, value = line.split(":", 1)
+            attrs[key.strip()] = value.strip().strip('"')
+        return attrs
+
+    def _evaluate_archive_compatibility(self, report: dict) -> dict:
+        target_os = str(self.settings.os)
+        target_arch = str(self.settings.arch)
+        attrs = report["attributes"]
+
+        target = f"{target_os}/{target_arch}"
+        if target_os != "baremetal":
+            return {
+                "ok": True,
+                "target": target,
+                "summary": "Non-baremetal target: attributes recorded, no MCU ISA restriction enforced.",
+            }
+
+        cpu_arch = attrs.get("Tag_CPU_arch", "unknown")
+        thumb_isa = attrs.get("Tag_THUMB_ISA_use", "")
+        arm_isa = attrs.get("Tag_ARM_ISA_use", "No")
+
+        expected = {
+            "armv6": {"v6-M", "v6S-M"},
+            "armv7": {"v7-M", "v7E-M"},
+            "armv8_32": {"v8-M.base", "v8-M.mainline"},
+        }.get(target_arch, set())
+
+        problems = []
+        if expected and cpu_arch not in expected:
+            problems.append(f"Tag_CPU_arch={cpu_arch} not in expected {sorted(expected)}")
+
+        if arm_isa.lower() in {"yes", "1", "true"}:
+            problems.append("ARM ISA is enabled, but baremetal Cortex-M targets require Thumb code")
+
+        if "Thumb" not in thumb_isa:
+            problems.append("Thumb ISA attribute is missing")
+
+        ok = not problems
+        if ok:
+            summary = f"Archive is compatible with {target}; CPU arch={cpu_arch}, Thumb={thumb_isa}."
+        else:
+            summary = "; ".join(problems)
+
+        return {
+            "ok": ok,
+            "target": target,
+            "summary": summary,
+        }
 
     def _remove_customized_doc_command(self, tags: list[str] = None):  # maybe no use anymore
 
@@ -287,28 +456,27 @@ class PackageRecipe(ConanFile):
                 _get_export_objects(_other_context, '@attacher'))
 
     def package(self):
-        if self.meta.get('is_header'):
-            copy(self, "*.hpp", self.source_folder, self.package_folder)
-        else:
-            cmake = CMake(self)
-            cmake.install()
+        cmake = CMake(self)
+        cmake.install()
+
+        report_path = Path(self.build_folder) / "compatibility_report.json"
+        if report_path.exists():
+            dst = Path(self.package_folder) / "share" / self.name
+            dst.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(report_path, dst / report_path.name)
 
     def package_info(self):
         self.cpp_info.libs = [self.name]
         _c, _cpp = self._preparing_deps_links()
 
-        if self.meta.get('is_header'):
-            self.cpp_info.bindirs = []
-            self.cpp_info.libdirs = []
-        else:
-            self.cpp_info.components[f"{self.name}_c"].libs = [f"{self.name}_c"]
-            self.cpp_info.components[f"{self.name}_c"].requires = [[_t := _.split('@')[1],
-                                                                    conan_targets[_t] if _t in conan_targets.keys()
-                                                                    else _t][-1] for _ in _c]
-            self.cpp_info.components[f"{self.name}_cpp"].libs = [f"{self.name}_cpp"]
-            self.cpp_info.components[f"{self.name}_cpp"].requires = [[_t := _.split('@')[1],
-                                                                      conan_targets[_t] if _t in conan_targets.keys()
-                                                                      else _t][-1] for _ in _cpp]
+        self.cpp_info.components[f"{self.name}_c"].libs = [f"{self.name}_c"]
+        self.cpp_info.components[f"{self.name}_c"].requires = [[_t := _.split('@')[1],
+                                                                conan_targets[_t] if _t in conan_targets.keys()
+                                                                else _t][-1] for _ in _c]
+        self.cpp_info.components[f"{self.name}_cpp"].libs = [f"{self.name}_cpp"]
+        self.cpp_info.components[f"{self.name}_cpp"].requires = [[_t := _.split('@')[1],
+                                                                  conan_targets[_t] if _t in conan_targets.keys()
+                                                                  else _t][-1] for _ in _cpp]
 
     @staticmethod
     def _call_syntax_suggestion():
