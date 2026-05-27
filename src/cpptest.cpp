@@ -1,8 +1,10 @@
 // Conan::ImportStart
 #include <iostream>
 #include <string>
+#ifndef __ARM_EABI__
 #include <zlib.h>
 #include <Eigen/Dense>
+#endif
 #include <cpptest.hpp>
 // Conan::ImportEnd
 
@@ -16,6 +18,7 @@ void test_hello() { std::cout << "CPP Compiler is ready!" << std::endl; };
 
 
 
+#ifndef __ARM_EABI__
 /**
  * @brief test eigen in cpp
  * @exporter
@@ -74,3 +77,4 @@ void test_cpp_zlib() {
               << "; Decompressed: " << reinterpret_cast<char*>(rec)
               << "; zlib in C++ test done!" << std::endl;
 }
+#endif /* __ARM_EABI__ */
