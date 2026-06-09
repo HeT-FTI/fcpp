@@ -216,10 +216,21 @@ class PackageRecipe(ConanFile):
             with open(_f, 'w', encoding='utf-8') as f:
                 f.write(''.join(_new_text))
 
+    def _test_dependencies_enabled(self):
+        return bool(self.meta.get("trigger_tests"))
+
+    def _python_bindings_enabled(self):
+        return bool(self.meta.get("enable_python_bindings"))
+
     def requirements(self):
         for req in self.conandata.get('requirements'):
+            req_lower = req.lower()
             # baremetal 环境下跳过测试框架
-            if self.settings.os == "baremetal" and "gtest" in req.lower():
+            if self.settings.os == "baremetal" and "gtest" in req_lower:
+                continue
+            if not self._test_dependencies_enabled() and "gtest" in req_lower:
+                continue
+            if not self._python_bindings_enabled() and "pybind11" in req_lower:
                 continue
             self.requires(req)
 
@@ -242,9 +253,11 @@ class PackageRecipe(ConanFile):
         _c = {k: v if k not in _common.keys() else list(set(v).union(set(_common.get(k)))) for k, v in _c.items()}
         _cpp = {k: v if k not in _common.keys() else list(set(v).union(set(_common.get(k)))) for k, v in _cpp.items()}
 
-        # baremetal 环境下跳过测试依赖
-        if self.settings.os == "baremetal":
+        # 包构建默认不链接测试依赖；Python 绑定关闭时也不引入 pybind11。
+        if self.settings.os == "baremetal" or not self._test_dependencies_enabled():
             _test = {}
+        if not self._python_bindings_enabled():
+            _test.pop("pybind11", None)
 
         _test_deps = [f"{k}@{' '.join(v)}" for k, v in _test.items()]
         _c_deps = [f"{k}@{' '.join(v)}" for k, v in {**_common, **_c}.items()]
