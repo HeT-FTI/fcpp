@@ -257,9 +257,9 @@ class BenchMcuConan(ConanFile):
 
                 self.output.info(f"[UART] {line}")
 
-                if line.startswith("BENCH_START"):
+                if line.startswith(("BENCHMARK_START", "BENCH_START")):
                     started = True
-                elif line.startswith("BENCH_END"):
+                elif line.startswith(("BENCHMARK_END", "BENCH_END")):
                     break
                 elif line.startswith("RESULT|") and started:
                     parts = line.split("|")
