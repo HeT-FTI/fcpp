@@ -46,7 +46,7 @@ jobs:
         contains(github.event.head_commit.message, ':fire:') ||
         contains(github.event.head_commit.message, '🔥')
       ))
-    runs-on: [self-hosted, linux, x64, hetai, docker]
+    runs-on: [self-hosted, Linux, X64, hetai, docker]
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
@@ -83,7 +83,7 @@ jobs:
 
   build:
     needs: prepare
-    runs-on: [self-hosted, linux, x64, hetai, docker]
+    runs-on: [self-hosted, Linux, X64, hetai, docker]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
