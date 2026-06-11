@@ -109,6 +109,27 @@ jobs:
             --toolchain-version '${{ matrix.toolchain_version }}' \
             --recipe-subdir '${{ matrix.recipe_subdir }}'
 
+      - name: Build benchmark bundle
+        if: ${{ success() && matrix.target_key == 'linux-armv7' && matrix.toolchain_version == '11.3.rel1' }}
+        env:
+          CONAN_USER: ${{ secrets.CONAN_USER }}
+          CONAN_PASS: ${{ secrets.CONAN_PASS }}
+          BENCHMARK_CI_TARGET_KEYS: linux-armv7
+          BENCHMARK_CI_TOOLCHAIN_VERSIONS: 11.3.rel1
+          BENCHMARK_TARGET_CPU: cortex-a7
+          BENCHMARK_FLOAT_ABI: hard
+          BENCHMARK_FPU: neon-vfpv4
+          BENCHMARK_REMOTE_PATH: /tmp/fcpp_benchmark/benchmark
+          BENCHMARK_DEPLOY_TOOL: ssh
+          BENCHMARK_SSH_HOST: unused@unused
+        run: |
+          set -euo pipefail
+          bash "$HETAI_PLAN_ROOT/ops/board/build_benchmark_artifacts.sh" \
+            --source-dir "$GITHUB_WORKSPACE" \
+            --run-dir "/opt/hetai/build-runs/${GITHUB_RUN_ID}/${GITHUB_REPOSITORY}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}" \
+            --target-key '${{ matrix.target_key }}' \
+            --toolchain-version '${{ matrix.toolchain_version }}'
+
       - name: Prepare board transfer password helper
         if: ${{ success() }}
         env:
@@ -162,6 +183,13 @@ jobs:
             /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/summary.md
             /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/cache-snapshot-info.json
             /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/metadata-override.json
+            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}
+            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}.map
+            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}.dis
+            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-build.log
+            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-info.json
+            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-config.json
+            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-host.profile
             /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/package-info.txt
             /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/package-folder.tar.gz
             /opt/hetai/build-logs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/console.log
