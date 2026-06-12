@@ -11,8 +11,6 @@
 ```
 benchmark/
 ├── bench_entry.c              ← 【算法工程师编辑】用例注册入口（MCU/Linux 共用）
-├── bench_config.json          ← 【每块板卡配置一次】Cortex-M 硬件参数
-├── bench_config_linux.json    ← 【参考模板】Cortex-A Linux 硬件参数示例
 ├── algo_module.ld.in          ← Linker Script 模板（仅裸机，自动填充地址）
 ├── CMakeLists.txt             ← 双目标编译脚本（baremetal / Linux 自动分支）
 ├── conanfile.py               ← Conan 包配方（不需要修改）
@@ -20,6 +18,9 @@ benchmark/
 ├── core/
 │   ├── het_bench_core.h       ← Benchmark ABI（HostInterface、Case、Manifest）
 │   └── het_bench_core.c       ← 运行时（计时、输出、用例调度）—— MCU/Linux 共用
+├── platform/
+│   ├── bench_config.json          ← 【每块板卡配置一次】Cortex-M 硬件参数
+│   └── bench_config_linux.json    ← 【参考模板】Cortex-A Linux 硬件参数示例
 ├── port/
 │   └── linux/
 │       └── bench_main_linux.c ← 【A 核唯一新增 .c】main() + clock_gettime + printf
@@ -322,13 +323,13 @@ BENCHMARK_END
 ```bash
 # 串行执行（多块板卡）
 for cfg in board_m0.json board_m4.json board_a7.json; do
-    python3 script/run_bench.py --config "$cfg"
+    python3 script/run_bench.py --config "platform/$cfg"
 done
 
 # 并行编译（仅构建，不需要硬件）
-python3 script/run_bench.py --config board_m0.json --no-flash &
-python3 script/run_bench.py --config board_m4.json --no-flash &
-python3 script/run_bench.py --config board_a7.json --no-flash &
+python3 script/run_bench.py --config platform/board_m0.json --no-flash &
+python3 script/run_bench.py --config platform/board_m4.json --no-flash &
+python3 script/run_bench.py --config platform/board_a7.json --no-flash &
 wait
 ```
 
@@ -391,7 +392,7 @@ jobs:
           path: benchmark/build/Release/
       - name: Flash and test
         working-directory: benchmark
-        run: python3 script/run_bench.py --config board_m0.json
+        run: python3 script/run_bench.py --config platform/board_m0.json
 
   test-linux:
     name: On-board Linux test (ADB)
@@ -406,7 +407,7 @@ jobs:
           path: benchmark/build/Release/
       - name: Deploy and test
         working-directory: benchmark
-        run: python3 script/run_bench.py --config board_a7.json
+        run: python3 script/run_bench.py --config platform/board_a7.json
 ```
 
 ### 本地 CI 脚本（GitLab / Jenkins 等）
@@ -419,15 +420,15 @@ source .venv/bin/activate
 cd benchmark
 
 # 阶段 1：编译（任何机器）
-python3 script/run_bench.py --config board_m0.json  --no-flash
-python3 script/run_bench.py --config board_a7.json  --no-flash
+python3 script/run_bench.py --config platform/board_m0.json  --no-flash
+python3 script/run_bench.py --config platform/board_a7.json  --no-flash
 
 # 阶段 2：上板（按接入的硬件类型决定）
 if [[ "${CI_HAS_MCU:-0}" == "1" ]]; then
-    python3 script/run_bench.py --config board_m0.json
+    python3 script/run_bench.py --config platform/board_m0.json
 fi
 if [[ "${CI_HAS_LINUX_BOARD:-0}" == "1" ]]; then
-    python3 script/run_bench.py --config board_a7.json
+    python3 script/run_bench.py --config platform/board_a7.json
 fi
 ```
 
@@ -488,6 +489,8 @@ adb devices                # 验证设备连接
 ---
 
 ## 框架架构
+
+![架构图](frame.png)
 
 ```mermaid
 flowchart TD

@@ -216,6 +216,12 @@ class PackageRecipe(ConanFile):
             with open(_f, 'w', encoding='utf-8') as f:
                 f.write(''.join(_new_text))
 
+    def _test_dependencies_enabled(self):
+        return bool(self.meta.get("trigger_tests"))
+
+    def _python_bindings_enabled(self):
+        return bool(self.meta.get("enable_python_bindings"))
+
     def requirements(self):
         # 裸机环境下跳过不适用的依赖：
         #   gtest/pybind11 — 测试框架，裸机无法运行；且 pybind11 不在 cpp_info.requires 中，
@@ -227,6 +233,14 @@ class PackageRecipe(ConanFile):
             if self.settings.os == "baremetal":
                 if any(req.lower().startswith(k) for k in BAREMETAL_SKIP):
                     continue
+            req_lower = req.lower()
+            # baremetal 环境下跳过测试框架
+            if self.settings.os == "baremetal" and "gtest" in req_lower:
+                continue
+            if not self._test_dependencies_enabled() and "gtest" in req_lower:
+                continue
+            if not self._python_bindings_enabled() and "pybind11" in req_lower:
+                continue
             self.requires(req)
 
     def layout(self):
@@ -253,6 +267,11 @@ class PackageRecipe(ConanFile):
             _test = {}
             _common = {}   # ZLIB 依赖 OS，裸机不可用
             _c = {}        # PCRE2 依赖 OS，裸机不可用
+        # 包构建默认不链接测试依赖；Python 绑定关闭时也不引入 pybind11。
+        if self.settings.os == "baremetal" or not self._test_dependencies_enabled():
+            _test = {}
+        if not self._python_bindings_enabled():
+            _test.pop("pybind11", None)
 
         _test_deps = [f"{k}@{' '.join(v)}" for k, v in _test.items()]
         _c_deps = [f"{k}@{' '.join(v)}" for k, v in {**_common, **_c}.items()]
