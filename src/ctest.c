@@ -1,9 +1,11 @@
 // Conan::ImportStart
 #include <ctest.h>
 #include <stdio.h>
+#ifndef __ARM_EABI__
 #include <zlib.h>
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
+#endif
 #include <string.h>
 // Conan::ImportEnd
 
@@ -21,6 +23,7 @@ void test_c_compiler() {
 
 
 
+#ifndef __ARM_EABI__
 /**
  * @brief zlib requirement test in C compiler
  * @exporter
@@ -46,4 +49,5 @@ void test_c_pcre() {
     printf(rc >= 0 ? "PCRE2 test: Match\n" : "PCRE2 test: No match\n");
     pcre2_code_free(re);
 }
+#endif /* __ARM_EABI__ */
 
