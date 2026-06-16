@@ -3,10 +3,8 @@ from conan.tools.cmake import CMake, CMakeToolchain, CMakeDeps, cmake_layout
 from conan.tools.files import copy
 from pathlib import Path
 import json
-import yaml
 import os
 import subprocess
-import serial
 import time
 
 sep = os.path.sep
@@ -58,7 +56,7 @@ class BenchMcuConan(ConanFile):
 
     exports_sources = [
         "CMakeLists.txt",
-        "bench_entry.c",
+        "bench_entry.*",
         "algo_module.ld.in",
         "bench_config.json",
         "core/*",
@@ -239,6 +237,15 @@ class BenchMcuConan(ConanFile):
     def _collect_serial_results(self, port, baud, timeout):
         """通过串口采集 benchmark 结果"""
         results = []
+        try:
+            import serial
+        except ImportError:
+            self.output.warning(
+                "pyserial is not installed; skipping serial collection. "
+                "Install it only on hosts that need UART result capture."
+            )
+            return results
+
         try:
             ser = serial.Serial(port, baud, timeout=1)
             time.sleep(0.5)
