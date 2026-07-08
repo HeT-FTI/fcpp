@@ -1,4 +1,4 @@
-name: hetai-package-matrix-fcpp-dev
+name: hetai-package-matrix
 
 on:
   workflow_dispatch:
@@ -18,7 +18,7 @@ on:
         default: "[]"
         type: string
   push:
-    branches: [fcpp-dev]
+    branches: [main, fcpp-dev]
     paths:
       - ".github/workflows/hetai-package-matrix.yml"
       - ".hetai/build-matrix.yml"
