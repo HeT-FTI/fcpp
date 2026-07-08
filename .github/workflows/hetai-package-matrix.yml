@@ -112,16 +112,19 @@ jobs:
       - name: Build benchmark bundle
         if: ${{ success() && matrix.target_key == 'linux-armv7' && matrix.toolchain_version == '11.3.rel1' }}
         env:
+          BOARD_CI_CONFIG: ${{ vars.BOARD_CI_CONFIG }}
           CONAN_USER: ${{ secrets.CONAN_USER }}
           CONAN_PASS: ${{ secrets.CONAN_PASS }}
-          BENCHMARK_CI_TARGET_KEYS: linux-armv7
-          BENCHMARK_CI_TOOLCHAIN_VERSIONS: 11.3.rel1
-          BENCHMARK_TARGET_CPU: cortex-a7
-          BENCHMARK_FLOAT_ABI: hard
-          BENCHMARK_FPU: neon-vfpv4
-          BENCHMARK_REMOTE_PATH: /tmp/fcpp_benchmark/benchmark
-          BENCHMARK_DEPLOY_TOOL: ssh
-          BENCHMARK_SSH_HOST: unused@unused
+          BENCHMARK_CI_TARGET_KEYS: ${{ vars.BENCHMARK_CI_TARGET_KEYS }}
+          BENCHMARK_CI_TOOLCHAIN_VERSIONS: ${{ vars.BENCHMARK_CI_TOOLCHAIN_VERSIONS }}
+          BENCHMARK_TARGET_CPU: ${{ vars.BENCHMARK_TARGET_CPU }}
+          BENCHMARK_FLOAT_ABI: ${{ vars.BENCHMARK_FLOAT_ABI }}
+          BENCHMARK_FPU: ${{ vars.BENCHMARK_FPU }}
+          BENCHMARK_EXTRA_CFLAGS: ${{ vars.BENCHMARK_EXTRA_CFLAGS }}
+          BENCHMARK_CONFIG_REL: ${{ vars.BENCHMARK_CONFIG_REL }}
+          BENCHMARK_REMOTE_PATH: ${{ vars.BENCHMARK_REMOTE_PATH }}
+          BENCHMARK_DEPLOY_TOOL: ${{ vars.BENCHMARK_DEPLOY_TOOL }}
+          BENCHMARK_SSH_HOST: ${{ vars.BENCHMARK_SSH_HOST }}
         run: |
           set -euo pipefail
           bash "$HETAI_PLAN_ROOT/ops/board/build_benchmark_artifacts.sh" \
@@ -152,12 +155,13 @@ jobs:
       - name: Transfer build bundle to benchmark debug server
         if: ${{ success() }}
         env:
-          BOARD_TRANSFER_ENABLED: "1"
-          BOARD_TRANSFER_HOST: 10.12.71.82
-          BOARD_TRANSFER_USER: lgq
-          BOARD_TRANSFER_BASE_DIR: /home/lgq/WorkProject/fcpp_board_ci
-          BOARD_TRANSFER_PORT: "22"
-          BOARD_TRANSFER_STRICT_HOST_KEY_CHECKING: accept-new
+          BOARD_CI_CONFIG: ${{ vars.BOARD_CI_CONFIG }}
+          BOARD_TRANSFER_ENABLED: ${{ vars.BOARD_TRANSFER_ENABLED }}
+          BOARD_TRANSFER_HOST: ${{ vars.BOARD_TRANSFER_HOST }}
+          BOARD_TRANSFER_USER: ${{ vars.BOARD_TRANSFER_USER }}
+          BOARD_TRANSFER_BASE_DIR: ${{ vars.BOARD_TRANSFER_BASE_DIR }}
+          BOARD_TRANSFER_PORT: ${{ vars.BOARD_TRANSFER_PORT }}
+          BOARD_TRANSFER_STRICT_HOST_KEY_CHECKING: ${{ vars.BOARD_TRANSFER_STRICT_HOST_KEY_CHECKING }}
           BOARD_TRANSFER_SSH_KEY: ${{ secrets.BOARD_TRANSFER_SSH_KEY }}
           BOARD_TRANSFER_SSH_PASSWORD: ${{ secrets.BOARD_TRANSFER_SSH_PASSWORD }}
           BOARD_TRANSFER_KNOWN_HOSTS: ${{ secrets.BOARD_TRANSFER_KNOWN_HOSTS }}
