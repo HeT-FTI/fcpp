@@ -36,6 +36,7 @@ env:
   HETAI_PLAN_ROOT: /home/fcpp/WorkProject/Plan
   BUILD_REGISTRY_API_URL: ${{ vars.BUILD_REGISTRY_API_URL }}
   CONAN_REMOTE_URL: ${{ vars.CONAN_REMOTE_URL }}
+  HETAI_RUN_KEY: ${{ format('{0}-attempt-{1}', github.run_id, github.run_attempt) }}
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
@@ -101,6 +102,7 @@ jobs:
           bash "$HETAI_PLAN_ROOT/ops/docker/run_ephemeral_package_build.sh" \
             --source-dir "$GITHUB_WORKSPACE" \
             --run-id "$GITHUB_RUN_ID" \
+            --run-key "$HETAI_RUN_KEY" \
             --repo "$GITHUB_REPOSITORY" \
             --package-ref '${{ matrix.package_ref }}' \
             --build-kind '${{ matrix.build_kind }}' \
@@ -129,7 +131,7 @@ jobs:
           set -euo pipefail
           bash "$HETAI_PLAN_ROOT/ops/board/build_benchmark_artifacts.sh" \
             --source-dir "$GITHUB_WORKSPACE" \
-            --run-dir "/opt/hetai/build-runs/${GITHUB_RUN_ID}/${GITHUB_REPOSITORY}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}" \
+            --run-dir "/opt/hetai/build-runs/${HETAI_RUN_KEY}/${GITHUB_REPOSITORY}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}" \
             --target-key '${{ matrix.target_key }}' \
             --toolchain-version '${{ matrix.toolchain_version }}'
 
@@ -173,8 +175,8 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --target-key '${{ matrix.target_key }}' \
             --toolchain-version '${{ matrix.toolchain_version }}' \
-            --run-dir "/opt/hetai/build-runs/${GITHUB_RUN_ID}/${GITHUB_REPOSITORY}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}" \
-            --console-log "/opt/hetai/build-logs/${GITHUB_RUN_ID}/${GITHUB_REPOSITORY}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/console.log"
+            --run-dir "/opt/hetai/build-runs/${HETAI_RUN_KEY}/${GITHUB_REPOSITORY}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}" \
+            --console-log "/opt/hetai/build-logs/${HETAI_RUN_KEY}/${GITHUB_REPOSITORY}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/console.log"
 
       - name: Upload logs and result bundle
         if: always()
@@ -182,18 +184,18 @@ jobs:
         with:
           name: build-${{ matrix.target_key }}-${{ matrix.toolchain_version }}
           path: |
-            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/result.json
-            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/package_refs.json
-            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/summary.md
-            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/cache-snapshot-info.json
-            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/metadata-override.json
-            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}
-            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}.map
-            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}.dis
-            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-build.log
-            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-info.json
-            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-config.json
-            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-host.profile
-            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/package-info.txt
-            /opt/hetai/build-runs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/package-folder.tar.gz
-            /opt/hetai/build-logs/${{ github.run_id }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/console.log
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/result.json
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/package_refs.json
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/summary.md
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/cache-snapshot-info.json
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/metadata-override.json
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}.map
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}.dis
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-build.log
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-info.json
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-config.json
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-host.profile
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/package-info.txt
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/package-folder.tar.gz
+            /opt/hetai/build-logs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/console.log
