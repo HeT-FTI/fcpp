@@ -172,6 +172,7 @@ jobs:
           bash "$HETAI_PLAN_ROOT/ops/board/transfer_build_artifacts.sh" \
             --phase build \
             --run-id "$GITHUB_RUN_ID" \
+            --run-key "$HETAI_RUN_KEY" \
             --repo "$GITHUB_REPOSITORY" \
             --target-key '${{ matrix.target_key }}' \
             --toolchain-version '${{ matrix.toolchain_version }}' \
