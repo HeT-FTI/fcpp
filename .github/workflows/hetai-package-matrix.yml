@@ -112,21 +112,25 @@ jobs:
             --recipe-subdir '${{ matrix.recipe_subdir }}'
 
       - name: Build benchmark bundle
-        if: ${{ success() && matrix.target_key == 'linux-armv7' && matrix.toolchain_version == '11.3.rel1' }}
+        if: ${{ success() && matrix.benchmark_enabled }}
         env:
           BOARD_CI_CONFIG: ${{ vars.BOARD_CI_CONFIG }}
           CONAN_USER: ${{ secrets.CONAN_USER }}
           CONAN_PASS: ${{ secrets.CONAN_PASS }}
-          BENCHMARK_CI_TARGET_KEYS: ${{ vars.BENCHMARK_CI_TARGET_KEYS }}
-          BENCHMARK_CI_TOOLCHAIN_VERSIONS: ${{ vars.BENCHMARK_CI_TOOLCHAIN_VERSIONS }}
-          BENCHMARK_TARGET_CPU: ${{ vars.BENCHMARK_TARGET_CPU }}
-          BENCHMARK_FLOAT_ABI: ${{ vars.BENCHMARK_FLOAT_ABI }}
-          BENCHMARK_FPU: ${{ vars.BENCHMARK_FPU }}
-          BENCHMARK_EXTRA_CFLAGS: ${{ vars.BENCHMARK_EXTRA_CFLAGS }}
-          BENCHMARK_CONFIG_REL: ${{ vars.BENCHMARK_CONFIG_REL }}
-          BENCHMARK_REMOTE_PATH: ${{ vars.BENCHMARK_REMOTE_PATH }}
-          BENCHMARK_DEPLOY_TOOL: ${{ vars.BENCHMARK_DEPLOY_TOOL }}
-          BENCHMARK_SSH_HOST: ${{ vars.BENCHMARK_SSH_HOST }}
+          BENCHMARK_CI_TARGET_KEYS: ${{ matrix.target_key }}
+          BENCHMARK_CI_TOOLCHAIN_VERSIONS: ${{ matrix.toolchain_version }}
+          BENCHMARK_TARGET_OS: ${{ matrix.benchmark_target_os }}
+          BENCHMARK_TARGET_CPU: ${{ matrix.benchmark_target_cpu }}
+          BENCHMARK_FLOAT_ABI: ${{ matrix.benchmark_float_abi }}
+          BENCHMARK_FPU: ${{ matrix.benchmark_fpu }}
+          BENCHMARK_EXTRA_CFLAGS: ${{ matrix.benchmark_extra_cflags }}
+          BENCHMARK_CONFIG_REL: ${{ matrix.benchmark_config_rel }}
+          BENCHMARK_REMOTE_PATH: ${{ matrix.benchmark_remote_path }}
+          BENCHMARK_DEPLOY_TOOL: ${{ matrix.benchmark_deploy_tool }}
+          BENCHMARK_SSH_HOST: ${{ matrix.benchmark_ssh_host }}
+          BENCHMARK_EXECUTION_ROUTE: ${{ matrix.benchmark_execution_route }}
+          BENCHMARK_ROUTE_ID: ${{ matrix.benchmark_route_id }}
+          BENCHMARK_ROUTE_NOTE: ${{ matrix.benchmark_route_note }}
         run: |
           set -euo pipefail
           bash "$HETAI_PLAN_ROOT/ops/board/build_benchmark_artifacts.sh" \

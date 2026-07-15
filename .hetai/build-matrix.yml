@@ -14,3 +14,63 @@ targets:
     arch: armv7
     toolchain_versions:
       - 11.3.rel1
+    benchmark:
+      enabled: true
+      target_os: Linux
+      target_cpu: cortex-a7
+      float_abi: hard
+      fpu: neon-vfpv4
+      extra_cflags: []
+      config_rel: platform/bench_config_ci_rk3506.json
+      remote_path: /tmp/fcpp_benchmark_fcpp/benchmark
+      deploy_tool: ssh
+      ssh_host: root@192.168.0.10
+      execution_route: ssh-board
+      route_id: rk3506-linux-armv7
+      route_note: RK3506 Linux armv7 board execution on 10.12.92.107 watcher
+
+  - id: linux-x86_64
+    default: false
+    enabled: true
+    build_kind: linux
+    os: Linux
+    arch: x86_64
+    toolchain_versions:
+      - 11.3.rel1
+    benchmark:
+      enabled: true
+      target_os: Linux
+      target_cpu: x86_64
+      float_abi: ""
+      fpu: ""
+      extra_cflags: []
+      config_rel: platform/bench_config_ci_linux_x86_64.json
+      remote_path: /tmp/fcpp_benchmark_host/benchmark
+      deploy_tool: local
+      ssh_host: ""
+      execution_route: local-host
+      route_id: watcher-host-linux-x86_64
+      route_note: Execute benchmark directly on the watcher host
+
+  - id: baremetal-cortex-m4
+    default: false
+    enabled: true
+    build_kind: baremetal
+    os: baremetal
+    arch: cortex-m4
+    toolchain_versions:
+      - 11.3.rel1
+    benchmark:
+      enabled: true
+      target_os: baremetal
+      target_cpu: cortex-m4
+      float_abi: hard
+      fpu: fpv4-sp-d16
+      extra_cflags: []
+      config_rel: platform/bench_config_ci_cortex_m4.json
+      remote_path: /tmp/fcpp_benchmark_m4/benchmark
+      deploy_tool: manual
+      ssh_host: ""
+      execution_route: manual-placeholder
+      route_id: pending-baremetal-cortex-m4
+      route_note: Placeholder route until a Cortex-M4 board watcher is provisioned
