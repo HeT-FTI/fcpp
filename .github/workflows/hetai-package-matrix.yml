@@ -195,6 +195,8 @@ jobs:
             /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/cache-snapshot-info.json
             /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/metadata-override.json
             /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}.bin
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}.hex
             /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}.map
             /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}.dis
             /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-build.log

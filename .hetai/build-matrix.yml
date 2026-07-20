@@ -74,3 +74,26 @@ targets:
       execution_route: manual-placeholder
       route_id: pending-baremetal-cortex-m4
       route_note: Placeholder route until a Cortex-M4 board watcher is provisioned
+
+  - id: baremetal-cortex-m0
+    default: false
+    enabled: true
+    build_kind: baremetal
+    os: baremetal
+    arch: cortex-m0
+    toolchain_versions:
+      - 11.3.rel1
+    benchmark:
+      enabled: true
+      target_os: baremetal
+      target_cpu: cortex-m0
+      float_abi: soft
+      fpu: none
+      extra_cflags: []
+      config_rel: platform/bench_config_ci_cortex_m0.json
+      remote_path: /tmp/fcpp_benchmark_m0/benchmark
+      deploy_tool: jlink
+      ssh_host: ""
+      execution_route: jlink-serial
+      route_id: bat32-baremetal-cortex-m0
+      route_note: BAT32 Cortex-M0 board execution on 10.12.92.107 watcher via J-Link and UART
