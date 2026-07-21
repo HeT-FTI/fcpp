@@ -1,5 +1,25 @@
 # fcpp Benchmark 模块版本更新记录
 
+## v0.4.1-dev - 2026-07-21
+
+### 变更
+
+- 补充 `fcpp-dev` 分支 watcher `v1.3.0` 闭环联调记录。
+- 计划执行一次真实开发者 push 触发，用于验证：
+  - GitHub Actions 四矩阵构建
+  - self-hosted runner 容器化 build
+  - board bundle 自动下发
+  - watcher 自动消费与 `benchmark-report.md` 输出
+  - Build Registry 对 `run_id / github_run_attempt / run_key` 的登记
+- 计划在同一 `run_id` 上追加一次 `re-run jobs` 验证，确认 attempt-aware 记录不会覆盖首次执行结果。
+
+### 验证目标
+
+- `linux-armv7-11.3.rel1`
+- `linux-x86_64-11.3.rel1`
+- `baremetal-cortex-m0-11.3.rel1`
+- `baremetal-cortex-m4-11.3.rel1`（当前为 placeholder 验证，不要求物理板卡执行）
+
 ## v0.4.0 - 2026-06-16
 
 ### 变更
