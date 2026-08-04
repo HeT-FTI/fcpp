@@ -3,6 +3,7 @@
 #include <ctest.h>
 #include <filesystem>
 #include <string>
+#include <fstream>
 #include "cpptest.hpp"
 #include "net.hpp"
 // import "hello.hpp"; // C++23 only

@@ -1,5 +1,6 @@
 from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain, CMake, CMakeDeps, cmake_layout
+from conan.tools.build import cross_building
 from typing import Literal
 from pathlib import Path
 import yaml
@@ -223,23 +224,14 @@ class PackageRecipe(ConanFile):
         return bool(self.meta.get("enable_python_bindings"))
 
     def requirements(self):
-        # 裸机环境下跳过不适用的依赖：
-        #   gtest/pybind11 — 测试框架，裸机无法运行；且 pybind11 不在 cpp_info.requires 中，
-        #                    若声明为直接依赖但未在 package_info() 中引用会触发 Conan 校验错误
-        #   pcre2/zlib     — 依赖 OS 系统调用，arm-none-eabi 无 syscall stubs，
-        #                    从源码编译会因 CMake 链接测试失败
-        BAREMETAL_SKIP = ("gtest", "pybind11", "zlib", "pcre2")
         for req in self.conandata.get('requirements'):
-            if self.settings.os == "baremetal":
-                if any(req.lower().startswith(k) for k in BAREMETAL_SKIP):
+            _pkg = req.split('/')[0]
+            if cross_building(self) and self.settings.os == "baremetal":
+                if not _pkg in self.meta.get('baremetal_white_list'):
                     continue
-            req_lower = req.lower()
-            # baremetal 环境下跳过测试框架
-            if self.settings.os == "baremetal" and "gtest" in req_lower:
+            if _pkg == 'gtest':
                 continue
-            if not self._test_dependencies_enabled() and "gtest" in req_lower:
-                continue
-            if not self._python_bindings_enabled() and "pybind11" in req_lower:
+            if _pkg == 'pybind11' and not self._python_bindings_enabled():
                 continue
             self.requires(req)
 
@@ -249,8 +241,8 @@ class PackageRecipe(ConanFile):
     def generate(self):
         tc = CMakeToolchain(self)
         tc.variables['C_DEPS'], tc.variables['CPP_DEPS'] = self._preparing_deps_links()
-        # 裸机交叉编译：跳过 CMake 的链接测试
-        if self.settings.os == "baremetal":
+
+        if cross_building(self) and self.settings.os == "baremetal":  # cross build to MCU
             tc.variables["CMAKE_TRY_COMPILE_TARGET_TYPE"] = "STATIC_LIBRARY"
         
         tc.generate()
@@ -258,25 +250,22 @@ class PackageRecipe(ConanFile):
         deps.generate()
 
     def _preparing_deps_links(self):
-        _common, _c, _cpp, _test = [self.meta.get('dependencies').get(_) for _ in ['common', 'c', 'cpp', 'test']]
+        _common, _c, _cpp, _infra = [self.meta.get('dependencies').get(_) for _ in ['common', 'c', 'cpp', 'infra']]
         _c = {k: v if k not in _common.keys() else list(set(v).union(set(_common.get(k)))) for k, v in _c.items()}
         _cpp = {k: v if k not in _common.keys() else list(set(v).union(set(_common.get(k)))) for k, v in _cpp.items()}
 
-        # baremetal 环境下跳过依赖 OS 系统调用的库（与 requirements() 中的过滤保持一致）
-        if self.settings.os == "baremetal":
-            _test = {}
-            _common = {}   # ZLIB 依赖 OS，裸机不可用
-            _c = {}        # PCRE2 依赖 OS，裸机不可用
-        # 包构建默认不链接测试依赖；Python 绑定关闭时也不引入 pybind11。
-        if self.settings.os == "baremetal" or not self._test_dependencies_enabled():
-            _test = {}
-        if not self._python_bindings_enabled():
-            _test.pop("pybind11", None)
+        if cross_building(self) and self.settings.os == 'baremetal':
+            _c, _cpp, _common, _infra = [{k: v for k, v in z.items() if k in self.meta.get("baremetal_white_list")} 
+                                         for z in [_c, _cpp, _common, _infra]]
+        else:
+            _infra.pop("GTest", None)
+            if not self._python_bindings_enabled():
+                _infra.pop("pybind11", None)
 
-        _test_deps = [f"{k}@{' '.join(v)}" for k, v in _test.items()]
+        _infra_deps = [f"{k}@{' '.join(v)}" for k, v in _infra.items()]
         _c_deps = [f"{k}@{' '.join(v)}" for k, v in {**_common, **_c}.items()]
         _cpp_deps = [f"{k}@{' '.join(v)}" for k, v in {**_common, **_cpp}.items()]
-        return _c_deps, list(set(_cpp_deps).union(set(_test_deps)))
+        return _c_deps, list(set(_cpp_deps).union(set(_infra_deps)))
 
     def build(self):
         cmake = CMake(self)

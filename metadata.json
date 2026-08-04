@@ -27,8 +27,9 @@
       "Eigen3": ["Eigen3::Eigen"],
       "etl": ["etl::etl"]
     },
-    "test": {"GTest": ["gtest::gtest"], "pybind11": ["pybind11::module"]}
+    "infra": {"GTest": ["gtest::gtest"], "pybind11": ["pybind11::module"]}
   },
+  "baremetal_white_list": ["etl", "ArduinoJson"],
   "graphviz_bin": "/usr/bin",
   "doc_languages": ["en", "zh"],
   "doc_versions": ["1.0", "2.0"],

@@ -88,6 +88,10 @@ class PackageTestConan(ConanFile):
         _common, _c, _cpp, _infra = [self.metadata.get('dependencies').get(_) for _ in ['common', 'c', 'cpp', 'infra']]
         _c = {k: v if k not in _common.keys() else list(set(v).union(set(_common.get(k)))) for k, v in _c.items()}
         _cpp = {k: v if k not in _common.keys() else list(set(v).union(set(_common.get(k)))) for k, v in _cpp.items()}
+
+        if not self.metadata.get('enable_python_bindings'):
+            _infra.pop("pybind11", None)
+        
         _infra_deps = [f"{k}@{' '.join(v)}" for k, v in _infra.items()]
         _c_deps = [f"{k}@{' '.join(v)}" for k, v in {**_common, **_c}.items()]
         _cpp_deps = [f"{k}@{' '.join(v)}" for k, v in {**_common, **_cpp}.items()]
