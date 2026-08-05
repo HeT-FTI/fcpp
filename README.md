@@ -22,6 +22,8 @@ capabilities.
 - **Library Build System**: Python with Conan 2.0
 - **File Build System**: Doxygen, Graphviz, Sphinx
 - **Module Support**: Optionally activated, when C++ standard ≥ 23
+- **Metadata-Driven**: `metadata.json` is the single source of truth (build, deps, docs, CI)
+- **Skills & Agent**: library-level `het-*` skills + routing agent (`.github/skills/`)
 - **Component Structure**:
     - pairwise header and source assumption
     - suffix distinguishment, (.h, .c) for C part, and (.hpp, .cpp) for C++ part
@@ -37,15 +39,43 @@ capabilities.
 - Doxygen annotation support for object exporting (`@exporter`, `@attacher`)
 - Automation documenting system via Doxygen and Sphinx
 - Importation, derivation and call relationship illustration through Graphviz
+- `metadata.json` as the single source of truth (build / deps / docs / CI)
+- Library-level VS Code skills + routing agent (`.github/skills/`, `/het-*` slash commands)
+- Metadata + gitmoji driven CI/CD orchestration (GitHub Actions)
+- Cross-compilation & on-board benchmark framework (`benchmark/`)
+- Agentic Coding workspace (`/workspace/`, git-ignored)
+
+## Agentic Coding Workspace
+
+The template reserves `/workspace/` (declared in `.gitignore`) for agent-generated work products produced
+during Agentic Coding sessions — e.g., implementation plans, test contracts, audit reports, and other
+intermediate artifacts. Keep such working files under `/workspace/` so they never pollute the tracked
+source tree.
+
+## Skills & Agent (VS Code)
+
+The template ships a library-level skills system under `.github/skills/` — **14 `het-*` skills plus one
+routing agent**, all invocable from Copilot Chat by typing `/`:
+
+| Family | Skills | Audience |
+|--------|--------|----------|
+| IaC usage (S0–S6) | `het-guide`, `het-build`, `het-release`, `het-docs`, `het-quality`, `het-board`, `het-fix-ci` | CI/CD novices |
+| Dev automation (N1–N7) | `het-deps`, `het-module`, `het-setup`, `het-testgen`, `het-commit`, `het-audit`, `het-preflight` | Developers |
+| Routing agent (A1) | `het-agent` | Everyone |
+
+Examples: `/het-guide` for onboarding, `/het-testgen` to generate tests, `/het-agent` for natural-language
+composite tasks (e.g. *"add a module, test it, and commit"*). See `.github/skills/README.md` and
+`PLAN-skills.md` for the full execution plan.
 
 ## Build Requirements
 
+- Python 3.10+ (Conan tooling)
 - Conan 2.0+
 - Compatible C/C++ compiler:
     - GCC
     - Clang
     - MSVC
-- CMake
+- CMake (auto-installed by Conan)
 
 ## Documenting Requirements
 
@@ -58,6 +88,26 @@ capabilities.
 ## Test Requirements
 
 - GTest
+
+## CI/CD (metadata-driven)
+
+All GitHub Actions workflows are orchestrated from `metadata.json` (entry: `ci-orchestrator.yml`, decision:
+`metadata-controller.yml`). Each pipeline is gated by a `workflow_triggers.*` switch and triggered by a
+gitmoji in the commit message. The canonical commit form is `<type>(<emoji>): <description>` — the emoji
+sits in the parentheses right after the commit word (e.g. `feat(:fire:): ...`, `chore(:package:): ...`);
+as a **soft rule** the emoji also triggers from anywhere in the message:
+
+| Pipeline | gitmoji in commit message | Gate (`metadata.json`) |
+|----------|---------------------------|------------------------|
+| Build | `:building_construction:` | `workflow_triggers.build` |
+| Tests + coverage | `:beer:` | `trigger_tests` / `activate_code_coverage` (needs `build_type=Debug`) |
+| Release | `(:package:):` | `workflow_triggers.release` (needs `build_type=Release`) |
+| Docs | `:book:` | `workflow_triggers.docs` |
+| Security / lint | `:shield:` | `workflow_triggers.security_scan` (also runs on every PR) |
+| Board cross-build | `:fire:` (or `🔥`) | hetai self-hosted runner |
+
+> **Note**: all `workflow_triggers.*` are `false` by default in the template — enable the ones you need
+> first, otherwise the gitmoji will not trigger anything.
 
 ## Crash Course of Build
 
@@ -110,10 +160,15 @@ built ones. If the later one, at least you need a locale Conan server for managi
 project-root/
 ├── conanfile.py              # Conan recipe
 ├── CMakeLists.txt            # CMake build framework
-├── metadata.json             # Project metadata configuration (name, version, etc)
+├── metadata.json             # Project metadata configuration (single source of truth)
 ├── conandata.yml             # Dependency specifications, Conan plugin support
 ├── LICENSE                   # Apache v2 Project license
 ├── NOTICE                    # Notice file of Apache v2
+├── .hetai/                   # het-ai package matrix (cross-compile targets)
+├── .github/                  # CI/CD + library-level skills
+│   ├── workflows/            # ci-orchestrator / metadata-controller / build / test / docs / release / security
+│   ├── skills/               # 14 het-* skills + het-agent + _shared + manifest.json
+│   └── misc/                 # clang-format / clang-tidy / gitleaks / labels
 ├── api/                      # Interface to advanced programming language
 │    └── python_bindings.cpp  # Python bindings interface
 ├── include/                  # Public headers
@@ -123,6 +178,8 @@ project-root/
 │   ├── *.c                   # C sources
 │   ├── *.cpp                 # C++ sources
 │   └── *.ixx/*.cppm          # Auto-generated Module files (in experimental)
+├── benchmark/                # Cross-compile & on-board benchmark framework (Cortex-M / Cortex-A) 
+├── workspace/                # Agentic Coding work products (git-ignored)
 ├── docs/                     # Documentations root
 │   ├── doxygen/              # Doxygen system main root
 │   │   ├── dox/              # Pure documentations' folder
@@ -174,10 +231,40 @@ migration to fit the future C++ standard.
 - **Desktop**: Windows, Linux, MacOS
 - **Mobile**: arm-linux, risc-v
 
-## Commit Convention
+## Benchmark (on-board)
 
-Commit style use the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
-specificationfor commit messages.
+`benchmark/` cross-compiles the library to real hardware and measures performance on-board:
+
+- **Cortex-M (baremetal)**: flash via JLink / OpenOCD / PyOCD, timing via SYSTICK
+- **Cortex-A (Linux)**: deploy via ADB / SSH, timing via `clock_gettime`
+
+Edit `benchmark/bench_config.json` (board parameters) and `benchmark/bench_entry.c` (algorithm cases),
+then run `python benchmark/script/run_bench.py` (add `--no-flash` to build only). Results follow the
+`BENCHMARK_START / RESULT|name|cycles / BENCHMARK_END` protocol. See `benchmark/README.md`.
+
+> Role split: `test_package/` runs **host-side** GTest verification (desktop/x86_64, even when the library
+> is cross-compiled to baremetal), while `benchmark/` runs **target-side** on-board verification.
+
+## Commit Convention & Versioning
+
+Commit style uses the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+specification, extended with the template's private **emoji superset** (see the CI/CD table above) so a
+single message both bumps the version and triggers the right pipeline.
+
+**Canonical commit form** — the emoji is placed in the parentheses right after the commit word:
+
+```
+<type>(<emoji>): <description>
+```
+
+Examples: `feat(:fire:): cross-compile support`, `test(:beer:): vector add cases`,
+`chore(:package:): prepare release`. As a soft rule, the emoji anywhere in the message also triggers the
+pipeline, but the parenthesized placement is the recommended convention.
+
+Versioning is driven by **semantic-release** (`semver-release.yml` + `.releaserc.json`): the commit prefix
+decides the jump — `feat` → minor, `fix`/`perf` → patch, `BREAKING CHANGE`/`!` → major. A release
+generates `CHANGELOG.md` and rewrites the `version` in `metadata.json`. (The legacy
+commit-base-versioning mechanism has been removed.)
 
 ## To Do Things
 
@@ -186,3 +273,4 @@ Possible frame design/validation on Apple Clang compiler (raised from dlib requi
 ## License
 
 [Apache-2.0] - See included LICENSE file for details.
+
