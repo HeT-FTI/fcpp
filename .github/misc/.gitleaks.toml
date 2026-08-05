@@ -13,7 +13,6 @@ paths = [
   '''^LICENSE''',
   '''^NOTICE''',
   '''^README\.md''',
-  '''^Versioning\.md''',
   '''^CHANGELOG\.md''',
   '''^build''',
   '''^conan_provider\.cmake''',

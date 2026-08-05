@@ -45,7 +45,6 @@ jobs:
           echo "  🏗️  Build:      ${{ needs.controller.outputs.trigger_build }}"
           echo "  🧪 Tests:      ${{ needs.controller.outputs.trigger_tests }}"
           echo "  📦 Release:    ${{ needs.controller.outputs.trigger_release }}"
-          echo "  🔢 Versioning: ${{ needs.controller.outputs.trigger_versioning }}"
           echo "  📚 Docs:       ${{ needs.controller.outputs.trigger_docs }}"
           echo "  🛡️  Security:  ${{ needs.controller.outputs.trigger_security }}"
           echo ""
@@ -75,13 +74,6 @@ jobs:
       saving_tests_log: ${{ needs.controller.outputs.saving_tests_log }}
       activate_code_coverage: ${{ needs.controller.outputs.activate_code_coverage }}
 
-  versioning:
-    name: Versioning
-    needs: controller
-    if: needs.controller.outputs.trigger_versioning == 'true'
-    uses: ./.github/workflows/commit-base-versioning.yml
-    secrets: inherit
-
   release:
     name: Release
     needs: controller
@@ -103,3 +95,4 @@ jobs:
     with:
       validate_all_codebase: ${{ github.event_name == 'push' && 'true' || 'false' }}
     secrets: inherit
+

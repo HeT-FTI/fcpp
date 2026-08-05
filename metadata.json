@@ -43,7 +43,6 @@
     "tests": false,
     "release": false,
     "docs": false,
-    "versioning": false,
     "security_scan": false
   }
 }

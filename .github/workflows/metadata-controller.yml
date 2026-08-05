@@ -38,9 +38,6 @@ on:
       trigger_release:
         description: 'Whether to trigger release workflow'
         value: ${{ jobs.analyze.outputs.trigger_release }}
-      trigger_versioning:
-        description: 'Whether to trigger versioning workflow'
-        value: ${{ jobs.analyze.outputs.trigger_versioning }}
       trigger_docs:
         description: 'Whether to trigger docs workflow'
         value: ${{ jobs.analyze.outputs.trigger_docs }}
@@ -72,7 +69,6 @@ jobs:
       trigger_build: ${{ steps.compute_triggers.outputs.trigger_build }}
       trigger_tests: ${{ steps.compute_triggers.outputs.trigger_tests }}
       trigger_release: ${{ steps.compute_triggers.outputs.trigger_release }}
-      trigger_versioning: ${{ steps.compute_triggers.outputs.trigger_versioning }}
       trigger_docs: ${{ steps.compute_triggers.outputs.trigger_docs }}
       trigger_security: ${{ steps.compute_triggers.outputs.trigger_security }}
       
@@ -102,7 +98,6 @@ jobs:
           wf_tests=$(jq -r '.workflow_triggers.tests // true | tostring | ascii_downcase' metadata.json)
           wf_release=$(jq -r '.workflow_triggers.release // true | tostring | ascii_downcase' metadata.json)
           wf_docs=$(jq -r '.workflow_triggers.docs // true | tostring | ascii_downcase' metadata.json)
-          wf_versioning=$(jq -r '.workflow_triggers.versioning // true | tostring | ascii_downcase' metadata.json)
           wf_security=$(jq -r '.workflow_triggers.security_scan // true | tostring | ascii_downcase' metadata.json)
           
           # Output all values
@@ -116,7 +111,6 @@ jobs:
           echo "wf_tests=$wf_tests" >> $GITHUB_OUTPUT
           echo "wf_release=$wf_release" >> $GITHUB_OUTPUT
           echo "wf_docs=$wf_docs" >> $GITHUB_OUTPUT
-          echo "wf_versioning=$wf_versioning" >> $GITHUB_OUTPUT
           echo "wf_security=$wf_security" >> $GITHUB_OUTPUT
           
           # Log for debugging
@@ -125,7 +119,7 @@ jobs:
           echo "🧪 Trigger Tests: $trigger_tests"
           echo "📝 Saving Test Logs: $saving_tests_log"
           echo "📊 Code Coverage: $activate_code_coverage"
-          echo "🎛️  Workflow Toggles: build=$wf_build tests=$wf_tests release=$wf_release docs=$wf_docs versioning=$wf_versioning security=$wf_security"
+          echo "🎛️  Workflow Toggles: build=$wf_build tests=$wf_tests release=$wf_release docs=$wf_docs security=$wf_security"
 
       - name: Compute workflow triggers
         id: compute_triggers
@@ -138,14 +132,12 @@ jobs:
           WF_TESTS: ${{ steps.read_metadata.outputs.wf_tests }}
           WF_RELEASE: ${{ steps.read_metadata.outputs.wf_release }}
           WF_DOCS: ${{ steps.read_metadata.outputs.wf_docs }}
-          WF_VERSIONING: ${{ steps.read_metadata.outputs.wf_versioning }}
           WF_SECURITY: ${{ steps.read_metadata.outputs.wf_security }}
         run: |
           # Initialize trigger flags
           trigger_build="false"
           trigger_tests="false"
           trigger_release="false"
-          trigger_versioning="false"
           trigger_docs="false"
           trigger_security="false"
           
@@ -194,12 +186,6 @@ jobs:
             trigger_release="true"
           fi
           
-          # Compute versioning trigger
-          # Versioning triggers on push with build_type Release AND NO release emoji AND workflow_triggers.versioning is true
-          if [[ "$EVENT_NAME" == "push" && "$has_release_emoji" == "false" && "$BUILD_TYPE" == "Release" && "$WF_VERSIONING" == "true" ]]; then
-            trigger_versioning="true"
-          fi
-          
           # Compute docs trigger
           # Docs trigger on :book: emoji on push AND workflow_triggers.docs is true
           if [[ "$EVENT_NAME" == "push" && "$has_docs_emoji" == "true" && "$WF_DOCS" == "true" ]]; then
@@ -222,7 +208,6 @@ jobs:
           echo "trigger_build=$trigger_build" >> $GITHUB_OUTPUT
           echo "trigger_tests=$trigger_tests" >> $GITHUB_OUTPUT
           echo "trigger_release=$trigger_release" >> $GITHUB_OUTPUT
-          echo "trigger_versioning=$trigger_versioning" >> $GITHUB_OUTPUT
           echo "trigger_docs=$trigger_docs" >> $GITHUB_OUTPUT
           echo "trigger_security=$trigger_security" >> $GITHUB_OUTPUT
           
@@ -231,6 +216,6 @@ jobs:
           echo "  🏗️ Build: $trigger_build"
           echo "  🧪 Tests: $trigger_tests"
           echo "  📦 Release: $trigger_release"
-          echo "  🔢 Versioning: $trigger_versioning"
           echo "  📚 Docs: $trigger_docs"
           echo "  🛡️ Security: $trigger_security"
+
