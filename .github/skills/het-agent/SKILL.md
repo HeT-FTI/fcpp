@@ -35,6 +35,7 @@ user-invocable: true
 | Commit（规范提交） | `het-commit` (N5) |
 | Audit（审计） | `het-audit` (N6) |
 | Pre-release gate（发版门禁） | `het-preflight` (N7) |
+| Patent mining（专利挖掘） | `het-patent` (N8) |
 | Onboarding/navigation（新手导航） | `het-guide` (S0) |
 
 ## Composition Examples（技能组合示例）
@@ -46,6 +47,7 @@ user-invocable: true
 | "补测试 → 跑覆盖率 → 出文档 → 提交" | N4 → S1 → S3 → N5 |
 | "新增模块并补测试" | `het-module` (N2) → `het-testgen` (N4) |
 | "发版前全检查一遍" | `het-preflight` (N7) |
+| "挖掘专利点并生成交底书" | `het-patent` (N8) |
 | "上板前先审计裸机依赖" | `het-audit` (N6) → `het-board` (S5) |
 
 ## Available Skills（可用技能范围）

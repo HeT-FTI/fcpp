@@ -54,13 +54,13 @@ source tree.
 
 ## Skills & Agent (VS Code)
 
-The template ships a library-level skills system under `.github/skills/` — **14 `het-*` skills plus one
+The template ships a library-level skills system under `.github/skills/` — **15 `het-*` skills plus one
 routing agent**, all invocable from Copilot Chat by typing `/`:
 
 | Family | Skills | Audience |
 |--------|--------|----------|
 | IaC usage (S0–S6) | `het-guide`, `het-build`, `het-release`, `het-docs`, `het-quality`, `het-board`, `het-fix-ci` | CI/CD novices |
-| Dev automation (N1–N7) | `het-deps`, `het-module`, `het-setup`, `het-testgen`, `het-commit`, `het-audit`, `het-preflight` | Developers |
+| Dev automation (N1–N8) | `het-deps`, `het-module`, `het-setup`, `het-testgen`, `het-commit`, `het-audit`, `het-preflight`, `het-patent` | Developers |
 | Routing agent (A1) | `het-agent` | Everyone |
 
 Examples: `/het-guide` for onboarding, `/het-testgen` to generate tests, `/het-agent` for natural-language
@@ -164,10 +164,10 @@ project-root/
 ├── conandata.yml             # Dependency specifications, Conan plugin support
 ├── LICENSE                   # Apache v2 Project license
 ├── NOTICE                    # Notice file of Apache v2
-├── .hetai/                   # het-ai package matrix (cross-compile targets)
+├── PLAN-skills.md            # Skills & Agent full execution plan
 ├── .github/                  # CI/CD + library-level skills
 │   ├── workflows/            # ci-orchestrator / metadata-controller / build / test / docs / release / security
-│   ├── skills/               # 14 het-* skills + het-agent + _shared + manifest.json
+│   ├── skills/               # 15 het-* skills + het-agent + _shared + manifest.json
 │   └── misc/                 # clang-format / clang-tidy / gitleaks / labels
 ├── api/                      # Interface to advanced programming language
 │    └── python_bindings.cpp  # Python bindings interface
@@ -178,7 +178,8 @@ project-root/
 │   ├── *.c                   # C sources
 │   ├── *.cpp                 # C++ sources
 │   └── *.ixx/*.cppm          # Auto-generated Module files (in experimental)
-├── benchmark/                # Cross-compile & on-board benchmark framework (Cortex-M / Cortex-A) 
+├── benchmark/                # Cross-compile & on-board benchmark framework (Cortex-M / Cortex-A)
+├── .hetai/                   # hetai package matrix (cross-compile targets)
 ├── workspace/                # Agentic Coding work products (git-ignored)
 ├── docs/                     # Documentations root
 │   ├── doxygen/              # Doxygen system main root

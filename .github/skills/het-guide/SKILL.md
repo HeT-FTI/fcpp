@@ -24,7 +24,7 @@ user-invocable: true
 | Quality / security / lint（质量/安全） | `het-quality` (S4) | Pass quality gates |
 | Board / cross-compile / baremetal（上板/交叉编译/裸机） | `het-board` (S5) | Cross-compile & run on board |
 | CI red / errors（CI 红了/报错） | `het-fix-ci` (S6) | Troubleshoot |
-| Deps / module / setup / tests / commit / audit / preflight（依赖/模块/环境/测试/提交/审计/门禁） | Dev skills（二期） | `het-deps` · `het-module` · `het-setup` · `het-testgen` · `het-commit` · `het-audit` · `het-preflight` |
+| Deps / module / setup / tests / commit / audit / preflight / patent（依赖/模块/环境/测试/提交/审计/门禁/专利） | Dev skills（二期） | `het-deps` · `het-module` · `het-setup` · `het-testgen` · `het-commit` · `het-audit` · `het-preflight` · `het-patent` |
 
 ## Trigger Cheat Sheet（触发速查表）
 

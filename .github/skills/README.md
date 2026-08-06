@@ -1,10 +1,10 @@
 # fcpp Skills System（技能体系）
 
-> Library-level skills for the fcpp template — 14 `het-*` skills + 1 routing agent, invocable from VS Code Copilot Chat by typing `/`. 模板库级技能：14 个 `het-*` 技能 + 1 个路由 Agent，在 Copilot Chat 输入 `/` 即可调用。
+> Library-level skills for the fcpp template — 15 `het-*` skills + 1 routing agent, invocable from VS Code Copilot Chat by typing `/`. 模板库级技能：15 个 `het-*` 技能 + 1 个路由 Agent，在 Copilot Chat 输入 `/` 即可调用。
 
 ## Directory（目录结构）
 
-```
+```text
 .github/skills/
 ├── README.md                      # this index（本索引）
 ├── manifest.json                  # skill registry（注册清单，A1 路由用）
@@ -27,6 +27,7 @@
 ├── het-commit/                    # N5 auto conventional commit
 ├── het-audit/                     # N6 repository audit
 ├── het-preflight/                 # N7 pre-release gate
+├── het-patent/                    # N8 patent mining / disclosure drafting
 └── het-agent/                     # A1 routing agent
 ```
 
@@ -37,7 +38,7 @@
 All skills are `user-invocable: true` — type `/` in the Copilot Chat input to see and pick them. 输入 `/` 即可看到并选择。
 
 | `/` command（命令） | Skill | What it does（作用） |
-|------|------|------|
+| --- | --- | --- |
 | `/het-guide` | S0 | onboarding + routing + trigger cheat sheet |
 | `/het-build` | S1 | build / test / coverage |
 | `/het-release` | S2 | release a version |
@@ -52,9 +53,11 @@ All skills are `user-invocable: true` — type `/` in the Copilot Chat input to 
 | `/het-commit` | N5 | auto conventional commit |
 | `/het-audit` | N6 | repository audit |
 | `/het-preflight` | N7 | pre-release gate |
+| `/het-patent` | N8 | patent mining / disclosure drafting |
 | `/het-agent` | A1 | autonomous routing agent |
 
 Examples（用法示例）:
+
 - `/het-audit` → run repository audit directly（说"审计"或 `/project-audit` 也会路由到它）.
 - `/het-agent add etl tests and commit` → composes N4 + N5 automatically. 组合执行。
 - No `/` + natural language → the model auto-loads the matching skill via `description`. 直接说自然语言也会自动加载。
@@ -62,9 +65,9 @@ Examples（用法示例）:
 ## Two Families + One Agent（两大技能族 + 一个 Agent）
 
 | Family（族） | Audience（面向） | Skills | Focus（定位） |
-|------|------|------|------|
+| --- | --- | --- | --- |
 | IaC usage（一期） | CI/CD novices | S0~S6 | use the template IaC, just say what you want |
-| Dev automation（二期） | developers | N1~N7 | daily dev automation: deps/module/setup/testgen/commit/audit/preflight |
+| Dev automation（二期） | developers | N1~N8 | daily dev automation: deps/module/setup/testgen/commit/audit/preflight/patent |
 | Unified entry（统一入口） | all | A1 | natural-language skill composition |
 
 ## Usage Conventions（使用约定）

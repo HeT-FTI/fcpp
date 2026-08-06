@@ -265,6 +265,25 @@
         "het-audit",
         "het-release"
       ]
+    },
+    {
+      "id": "N8",
+      "name": "het-patent",
+      "family": "dev_automation",
+      "path": ".github/skills/het-patent/SKILL.md",
+      "intents": [
+        "专利",
+        "专利挖掘",
+        "交底书",
+        "创新点",
+        "知识产权",
+        "patent",
+        "IP"
+      ],
+      "read_only": false,
+      "dependencies": [
+        "het-guide"
+      ]
     }
   ],
   "agent": {
