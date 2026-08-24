@@ -108,6 +108,7 @@ jobs:
             --build-kind '${{ matrix.build_kind }}' \
             --os-name '${{ matrix.os_name }}' \
             --arch '${{ matrix.arch }}' \
+            --target-key '${{ matrix.target_key }}' \
             --toolchain-version '${{ matrix.toolchain_version }}' \
             --recipe-subdir '${{ matrix.recipe_subdir }}'
 
@@ -121,6 +122,11 @@ jobs:
           BENCHMARK_CI_TOOLCHAIN_VERSIONS: ${{ matrix.toolchain_version }}
           BENCHMARK_TARGET_OS: ${{ matrix.benchmark_target_os }}
           BENCHMARK_TARGET_CPU: ${{ matrix.benchmark_target_cpu }}
+          BENCHMARK_TARGET_ABI: ${{ matrix.benchmark_target_abi }}
+          BENCHMARK_PROFILE_ARCH: ${{ matrix.benchmark_profile_arch }}
+          BENCHMARK_ARTIFACT_KIND: ${{ matrix.benchmark_artifact_kind }}
+          BENCHMARK_TOOLCHAIN_PACKAGE: ${{ matrix.benchmark_toolchain_package }}
+          BENCHMARK_COMPILER_VERSION: ${{ matrix.benchmark_compiler_version }}
           BENCHMARK_FLOAT_ABI: ${{ matrix.benchmark_float_abi }}
           BENCHMARK_FPU: ${{ matrix.benchmark_fpu }}
           BENCHMARK_EXTRA_CFLAGS: ${{ matrix.benchmark_extra_cflags }}
@@ -168,6 +174,7 @@ jobs:
           BOARD_TRANSFER_BASE_DIR: ${{ vars.BOARD_TRANSFER_BASE_DIR }}
           BOARD_TRANSFER_PORT: ${{ vars.BOARD_TRANSFER_PORT }}
           BOARD_TRANSFER_STRICT_HOST_KEY_CHECKING: ${{ vars.BOARD_TRANSFER_STRICT_HOST_KEY_CHECKING }}
+          BOARD_TRANSFER_QUEUE_INDEX_ENABLED: ${{ vars.BOARD_TRANSFER_QUEUE_INDEX_ENABLED }}
           BOARD_TRANSFER_SSH_KEY: ${{ secrets.BOARD_TRANSFER_SSH_KEY }}
           BOARD_TRANSFER_SSH_PASSWORD: ${{ secrets.BOARD_TRANSFER_SSH_PASSWORD }}
           BOARD_TRANSFER_KNOWN_HOSTS: ${{ secrets.BOARD_TRANSFER_KNOWN_HOSTS }}

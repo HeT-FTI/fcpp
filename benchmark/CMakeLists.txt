@@ -78,7 +78,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     # Size 信息
     find_program(_SIZE_TOOL NAMES size
         arm-none-linux-gnueabihf-size
-        aarch64-none-linux-gnu-size)
+        aarch64-none-linux-gnu-size
+        riscv64-linux-gnu-size)
     if(_SIZE_TOOL)
         add_custom_command(TARGET benchmark POST_BUILD
             COMMAND ${_SIZE_TOOL} --format=berkeley $<TARGET_FILE:benchmark>
@@ -206,4 +207,3 @@ else()
     )
 
 endif()
-

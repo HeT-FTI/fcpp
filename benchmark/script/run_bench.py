@@ -57,6 +57,8 @@ CONAN_ARCH_MAP = {
     "cortex-a73":    "armv8",
     "cortex-a76":    "armv8",
     "cortex-a78":    "armv8",
+    # ── RISC-V Linux ────────────────────────────────────────────
+    "riscv64":       "riscv64",
     # ── Native Linux host ───────────────────────────────────────
     "x86_64":        "x86_64",
     "native-x86_64": "x86_64",
@@ -156,15 +158,16 @@ def generate_profile_linux(cfg: dict, lib_name: str) -> Path:
     toolchain_version = str(cfg.get("toolchain_package_version", "11.3.rel1"))
     extra_cflags      = cfg.get("extra_cflags", [])
 
-    arch = CONAN_ARCH_MAP.get(cpu, "armv7")
+    arch = str(cfg.get("profile_arch") or CONAN_ARCH_MAP.get(cpu, "armv7"))
     is_native_x86 = arch == "x86_64"
+    is_riscv64 = arch == "riscv64"
 
     flags = []
-    if not is_native_x86:
+    if not is_native_x86 and not is_riscv64:
         flags.append(f"-mcpu={cpu}")
-    if not is_native_x86 and fpu not in ("none", ""):
+    if not is_native_x86 and not is_riscv64 and fpu not in ("none", ""):
         flags += [f"-mfloat-abi={float_abi}", f"-mfpu={fpu}"]
-    elif not is_native_x86 and float_abi:
+    elif not is_native_x86 and not is_riscv64 and float_abi:
         flags.append(f"-mfloat-abi={float_abi}")
     flags.extend(extra_cflags)
     flags_str = _flags_list(flags)
@@ -202,6 +205,16 @@ def generate_profile_linux(cfg: dict, lib_name: str) -> Path:
                 "[buildenv]",
                 f"CC=/usr/bin/gcc-{compiler_version}",
                 f"CXX=/usr/bin/g++-{compiler_version}",
+            ]
+        )
+    elif is_riscv64:
+        profile_lines.extend(
+            [
+                f'tools.build:compiler_executables={{"c":"/usr/bin/riscv64-linux-gnu-gcc","cpp":"/usr/bin/riscv64-linux-gnu-g++","ar":"/usr/bin/riscv64-linux-gnu-ar","ranlib":"/usr/bin/riscv64-linux-gnu-ranlib","strip":"/usr/bin/riscv64-linux-gnu-strip"}}',
+                "",
+                "[buildenv]",
+                "CC=/usr/bin/riscv64-linux-gnu-gcc",
+                "CXX=/usr/bin/riscv64-linux-gnu-g++",
             ]
         )
     else:
