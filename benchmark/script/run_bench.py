@@ -161,13 +161,17 @@ def generate_profile_linux(cfg: dict, lib_name: str) -> Path:
     arch = str(cfg.get("profile_arch") or CONAN_ARCH_MAP.get(cpu, "armv7"))
     is_native_x86 = arch == "x86_64"
     is_riscv64 = arch == "riscv64"
+    # Conan's Linux/armv8 and Linux/armv8.3 profiles select the AArch64
+    # toolchain.  They still need -mcpu, but the ARM32-only float ABI/FPU
+    # switches are invalid for aarch64-none-linux-gnu-gcc.
+    is_aarch64 = arch in {"armv8", "armv8.3"}
 
     flags = []
     if not is_native_x86 and not is_riscv64:
         flags.append(f"-mcpu={cpu}")
-    if not is_native_x86 and not is_riscv64 and fpu not in ("none", ""):
+    if not is_native_x86 and not is_riscv64 and not is_aarch64 and fpu not in ("none", ""):
         flags += [f"-mfloat-abi={float_abi}", f"-mfpu={fpu}"]
-    elif not is_native_x86 and not is_riscv64 and float_abi:
+    elif not is_native_x86 and not is_riscv64 and not is_aarch64 and float_abi:
         flags.append(f"-mfloat-abi={float_abi}")
     flags.extend(extra_cflags)
     flags_str = _flags_list(flags)

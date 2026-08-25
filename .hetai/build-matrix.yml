@@ -6,7 +6,8 @@ defaults:
   create_extra_args: --build=missing --test-folder=
 
 targets:
-  - id: linux-armv7
+  - id: linux-myir-3506-A7
+    target_key: linux-myir-3506-A7
     default: true
     enabled: true
     build_kind: linux
@@ -18,19 +19,51 @@ targets:
       enabled: true
       target_os: Linux
       target_cpu: cortex-a7
+      target_abi: arm-linux-gnueabihf
+      profile_arch: armv7
+      artifact_kind: linux-elf
+      toolchain_package: arm-toolchain/11.3.rel1
       float_abi: hard
       fpu: neon-vfpv4
       extra_cflags: []
       config_rel: platform/bench_config_ci_rk3506.json
-      remote_path: /tmp/fcpp_benchmark_fcpp/benchmark
+      remote_path: /tmp/fcpp_benchmark_myir_3506_a7/benchmark
       deploy_tool: ssh
-      ssh_host: root@192.168.0.10
+      ssh_host: ""
       execution_route: ssh-board
-      route_id: rk3506-linux-armv7
-      route_note: RK3506 Linux armv7 board execution on the 10.12.71.89 watcher
+      route_id: myir-3506-a7
+      route_note: MYIR MYD-YR3506J Linux ARMv7 board route
 
-  - id: linux-aarch64
-    target_key: linux-aarch64
+  - id: linux-orangepi-rk3566-A55
+    target_key: linux-orangepi-rk3566-A55
+    default: false
+    enabled: true
+    build_kind: linux
+    os: Linux
+    arch: armv8
+    toolchain_versions:
+      - 11.3.rel1
+    benchmark:
+      enabled: true
+      target_os: Linux
+      target_cpu: cortex-a55
+      target_abi: aarch64-linux-gnu
+      profile_arch: armv8
+      artifact_kind: linux-elf
+      toolchain_package: arm-toolchain/11.3.rel1
+      float_abi: ""
+      fpu: ""
+      extra_cflags: []
+      config_rel: platform/bench_config_ci_aarch64.json
+      remote_path: /tmp/fcpp_benchmark_orangepi_3b/benchmark
+      deploy_tool: ssh
+      ssh_host: ""
+      execution_route: ssh-board
+      route_id: orangepi-rk3566-a55
+      route_note: OrangePi 3B AArch64 board route
+
+  - id: linux-orangepi-h6-A53
+    target_key: linux-orangepi-h6-A53
     default: false
     enabled: true
     build_kind: linux
@@ -44,22 +77,52 @@ targets:
       target_cpu: cortex-a53
       target_abi: aarch64-linux-gnu
       profile_arch: armv8
-      artifact_kind: elf
+      artifact_kind: linux-elf
       toolchain_package: arm-toolchain/11.3.rel1
       float_abi: ""
       fpu: ""
       extra_cflags: []
       config_rel: platform/bench_config_ci_aarch64.json
-      remote_path: /tmp/fcpp_benchmark_aarch64/benchmark
+      remote_path: /tmp/fcpp_benchmark_orangepi_3_lts/benchmark
       deploy_tool: ssh
       ssh_host: ""
       execution_route: ssh-board
-      route_id: pending-linux-aarch64
-      route_note: AArch64 CI artifact for 71.89 contract and ABI preflight; execution route is pending board registration
+      route_id: orangepi-h6-a53
+      route_note: OrangePi 3 LTS AArch64 board route
 
-  - id: linux-riscv64
+  - id: linux-raspberry-bcm2712-A76
+    target_key: linux-raspberry-bcm2712-A76
     default: false
     enabled: true
+    build_kind: linux
+    os: Linux
+    arch: armv8
+    toolchain_versions:
+      - 11.3.rel1
+    benchmark:
+      enabled: true
+      target_os: Linux
+      target_cpu: cortex-a76
+      target_abi: aarch64-linux-gnu
+      profile_arch: armv8
+      artifact_kind: linux-elf
+      toolchain_package: arm-toolchain/11.3.rel1
+      float_abi: ""
+      fpu: ""
+      extra_cflags: []
+      config_rel: platform/bench_config_ci_aarch64.json
+      remote_path: /tmp/fcpp_benchmark_raspberrypi_5/benchmark
+      deploy_tool: ssh
+      ssh_host: ""
+      execution_route: ssh-board
+      route_id: raspberry-bcm2712-a76
+      route_note: Raspberry Pi 5 AArch64 route is configured but blocked until 71.89 SSH authorization is granted
+
+  # RISC-V is intentionally paused in this board-CI iteration. Keep the
+  # declaration for future recovery but do not include it in any CI matrix.
+  - id: linux-riscv64
+    default: false
+    enabled: false
     build_kind: linux
     os: Linux
     arch: riscv64
@@ -71,7 +134,7 @@ targets:
       target_cpu: riscv64
       target_abi: riscv64-linux-gnu-lp64d
       profile_arch: riscv64
-      artifact_kind: elf
+      artifact_kind: linux-elf
       toolchain_package: system-gcc-riscv64/13
       compiler_version: "13"
       float_abi: ""
@@ -86,6 +149,7 @@ targets:
       route_note: RISC-V CI artifact for 71.89 contract and ABI preflight; execution route is pending board registration
 
   - id: linux-x86_64
+    target_key: linux-x86_64
     default: false
     enabled: true
     build_kind: linux
@@ -97,6 +161,10 @@ targets:
       enabled: true
       target_os: Linux
       target_cpu: x86_64
+      target_abi: x86_64-linux-gnu
+      profile_arch: x86_64
+      artifact_kind: linux-elf
+      toolchain_package: system-gcc/11
       float_abi: ""
       fpu: ""
       extra_cflags: []
@@ -109,6 +177,7 @@ targets:
       route_note: Execute benchmark directly on the watcher host
 
   - id: baremetal-cortex-m4
+    target_key: baremetal-cortex-m4
     default: false
     enabled: true
     build_kind: baremetal
@@ -120,6 +189,10 @@ targets:
       enabled: true
       target_os: baremetal
       target_cpu: cortex-m4
+      target_abi: arm-none-eabi
+      profile_arch: cortex-m4
+      artifact_kind: baremetal-bin
+      toolchain_package: arm-toolchain/11.3.rel1
       float_abi: hard
       fpu: fpv4-sp-d16
       extra_cflags: []
@@ -129,9 +202,10 @@ targets:
       ssh_host: ""
       execution_route: manual-placeholder
       route_id: pending-baremetal-cortex-m4
-      route_note: Placeholder route until a Cortex-M4 board watcher is provisioned
+      route_note: Placeholder route until Cortex-M4 hardware is provisioned
 
   - id: baremetal-cortex-m0
+    target_key: baremetal-cortex-m0
     default: false
     enabled: true
     build_kind: baremetal
@@ -143,6 +217,10 @@ targets:
       enabled: true
       target_os: baremetal
       target_cpu: cortex-m0
+      target_abi: arm-none-eabi
+      profile_arch: cortex-m0
+      artifact_kind: baremetal-bin
+      toolchain_package: arm-toolchain/11.3.rel1
       float_abi: soft
       fpu: none
       extra_cflags: []
@@ -152,4 +230,4 @@ targets:
       ssh_host: ""
       execution_route: jlink-serial
       route_id: bat32-baremetal-cortex-m0
-      route_note: BAT32 Cortex-M0 board execution on the 10.12.71.89 watcher via J-Link and UART
+      route_note: BAT32 Cortex-M0 route via J-Link and UART
