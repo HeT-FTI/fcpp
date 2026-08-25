@@ -1,0 +1,45 @@
+name: Release
+
+# This workflow can be triggered in two ways:
+# 1. Via workflow_call from ci-orchestrator.yml (recommended)
+# 2. Directly on push (for backward compatibility)
+
+on:
+  workflow_call:
+    # No inputs needed - this workflow uses secrets
+
+jobs:
+  auto-release:
+    name: Auto Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Install dependencies
+        run: |
+          npm install \
+            semantic-release \
+            @semantic-release/commit-analyzer \
+            @semantic-release/release-notes-generator \
+            @semantic-release/changelog \
+            @semantic-release/git \
+            @semantic-release/github \
+            @semantic-release/exec
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
