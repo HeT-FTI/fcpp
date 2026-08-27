@@ -15,6 +15,7 @@
  * ============================================================
  */
 #include <stdint.h>
+#include <array>
 #include "core/het_bench_core.h"
 
 // Include algorithm headers here. For example:
@@ -25,42 +26,53 @@
  * USER ZONE (algorithm engineer edits only this block)
  * ============================================================ */
 
-#define MODULE_NAME "LibBench"
+constexpr const char *MODULE_NAME = "LibBench";
+constexpr uint32_t BENCH_VECTOR_LEN = 128U;
 
-enum {
-	BENCH_VECTOR_LEN = 128U,
+namespace {
+struct BenchState {
+	std::array<float, BENCH_VECTOR_LEN> a;
+	std::array<float, BENCH_VECTOR_LEN> b;
+	std::array<float, BENCH_VECTOR_LEN> y;
 };
 
-static float g_a[BENCH_VECTOR_LEN];
-static float g_b[BENCH_VECTOR_LEN];
-static float g_y[BENCH_VECTOR_LEN];
+BenchState &bench_state(void)
+{
+	// Function-local static: replaces file-scope mutable globals to avoid
+	// cross-translation-unit state pollution.
+	static BenchState state = {};
+	return state;
+}
+}  // namespace
 
 static void bench_prepare_input(void)
 {
 	for (uint32_t i = 0U; i < BENCH_VECTOR_LEN; ++i) {
-		g_a[i] = (float)i * 0.25f;
-		g_b[i] = (float)(BENCH_VECTOR_LEN - i) * 0.5f;
-		g_y[i] = 0.0f;
+		bench_state().a[i] = (float)i * 0.25f;
+		bench_state().b[i] = (float)(BENCH_VECTOR_LEN - i) * 0.5f;
+		bench_state().y[i] = 0.0f;
 	}
 }
 
-static int bench_add_case(const void * const ctx)
+static int bench_add_case(const void * const ctx) // NOSONAR: opaque ctx required by the pFunCase C ABI for cross-language binary compatibility.
 {
 	(void)ctx;
-	fcpp_vec_add_f32(g_a, g_b, g_y, BENCH_VECTOR_LEN);
-	return g_y[0] == (g_a[0] + g_b[0]);
+	fcpp_vec_add_f32(bench_state().a.data(), bench_state().b.data(),
+	                 bench_state().y.data(), BENCH_VECTOR_LEN);
+	return bench_state().y[0] == (bench_state().a[0] + bench_state().b[0]);
 }
 
-static int bench_sub_case(const void * const ctx)
+static int bench_sub_case(const void * const ctx) // NOSONAR: opaque ctx required by the pFunCase C ABI for cross-language binary compatibility.
 {
 	(void)ctx;
-	fcpp_vec_sub_f32(g_a, g_b, g_y, BENCH_VECTOR_LEN);
-	return g_y[0] == (g_a[0] - g_b[0]);
+	fcpp_vec_sub_f32(bench_state().a.data(), bench_state().b.data(),
+	                 bench_state().y.data(), BENCH_VECTOR_LEN);
+	return bench_state().y[0] == (bench_state().a[0] - bench_state().b[0]);
 }
 
-static const Case bench_table[] = {
-	BENCHMARK_CASE_IMPLEMENTATION("test_add_n128", 0, bench_add_case, 100U),
-	BENCHMARK_CASE_IMPLEMENTATION("test_sub_n128", 0, bench_sub_case, 100U),
+static const Case bench_table[] = { // NOSONAR: must stay a C array - BENCHMARK_IMPLEMENTATION consumes it as a C-compatible aggregate.
+	BENCHMARK_CASE_IMPLEMENTATION("test_add_n128", nullptr, bench_add_case, 100U),
+	BENCHMARK_CASE_IMPLEMENTATION("test_sub_n128", nullptr, bench_sub_case, 100U),
 };
 
 
