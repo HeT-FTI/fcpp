@@ -22,6 +22,19 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Reuse the whitelist validation from download.py (same directory; sys.path
+# includes the script directory at runtime).
+from download import (
+    _check,
+    RE_HEX_ADDR,
+    RE_REMOTE_PATH,
+    RE_SSH_HOST,
+    RE_CFG_PATH,
+    RE_PROBE,
+    RE_DEVICE,
+    RE_SPEED,
+)
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 BENCH_DIR  = SCRIPT_DIR.parent
 ROOT_DIR   = BENCH_DIR.parent
@@ -143,7 +156,7 @@ def build(profile_path: Path) -> None:
     subprocess.run(cmd, check=True, cwd=str(BENCH_DIR))
 
 
-def generate_profile_linux(cfg: dict, lib_name: str) -> Path:
+def generate_profile_linux(cfg: dict) -> Path:
     """Generate Conan profile for Cortex-A / Linux target."""
     cpu               = cfg.get("target_cpu", cfg.get("target_mcu", "cortex-a7"))
     float_abi         = cfg.get("float_abi", "hard")
@@ -196,7 +209,9 @@ def deploy_linux(cfg: dict) -> None:
     """Deploy and run benchmark ELF on A-core Linux target via ADB or SSH."""
     elf_path    = BENCH_DIR / "build" / "Release" / "benchmark"
     deploy_tool = cfg.get("deploy_tool", cfg.get("flash_tool", "adb"))
-    remote_path = cfg.get("remote_path", "/data/local/tmp/benchmark")
+    if deploy_tool not in ("adb", "ssh"):
+        raise ValueError(f"invalid deploy_tool: {deploy_tool!r}")
+    remote_path = _check(cfg.get("remote_path", "/data/local/tmp/benchmark"), RE_REMOTE_PATH, "remote_path")
 
     if not elf_path.exists():
         print(f"[ERROR] Binary not found: {elf_path}")
@@ -216,19 +231,20 @@ def deploy_linux(cfg: dict) -> None:
         if not ssh_host:
             print("[WARN] ssh_host not configured in bench_config — skipping deploy.")
             return
-        cmd += ["--host", ssh_host]
+        cmd += ["--host", _check(ssh_host, RE_SSH_HOST, "ssh_host")]
 
-    elif deploy_tool == "adb":
-        pass  # adb uses default device; no extra args needed
-
+    # Suppression rationale: see wokspace/SONAR-IMPROVEMENT-PLAN.md section 7;
+    # every value has passed whitelist validation and argv is used without shell.
     print(f">> {' '.join(cmd)}")
-    subprocess.run(cmd, check=True)
+    subprocess.run(cmd, check=True)  # NOSONAR
 
 
 def flash(cfg: dict) -> None:
     bin_path   = BENCH_DIR / "build" / "Release" / "benchmark.bin"
     flash_tool = cfg.get("flash_tool", "jlink")
-    flash_addr = cfg.get("algo_flash_origin", "0x08030000")
+    if flash_tool not in ("jlink", "openocd", "pyocd"):
+        raise ValueError(f"invalid flash_tool: {flash_tool!r}")
+    flash_addr = _check(cfg.get("algo_flash_origin", "0x08030000"), RE_HEX_ADDR, "algo_flash_origin")
 
     if not bin_path.exists():
         print(f"[ERROR] Binary not found: {bin_path}")
@@ -247,28 +263,31 @@ def flash(cfg: dict) -> None:
         if not device or device == "CHANGE_ME":
             print("[WARN] jlink_device is not configured in bench_config.json — skipping flash.")
             return
-        cmd += ["--device", device]
-        cmd += ["--speed", str(cfg.get("jlink_speed", "4000"))]
+        cmd += ["--device", _check(device, RE_DEVICE, "jlink_device")]
+        cmd += ["--speed", _check(str(cfg.get("jlink_speed", "4000")), RE_SPEED, "jlink_speed")]
 
     elif flash_tool == "openocd":
         target_cfg = cfg.get("openocd_target", "")
         if not target_cfg:
             print("[WARN] openocd_target not configured — skipping flash.")
             return
-        cmd += ["--interface", cfg.get("openocd_interface", "interface/stlink.cfg")]
-        cmd += ["--target", target_cfg]
+        interface = _check(cfg.get("openocd_interface", "interface/stlink.cfg"), RE_CFG_PATH, "openocd_interface")
+        cmd += ["--interface", interface]
+        cmd += ["--target", _check(target_cfg, RE_CFG_PATH, "openocd_target")]
 
     elif flash_tool == "pyocd":
         target = cfg.get("pyocd_target", "")
         if not target:
             print("[WARN] pyocd_target not configured — skipping flash.")
             return
-        cmd += ["--target", target]
+        cmd += ["--target", _check(target, RE_CFG_PATH, "pyocd_target")]
         if cfg.get("pyocd_probe"):
-            cmd += ["--probe", cfg["pyocd_probe"]]
+            cmd += ["--probe", _check(cfg["pyocd_probe"], RE_PROBE, "pyocd_probe")]
 
+    # Suppression rationale: see wokspace/SONAR-IMPROVEMENT-PLAN.md section 7;
+    # every value has passed whitelist validation and argv is used without shell.
     print(f">> {' '.join(cmd)}")
-    subprocess.run(cmd, check=True)
+    subprocess.run(cmd, check=True)  # NOSONAR
 
 
 def main():
@@ -298,16 +317,20 @@ def main():
     target_os    = cfg.get("target_os", "baremetal")
     is_linux     = target_os == "Linux"
 
-    profile_path = (generate_profile_linux(cfg, lib_name)
+    profile_path = (generate_profile_linux(cfg)
                     if is_linux
                     else generate_profile(cfg, lib_name))
     build(profile_path)
 
     if not args.no_flash:
-        if is_linux:
-            deploy_linux(cfg)
-        else:
-            flash(cfg)
+        try:
+            if is_linux:
+                deploy_linux(cfg)
+            else:
+                flash(cfg)
+        except ValueError as err:
+            print(f"[ERROR] {err}")
+            sys.exit(2)
     else:
         print("[INFO] --no-flash specified, skipping download step.")
 
