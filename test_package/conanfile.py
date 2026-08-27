@@ -9,6 +9,7 @@ import shutil
 import yaml
 import os
 sep = os.path.sep
+MAIN_CPP = 'main.cpp'
 _get_file_name = (lambda x: x.split(sep)[-1])
 
 
@@ -123,7 +124,7 @@ class PackageTestConan(ConanFile):
             compiler.cppstd = _build_std
 
     def test(self):
-        
+
         # defensive logic for cross_building
         if cross_building(self):
             self.output.info("Cross-compilation detect. Skipping test execution.")
@@ -136,32 +137,34 @@ class PackageTestConan(ConanFile):
 
         # test cases in test_pacakge/test/*.cpp
         if self.metadata.get('trigger_tests'):
-            try:
-                if can_run(self):
-                    cmake = CMake(self)
-                    cmake.test()
-            except (Exception, ) as err:
-                print('CTest Crashed:', err)
-            finally:
-                target_folder = self.recipe_folder + sep + 'test' + sep + 'export'
-
-                if self.metadata.get('saving_tests_log'):
-                    obj_folder = self.recipe_folder + sep + 'build'
-                    report = [_ for _ in _recursive_find(obj_folder, ['LastTest.log'])][0]  # need robust
-                    with open(report, 'r', encoding='utf-8') as f:
-                        _content = f.readlines()
-                    if not os.path.exists(target_folder):
-                        os.mkdir(target_folder)
-                    with open(target_folder + sep + 'TestResult.log', 'w', encoding='utf-8') as f:
-                        f.write(''.join(_content))
-                else:
-                    if os.path.exists(_f := target_folder + sep + 'TestResult.log'):
-                        os.remove(_f)
-
-                self._remove_entries()
+            self._run_ctest_suite()
 
         if self.metadata.get('activate_code_coverage'):
             self._code_coverage_auto()
+
+    def _run_ctest_suite(self):
+        try:
+            if can_run(self):
+                cmake = CMake(self)
+                cmake.test()
+        except (Exception, ) as err:
+            print('CTest Crashed:', err)
+        finally:
+            target_folder = self.recipe_folder + sep + 'test' + sep + 'export'
+
+            if self.metadata.get('saving_tests_log'):
+                obj_folder = self.recipe_folder + sep + 'build'
+                report = next(iter(_recursive_find(obj_folder, ['LastTest.log'])))
+                with open(report, 'r', encoding='utf-8') as f:
+                    _content = f.readlines()
+                if not os.path.exists(target_folder):
+                    os.mkdir(target_folder)
+                with open(target_folder + sep + 'TestResult.log', 'w', encoding='utf-8') as f:
+                    f.write(''.join(_content))
+            elif os.path.exists(_f := target_folder + sep + 'TestResult.log'):
+                os.remove(_f)
+
+            self._remove_entries()
 
     def _code_coverage_auto(self):
         compiler = getattr(self.settings, 'compiler').__str__()
@@ -187,7 +190,7 @@ class PackageTestConan(ConanFile):
         _main_pkg_build_fd = sep.join(_tmp.stdout.split(sep)[:-1] + ['b', 'build'])
 
         # collect code coverage files to export/coverage/
-        _gcda = [str(_) for _ in list(Path(_main_pkg_build_fd).rglob('*.gcda'))]
+        _gcda = [str(_) for _ in Path(_main_pkg_build_fd).rglob('*.gcda')]
         _gcno = [_[:-4] + 'gcno' for _ in _gcda]
 
         target_folder = self.recipe_folder + sep + 'test' + sep + 'export'
@@ -225,13 +228,13 @@ class PackageTestConan(ConanFile):
         if self.metadata.get('trigger_tests'):
 
             _f_stress = self.recipe_folder + sep + 'test' + sep + 'stress'
-            if not os.path.exists(_m := _f_stress + sep + 'main.cpp'):
+            if not os.path.exists(_m := _f_stress + sep + MAIN_CPP):
                 with open(_m, 'w', encoding='utf-8') as f:
                     f.write(''.join(_entry_lists()))
 
             _f_unit = self.recipe_folder + sep + 'test' + sep + 'unit'
             if self.metadata.get('activate_code_coverage'):
-                _files = [str(_) for _ in list(Path(_f_unit).rglob('*.cpp'))]
+                _files = [str(_) for _ in Path(_f_unit).rglob('*.cpp')]
                 _cache = [[_a := _.split(sep), (sep.join(_a[:-1]), _a[-1])][-1] for _ in _files]
                 for _test_src, _test_ucov in zip(_files, _cache):
                     with open(_test_src, 'r') as f:
@@ -240,25 +243,28 @@ class PackageTestConan(ConanFile):
                     with open(_test_ucov[0] + sep + 'ucov_' + _test_ucov[1], 'w', encoding='utf-8') as f:
                         f.write(''.join(_tmp))
             else:
-                if not os.path.exists(_m := _f_unit + sep + 'main.cpp'):
+                if not os.path.exists(_m := _f_unit + sep + MAIN_CPP):
                     with open(_m, 'w', encoding='utf-8') as f:
                         f.write(''.join(_entry_lists()))
 
     def _remove_entries(self):
-        if self.metadata.get('trigger_tests'):
+        if not self.metadata.get('trigger_tests'):
+            return
 
-            if os.path.exists(_f1 := self.recipe_folder + sep + 'test' + sep + 'stress' + sep + 'main.cpp'):
-                os.remove(_f1)
+        stress_main = self.recipe_folder + sep + 'test' + sep + 'stress' + sep + MAIN_CPP
+        if os.path.exists(stress_main):
+            os.remove(stress_main)
 
-            if self.metadata.get('activate_code_coverage'):
-                _f_unit = self.recipe_folder + sep + 'test' + sep + 'unit'
-                _files = [str(_) for _ in list(Path(_f_unit).rglob('*.cpp'))]
-                for _m in _files:
-                    if _m.split(sep)[-1].startswith('ucov_'):
-                        os.remove(_m)
-            else:
-                if os.path.exists(_f3 := self.recipe_folder + sep + 'test' + sep + 'unit' + sep + 'main.cpp'):
-                    os.remove(_f3)
+        _f_unit = self.recipe_folder + sep + 'test' + sep + 'unit'
+        if self.metadata.get('activate_code_coverage'):
+            self._remove_ucov_files(_f_unit)
+        elif os.path.exists(_f3 := _f_unit + sep + MAIN_CPP):
+            os.remove(_f3)
+
+    def _remove_ucov_files(self, _f_unit):
+        for _m in Path(_f_unit).rglob('*.cpp'):
+            if str(_m).split(sep)[-1].startswith('ucov_'):
+                os.remove(str(_m))
 
 
 if __name__ == '__main__':

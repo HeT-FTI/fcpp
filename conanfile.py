@@ -25,13 +25,20 @@ conan_targets = {
     'Catch2::Catch2': 'catch2::catch2'
 }
 
+# Module annotation / include-guard literals (extracted to avoid drift).
+METADATA_FILENAME = 'metadata.json'
+TAG_EXPORTER = '@exporter'
+TAG_ATTACHER = '@attacher'
+GUARD_IFDEF = '#ifdef __cplusplus\n'
+GUARD_ENDIF = '#endif\n'
+
 
 def _get_root_path() -> str:
     return sep.join(_get_root_path_list())
 
 
 def _inherit_root_metadata():
-    with open(_get_root_path() + sep + 'metadata.json', 'r', encoding='utf-8') as f:
+    with open(_get_root_path() + sep + METADATA_FILENAME, 'r', encoding='utf-8') as f:
         _meta = json.load(f)
     return _meta
 
@@ -39,14 +46,16 @@ def _inherit_root_metadata():
 _metadata = _inherit_root_metadata()
 
 
-def _get_export_objects(x: list[str], tag: Literal['@exporter', '@attacher'] = '@exporter') -> list[str]:
-    _cache = (''.join(x)).split('\n\n')  # TODO: maybe \n*3 is better (consider the namespace in CPP)?
+def _get_export_objects(x: list[str], tag: Literal['@exporter', '@attacher'] = TAG_EXPORTER) -> list[str]:
+    # Note: split on '\n\n' (two blank lines) per the repo convention between
+    # global objects; revisit '\n\n\n' if module namespaces ever need it.
+    _cache = (''.join(x)).split('\n\n')
     _export_objs = [_ for _ in _cache if tag in _]
 
     container = []
     for _obj in _export_objs:
         _obj = [_ for _ in _obj.split('\n') if _ != '']
-        _res, _ptr = [_ for _ in _obj], False
+        _res, _ptr = list(_obj), False
         for i, (_v1, _v2) in enumerate(zip(_obj, _res)):
             if _v1.startswith(f' * {tag}'):
                 _ptr = True
@@ -54,7 +63,7 @@ def _get_export_objects(x: list[str], tag: Literal['@exporter', '@attacher'] = '
                 _res[i] = _v2 + '\nexport '
                 _ptr = False
         _res = '\n'.join([_ for _ in _res if not _.startswith(f' * {tag}')])
-        if tag == '@exporter':
+        if tag == TAG_EXPORTER:
             _res = _res.replace('export \n','export ')
         else:  # @attacher
             _res = _res.replace('export \n', '')
@@ -97,8 +106,8 @@ class PackageRecipe(ConanFile):
     default_options = {"shared": _metadata.get('is_shared'), "fPIC": True}  # inherit from config
 
     # Sources are located in the same place as this recipe, copy them to the recipe
-    exports_sources = ["CMakeLists.txt", "src/*", "include/*", "metadata.json", "LICENSE"]
-    exports = ["conandata.yml", "metadata.json", "LICENSE"]
+    exports_sources = ["CMakeLists.txt", "src/*", "include/*", METADATA_FILENAME, "LICENSE"]
+    exports = ["conandata.yml", METADATA_FILENAME, "LICENSE"]
 
     generators = "VirtualBuildEnv", "VirtualRunEnv"
     conandata, meta, headers, sources, license_full_text , importable_modules = [None for _ in range(6)]
@@ -109,7 +118,7 @@ class PackageRecipe(ConanFile):
         bash: bash ./build
         """
         conandata_path = Path(self.recipe_folder) / "conandata.yml"
-        metadata_path = Path(self.recipe_folder) / "metadata.json"
+        metadata_path = Path(self.recipe_folder) / METADATA_FILENAME
         license_path = Path(self.recipe_folder) / "LICENSE"
 
         self.conandata = yaml.safe_load(conandata_path.read_text())
@@ -169,7 +178,7 @@ class PackageRecipe(ConanFile):
                 _m_inc = [_ for _ in set(_hpp_inc).union(set(_cpp_inc)) if not _.startswith('// Conan::Escape')]
                 _m_inc = [_ for _ in _m_inc if not _.startswith('#pragma once')]
                 _m_inc = [_ for _ in _m_inc if f'{_mod_name}.hpp' not in _]  # escape self include
-                _m_extra = [_ for _ in set(_hpp_extra).union(set(_cpp_extra))]
+                _m_extra = list(set(_hpp_extra).union(set(_cpp_extra)))
                 _m_obj = ['\n'] + '@@'.join(_hpp_obj + _cpp_obj).replace('@@', '\n\n\n').split('\n')
 
                 _m_full = _m_intro + _m_inc + _m_split + _m_extra + _m_obj
@@ -207,11 +216,11 @@ class PackageRecipe(ConanFile):
                 _org_text = f.readlines()
             _has_pragma, _idx = _pragma_in_import(_org_text)
             if _has_pragma:
-                _start = ['#pragma once\n', '#ifdef __cplusplus\n', 'extern "C" {\n', '#endif\n']
+                _start = ['#pragma once\n', GUARD_IFDEF, 'extern "C" {\n', GUARD_ENDIF]
             else:
-                _start = ['#ifdef __cplusplus\n', 'extern "C" {\n', '#endif\n']
+                _start = [GUARD_IFDEF, 'extern "C" {\n', GUARD_ENDIF]
             _inner_text = ['    ' + l for i, l in enumerate(_org_text) if i != _idx]
-            _end = ['#ifdef __cplusplus\n', '}\n', '#endif\n']
+            _end = [GUARD_IFDEF, '}\n', GUARD_ENDIF]
             _new_text = _start + _inner_text + _end
 
             with open(_f, 'w', encoding='utf-8') as f:
@@ -227,7 +236,7 @@ class PackageRecipe(ConanFile):
         for req in self.conandata.get('requirements'):
             _pkg = req.split('/')[0]
             if cross_building(self) and self.settings.os == "baremetal":
-                if not _pkg in self.meta.get('baremetal_white_list'):
+                if _pkg not in self.meta.get('baremetal_white_list'):
                     continue
             if _pkg == 'gtest':
                 continue
@@ -430,7 +439,7 @@ class PackageRecipe(ConanFile):
     def _remove_customized_doc_command(self, tags: list[str] = None):  # maybe no use anymore
 
         if tags is None:
-            tags = ['@exporter', '@attacher']
+            tags = [TAG_EXPORTER, TAG_ATTACHER]
 
         _cpp = self._file_detector('src', ['cpp', ], retarget=Path(self.recipe_folder).parent / 'es')
         _hpp = self._file_detector('include', ['hpp', ], retarget=Path(self.recipe_folder).parent / 'es')
@@ -440,7 +449,7 @@ class PackageRecipe(ConanFile):
             with open(_f, 'r', encoding='utf-8') as f:
                 _file = f.readlines()
             with open(_f, 'w', encoding='utf-8') as w:
-                w.write(''.join([_ for _ in _file if not any([_.startswith(f' * {tag}') for tag in tags])]))
+                w.write(''.join(_ for _ in _file if not any(_.startswith(f' * {tag}') for tag in tags)))
 
 
     def _module_elements(self, x: list[str], m_name: str):
@@ -468,8 +477,8 @@ class PackageRecipe(ConanFile):
         _intro, _tmp, _split, _extra = ([_.strip() for _ in _intro], [_.strip() for _ in _tmp],
                                         [_.strip() for _ in _split], [_.strip() for _ in _extra])
 
-        return (_intro, _tmp, _split, _extra, _get_export_objects(_other_context, '@exporter') +
-                _get_export_objects(_other_context, '@attacher'))
+        return (_intro, _tmp, _split, _extra, _get_export_objects(_other_context, TAG_EXPORTER) +
+                _get_export_objects(_other_context, TAG_ATTACHER))
 
     def package(self):
         cmake = CMake(self)
@@ -487,11 +496,11 @@ class PackageRecipe(ConanFile):
 
         self.cpp_info.components[f"{self.name}_c"].libs = [f"{self.name}_c"]
         self.cpp_info.components[f"{self.name}_c"].requires = [[_t := _.split('@')[1],
-                                                                conan_targets[_t] if _t in conan_targets.keys()
+                                                                conan_targets[_t] if _t in conan_targets
                                                                 else _t][-1] for _ in _c]
         self.cpp_info.components[f"{self.name}_cpp"].libs = [f"{self.name}_cpp"]
         self.cpp_info.components[f"{self.name}_cpp"].requires = [[_t := _.split('@')[1],
-                                                                  conan_targets[_t] if _t in conan_targets.keys()
+                                                                  conan_targets[_t] if _t in conan_targets
                                                                   else _t][-1] for _ in _cpp]
 
     @staticmethod

@@ -8,6 +8,7 @@ import subprocess
 import time
 
 sep = os.path.sep
+BENCH_CONFIG_FILENAME = "bench_config.json"
 
 
 def _inherit_root_metadata():
@@ -19,7 +20,7 @@ def _inherit_root_metadata():
 
 def _load_bench_config():
     """加载 bench 配置"""
-    bench_cfg = Path(__file__).parent / "bench_config.json"
+    bench_cfg = Path(__file__).parent / BENCH_CONFIG_FILENAME
     if bench_cfg.exists():
         with open(bench_cfg, "r", encoding="utf-8") as f:
             return json.load(f)
@@ -58,7 +59,7 @@ class BenchMcuConan(ConanFile):
         "CMakeLists.txt",
         "bench_entry.*",
         "algo_module.ld.in",
-        "bench_config.json",
+        BENCH_CONFIG_FILENAME,
         "core/*",
         "port/*",
     ]
@@ -72,7 +73,7 @@ class BenchMcuConan(ConanFile):
         with open(metadata_path, "r", encoding="utf-8") as f:
             self._metadata = json.load(f)
 
-        bench_cfg_path = Path(self.recipe_folder) / "bench_config.json"
+        bench_cfg_path = Path(self.recipe_folder) / BENCH_CONFIG_FILENAME
         if bench_cfg_path.exists():
             with open(bench_cfg_path, "r", encoding="utf-8") as f:
                 self._bench_cfg = json.load(f)
@@ -152,7 +153,6 @@ class BenchMcuConan(ConanFile):
 
     def package(self):
         """将生成的 bin/elf/map 拷贝到 package"""
-        mcu = str(self.options.target_mcu)
         copy(self, "*.bin", src=self.build_folder, dst=os.path.join(self.package_folder, "bin"))
         copy(self, "*.elf", src=self.build_folder, dst=os.path.join(self.package_folder, "bin"))
         copy(self, "*.map", src=self.build_folder, dst=os.path.join(self.package_folder, "bin"))
@@ -165,11 +165,10 @@ class BenchMcuConan(ConanFile):
     def _get_flash_tool_cmd(self, bin_path, flash_addr):
         """根据配置生成烧录命令"""
         tool = self._bench_cfg.get("flash_tool", "openocd")
-        mcu = str(self.options.target_mcu)
 
         if tool == "openocd":
             interface = self._bench_cfg.get("openocd_interface", "interface/stlink.cfg")
-            target_cfg = self._bench_cfg.get("openocd_target", f"target/stm32f4x.cfg")
+            target_cfg = self._bench_cfg.get("openocd_target", "target/stm32f4x.cfg")
             return [
                 "openocd",
                 "-f", interface,
@@ -185,7 +184,6 @@ class BenchMcuConan(ConanFile):
                 bin_path
             ]
         elif tool == "jlink":
-            device = self._bench_cfg.get("jlink_device", "STM32F407VG")
             return [
                 "JFlash",
                 "-openprj", self._bench_cfg.get("jlink_project", ""),
