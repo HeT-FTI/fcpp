@@ -13,7 +13,7 @@ int sleep(int n) {
 
 
 void net_predict() {
-    // int prediction = predict_random_sample();
+    // Placeholder: net.cpp's predict_random_sample currently returns a constant, no call needed.
 }
 
 

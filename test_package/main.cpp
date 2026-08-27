@@ -6,7 +6,6 @@
 #include <fstream>
 #include "cpptest.hpp"
 #include "net.hpp"
-// import "hello.hpp"; // C++23 only
 
 
 
@@ -44,19 +43,16 @@ int main() {
     test_cpp_zlib();
     test_eigen();
 
-    const std::vector<int> nums = {1, 2, 3, 4, 5};
+    const std::vector nums = {1, 2, 3, 4, 5};
     const auto result = test_sum(nums);
     std::cout << "Sum: " << result << std::endl;
 
     const Person alice("Alice", 25);
     std::cout << alice.greet() << std::endl;
 
-    const Color<int> red(255, 0, 0);
+    const Color red(255, 0, 0);
     red.print();
 
-    // train_with_random_data();
-
-    // int prediction = predict_random_sample();
     int prediction = 3;  // skip net.cpp CI
 
     std::cout << "prediction result for random sample: " << prediction << std::endl;
