@@ -94,6 +94,14 @@ Example:
   infra  : { "GTest": ["gtest::gtest"] }
 ]
 
+Quality-gate sync (IMPORTANT): the clang-tidy CI gate installs system header
+deps by mapping conandata.yml requirements (see .github/workflows/
+security-linters.yml: zlib→zlib1g-dev, pcre2→libpcre2-dev, eigen→libeigen3-dev;
+header-only ETL is downloaded at the version declared in conandata.yml). When
+adding a new C/C++ dependency whose headers appear in src/, extend that mapping
+(or add an ETL-style source download). Missing mapping = clang-tidy include
+errors in CI (fail-loud by design). See het-deps for full dependency governance.
+
 ────────────────────────────────────────────────────────────────────────────────
 SECTION 4 — EDITABLE FILES & AGENT INSTRUCTIONS
 ────────────────────────────────────────────────────────────────────────────────
@@ -116,6 +124,11 @@ generate/modify each one according to the project design above.
      • Populate "dependencies" → common/c/cpp/infra from Section 3.
      • Set "cmake_version" to "4.0.1" (or newer).
      • Set "trigger_tests" to true, "saving_tests_log" to true.
+     • Set "workflow_triggers" to the team default:
+         {"build": true, "tests": true, "release": false,
+          "docs": false, "security_scan": true}
+       build/test/security gates are on by default (PR shift-left);
+       release/docs are opt-in via gitmoji.
      • Configure "doc_languages", "doc_versions", "doc_doxygen_folders",
        "doc_doxygen_suffix" as appropriate.
 
@@ -420,11 +433,19 @@ SECTION 6 — OTHER FILES FOR PROJECT COMPLETENESS
        structural reason (e.g., adding a new build target type). The template's
        automation reads metadata.json and conandata.yml to drive everything.
 
-6.7  .releaserc.json
-     • Update "repositoryUrl" to match Section 1's repository URL.
+6.7  .github/misc/.releaserc.json  (semantic-release config)
+     • NO manual edits needed: the repository URL is derived dynamically by
+       the release workflow (`-r "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"`),
+       and branches are fixed to main. Only adjust parserOpts here if the
+       canonical commit form changes (keep in sync with
+       .github/misc/commitlint.config.js).
 
-6.8  .mega-linter.yml
-     • Optionally adjust linter settings for your coding style preferences.
+6.8  .github/misc/.mega-linter.yml
+     • Advisory SAST config (MegaLinter runs as non-blocking in CI).
+       Optionally adjust linter settings for your coding style preferences.
+       Required quality gates (clang-format/clang-tidy/gitleaks) live in
+       .github/workflows/security-linters.yml and use the configs in
+       .github/misc/.
 
 6.9  .github/workflows/  (CI workflows)
      • Review and update workflow files if you need different trigger branches,
@@ -457,7 +478,7 @@ Before finishing, the agent MUST verify:
   [ ] README.md is updated with new project information.
   [ ] LICENSE and NOTICE are UNCHANGED from the template.
   [ ] build script references the correct package name.
-  [ ] .releaserc.json has the correct repository URL.
+  [ ] .github/misc/.releaserc.json needs no repositoryUrl edit (derived from git remote).
   [ ] If pybind11 enabled: api/python_bindings.cpp binds all public APIs.
   [ ] The whole project builds: conan create . -s build_type=Debug --build=missing
 

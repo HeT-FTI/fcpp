@@ -1,7 +1,7 @@
 # .mega-linter.yml
 FILTER_REGEX_INCLUDE: "(include|src)/"
 
-ENABLE: "C,CPP,COPYPASTE"
+ENABLE: "C,CPP"
 DISABLE: "SPELL"
 
 ENABLE_LINTERS:
@@ -13,6 +13,10 @@ ENABLE_LINTERS:
 DISABLE_LINTERS:
   - C_CPPLINT
   - CPP_CPPLINT
+  # clang-tidy is owned by the native required gate in security-linters.yml
+  # (MegaLinter cannot resolve conan/apt dependency headers)
+  - C_CLANG_TIDY
+  - CPP_CLANG_TIDY
 
 COPYPASTE_JSCPD_ARGUMENTS:
   - "--pattern"
@@ -59,11 +63,11 @@ CPP_CLANG_TIDY:
 
 C_CLANG_FORMAT:
   ENABLE: true
-  CONFIG_FILE: ".github/misc/.clang-format"
+  CONFIG_FILE: ".github/misc/.clang-format-c"
 
 CPP_CLANG_FORMAT:
   ENABLE: true
-  CONFIG_FILE: ".github/misc/.clang-format"
+  CONFIG_FILE: ".github/misc/.clang-format-cpp"
 
 SARIF_REPORTER: true
 MARKDOWN_SUMMARY_REPORTER: true

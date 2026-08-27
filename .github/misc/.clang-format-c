@@ -1,0 +1,17 @@
+# C family (.c and .h) — fcpp private convention: .h/.c are C
+# (see .github/skills/_shared/code-conventions.md; conanfile.py syntax guide #9)
+# The native gate routes .c/.h files to this config explicitly (--style=file:).
+Language: C
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 120
+MaxEmptyLinesToKeep: 3
+
+# Keep the 2-blank-line module split rule intact (MaxEmptyLinesToKeep >= 2)
+# Close docstring re-format
+ReflowComments: false
+SortIncludes: false
+BreakBeforeBraces: Attach
+PointerAlignment: Right
