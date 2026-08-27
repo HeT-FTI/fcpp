@@ -37,9 +37,35 @@ def _inherit_root_metadata():
 _hit_com_tag = re.compile(r" \* @")
 _hit_lang_tag = re.compile(rf"( \* @[a-z]+).*\[({'|'.join(_inherit_root_metadata().get('doc_languages'))})] ")
 _hit_free_tag = re.compile(r" \* [^@]+")
-_hit_file_doc = re.compile(r"\n?/\*!(.|\n)*@file(.|\n)*@defgroup")
-_hit_since_command = re.compile(r"\n?/\*\*(.|\n)*@since ")
+_hit_file_start = re.compile(r"\n?/\*!")
+_hit_since_start = re.compile(r"\n?/\*\*")
 language_map = {'en': 'English', 'zh': 'Chinese', 'jp': 'Japanese'}
+
+# Fixed filenames / annotations used in several places (extracted to avoid drift).
+DOXYFILE_IN = 'Doxyfile.in'
+SINCE_TAG = '@since '
+
+
+def _match_file_doc(block: str):
+    """Linear match: anchor the `/*!` start and locate @file/@defgroup via
+
+    str.find to avoid backtracking-heavy regexes.
+    """
+    m = _hit_file_start.match(block)
+    if m is None or '@file' not in block or '@defgroup' not in block:
+        return None
+    return m
+
+
+def _match_since_command(block: str):
+    """Linear match: anchor the `/**` start and locate SINCE_TAG via str.find
+
+    to avoid backtracking-heavy regexes.
+    """
+    m = _hit_since_start.match(block)
+    if m is None or SINCE_TAG not in block:
+        return None
+    return m
 
 
 def _no_recursive_clean_img(x: str):
@@ -106,7 +132,7 @@ def _clean_doxygen_build(root: str):
                 shutil.rmtree(full_path)
             else:
                 _clean_doxygen_build(full_path)
-        elif f == 'Doxyfile.in':  # clean generated Doxyfile
+        elif f == DOXYFILE_IN:  # clean generated Doxyfile
             os.remove(full_path)
 
 
@@ -140,13 +166,13 @@ def _ver_filter(x: list[str], ver: str) -> tuple[list[str], str]:
     x = (''.join(x)).split('\n\n\n')
     container, _need_append_end, file_ver = [], False, ''
     for i, block in enumerate(x):  # x[0] for import declaration
-        if _hit_file_doc.match(block):
-            if '@since ' in block:
-                file_ver = block.split('@since ')[1].split(' ')[0].strip()
+        if _match_file_doc(block):
+            if SINCE_TAG in block:
+                file_ver = block.split(SINCE_TAG)[1].split(' ')[0].strip()
             container.append(block+'\n//! @{')
             _need_append_end = True
-        elif _match := _hit_since_command.match(block):
-            _obj_ver = block[_match.regs[1][0]:].split('@since ')[1].split(' ')[0]  # version getter
+        elif _match := _match_since_command(block):
+            _obj_ver = block[_match.end():].split(SINCE_TAG)[1].split(' ')[0]  # version getter
             if _ver_should_include(_obj_ver, ver):
                 container.append(block)
         else:
@@ -165,22 +191,22 @@ def _generate_docs_index(languages: list[str], versions: list[str], lib: str) ->
     version_groups = ""
     for version in sorted(versions, reverse=True):
         group = f'    <!-- 版本 {version} -->\n'
-        group += f'    <div class="version-group">\n'
+        group += '    <div class="version-group">\n'
         group += f'      <h2 class="version-title">Version {version}</h2>\n'
-        group += f'      <ul class="lang-links">\n'
+        group += '      <ul class="lang-links">\n'
 
         for lang in languages:
             lang_name, flag = lang_display.get(lang, (lang.capitalize(), ""))
             link_path = f"./{lang}/v{version}/build_sub/html/index.html"
             display_text = f"{flag} {lang_name} - Version {version}"
-            group += f'        <li>\n'
+            group += '        <li>\n'
             group += f'          <a href="{link_path}">\n'
             group += f'            {display_text}\n'
-            group += f'          </a>\n'
-            group += f'        </li>\n'
+            group += '          </a>\n'
+            group += '        </li>\n'
 
-        group += f'      </ul>\n'
-        group += f'    </div>\n'
+        group += '      </ul>\n'
+        group += '    </div>\n'
         version_groups += group
 
     html_content = f'''
@@ -374,32 +400,40 @@ class AutomationDoc:
         for _lang in self.meta.get('doc_languages'):
             _f_out = _build_folder + sep + _lang
             for _ver in self.meta.get('doc_versions'):
-                _f_in = _f_out + sep + f'v{_ver}'
-                _docstrings = f'_{_lang}_v{_ver}_docstrings'
+                self._prepare_version_docstrings(_f_out, _lang, _ver)
 
-                if _docstrings in os.listdir(_f_in):  # remove if exists
-                    shutil.rmtree(_docstrings)
+    def _prepare_version_docstrings(self, _f_out, _lang, _ver):
 
-                _f_final = _f_in + sep + _docstrings
-                os.mkdir(_f_final)
+        _f_in = _f_out + sep + f'v{_ver}'
+        _docstrings = f'_{_lang}_v{_ver}_docstrings'
 
-                should_be_escape = []
-                for file in os.listdir(_r := _f_out + sep + f'_{_lang}_docstrings'):
-                    with open(_r + sep + file, 'r', encoding='utf-8') as f:
-                        _tmp = f.readlines()
+        if _docstrings in os.listdir(_f_in):  # remove if exists
+            shutil.rmtree(_docstrings)
 
-                    _tmp, _file_ver = _ver_filter(_tmp, _ver)
-                    if _file_ver:
-                        if not _ver_should_include(_file_ver, _ver):
-                            should_be_escape.append(file)
+        _f_final = _f_in + sep + _docstrings
+        os.mkdir(_f_final)
 
-                    with open(_f_final + sep + file, 'w', encoding='utf-8') as f:
-                        f.write('\n\n\n'.join(_tmp))
+        should_be_escape = self._filter_docstring_files(_f_out, _lang, _ver, _f_final)
 
-                _escape_files = _capture_escape_files(should_be_escape)  # remove unmatched version files
-                for file in os.listdir(_r := _f_out + sep + f'_{_lang}_docstrings'):
-                    if file in _escape_files:
-                        os.remove(_f_final + sep + file)
+        _escape_files = _capture_escape_files(should_be_escape)  # remove unmatched version files
+        for file in os.listdir(_f_out + sep + f'_{_lang}_docstrings'):
+            if file in _escape_files:
+                os.remove(_f_final + sep + file)
+
+    def _filter_docstring_files(self, _f_out, _lang, _ver, _f_final):
+
+        should_be_escape = []
+        for file in os.listdir(_r := _f_out + sep + f'_{_lang}_docstrings'):
+            with open(_r + sep + file, 'r', encoding='utf-8') as f:
+                _tmp = f.readlines()
+
+            _tmp, _file_ver = _ver_filter(_tmp, _ver)
+            if _file_ver and not _ver_should_include(_file_ver, _ver):
+                should_be_escape.append(file)
+
+            with open(_f_final + sep + file, 'w', encoding='utf-8') as f:
+                f.write('\n\n\n'.join(_tmp))
+        return should_be_escape
 
     def _doxygen_config_injection(self):
 
@@ -420,7 +454,7 @@ class AutomationDoc:
                 _meta = _meta.replace("%VER%", _ver)
                 _meta = _meta.replace("%FULL_LAN%", language_map.get(_lang))
 
-                with open(_f_in + sep + 'Doxyfile.in', 'w', encoding='utf-8') as f:
+                with open(_f_in + sep + DOXYFILE_IN, 'w', encoding='utf-8') as f:
                     f.write(_meta)
 
     def _doxygen_config_execution(self):
@@ -429,7 +463,7 @@ class AutomationDoc:
         for _lang in self.meta.get('doc_languages'):
             _f_out = _build_folder + sep + _lang
             for _ver in self.meta.get('doc_versions'):
-                subprocess.run(["doxygen", 'Doxyfile.in'], cwd=Path(_f_out + sep + f'v{_ver}'))
+                subprocess.run(["doxygen", DOXYFILE_IN], cwd=Path(_f_out + sep + f'v{_ver}'))
                 print(f"Doxygen build system: Documentation of [{_lang}, v{_ver}] successfully generated")
 
     def _doxygen_export_navigation(self):
