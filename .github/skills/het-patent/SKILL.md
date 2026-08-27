@@ -44,7 +44,7 @@ Ask the user to specify the project scope to analyze. If not provided, default t
 
 **Decision points:**
 - Which directories/files to include? (e.g., `include/`, `src/`, `api/`, `benchmark/`, specific modules)
-- Are there design docs, papers, or architecture documents to reference? (`PLAN-skills.md`, `docs/`, module READMEs)
+- Are there design docs, papers, or architecture documents to reference? (`.github/misc/Codegen-Starter.txt`, `docs/`, module READMEs)
 - Any known innovation areas the user wants emphasized?
 
 **Output:** A confirmed scope statement. Create a todo list tracking all phases.

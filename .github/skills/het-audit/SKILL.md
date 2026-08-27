@@ -33,7 +33,7 @@ user-invocable: true
 
 Judgments（逐项判定）: `implemented（已实现）` / `partial（部分）` / `missing（缺失）` / `mismatch（不一致）`.
 
-Additional findings（附加发现）: public APIs without test coverage (→ suggest `het-testgen`), dead code, deviation from `Codegen-Starter.txt`.
+Additional findings（附加发现）: public APIs without test coverage (→ suggest `het-testgen`), dead code, deviation from `.github/misc/Codegen-Starter.txt`.
 
 ## Output（输出格式）
 

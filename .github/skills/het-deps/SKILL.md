@@ -11,8 +11,8 @@ user-invocable: true
 
 ## Mental Model（心智模型）
 
-> "Adding a dependency touches two files and three consumers: `conandata.yml` (declare) → `metadata.json` `dependencies` (bucket + target mapping) → verify main recipe and test_package filter consistently. A wrong bucket or switch pollutes downstream (benchmark)."
-> 加依赖要动两个文件、检查三个消费方；分错桶或漏开关，下游（benchmark）会被污染。
+> "Adding a dependency touches two files and three consumers, plus one quality gate: `conandata.yml` (declare) → `metadata.json` `dependencies` (bucket + target mapping) → verify main recipe and test_package filter consistently → sync the clang-tidy gate's system-header mapping in `security-linters.yml`. A wrong bucket or switch pollutes downstream (benchmark); a missing gate mapping fails clang-tidy in CI."
+> 加依赖要动两个文件、检查三个消费方、同步一处质量门禁；分错桶或漏开关，下游（benchmark）会被污染；漏同步门禁映射，clang-tidy 会 fail-loud。
 
 ## The 4-Bucket Spec（依赖四桶语义，不可违背）
 
@@ -48,6 +48,11 @@ requirements:
 - Main `_preparing_deps_links()`: `infra` GTest popped unconditionally; pybind11 gated. 主配方 deps 口径。
 - test_package: GTest kept; pybind11 gated. test_package 保留 GTest。
 
+**④ Sync the clang-tidy quality gate（同步质量门禁）**
+- `.github/workflows/security-linters.yml` 从 `conandata.yml` 推导系统头依赖：apt 映射 zlib→zlib1g-dev / pcre2→libpcre2-dev / eigen→libeigen3-dev；ETL 版本从 conandata 解析下载。
+- 新依赖的头文件被 `src/` 引用时：有 apt 包 → 在 workflow 的 `mapping` 加一行；header-only 无 apt 包 → 参照 ETL 用固定版本源码包下载。
+- 不补映射 → clang-tidy 门禁报 file-not-found（fail-loud 是有意设计）。
+
 ## Switch Map（开关对照）
 
 | Dep（依赖） | Controlled by（受控于） |
@@ -69,4 +74,5 @@ python benchmark/script/run_bench.py --no-flash   # baremetal cross check（裸�
 2. Downstream (benchmark) polluted → GTest/pybind11 wrongly in main requires. 检查是否把测试依赖错放进主包。
 3. Baremetal build fails → check `baremetal_white_list`. 检查裸机白名单。
 4. Case mismatch → normalize lowercase. 大小写统一小写。
+5. clang-tidy gate file-not-found → extend the system-header mapping in `security-linters.yml` (step ④). 门禁报找不到头 → 补门禁依赖映射（步骤④）。
 
