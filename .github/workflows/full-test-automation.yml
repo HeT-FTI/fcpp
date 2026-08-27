@@ -41,7 +41,7 @@ jobs:
 
       - name: Install Conan
         run: |
-          pip install conan
+          pip install --only-binary :all: conan==2.24.0
 
       - name: Set metadata from inputs
         id: read_metadata
@@ -65,7 +65,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ${{ env.CONAN_HOME }}
-          key: conan-${{ runner.os }}-${{ hashFiles('conanfile.py', 'conan.lock') }}
+          key: conan-${{ runner.os }}-${{ hashFiles('conanfile.py', 'conandata.yml', 'metadata.json') }}
           restore-keys: |
             conan-${{ runner.os }}-
 
