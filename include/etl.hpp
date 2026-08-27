@@ -11,7 +11,7 @@
  * @param y   Output array Y = A + B
  * @param n   Number of elements
  */
-void fcpp_vec_add_f32(const float *a, const float *b, float *y, uint32_t n);
+void fcpp_vec_add_f32(const float* a, const float* b, float* y, uint32_t n);
 
 /**
  * @brief Element-wise subtraction of two float arrays.
@@ -21,5 +21,4 @@ void fcpp_vec_add_f32(const float *a, const float *b, float *y, uint32_t n);
  * @param y   Output array Y = A - B
  * @param n   Number of elements
  */
-void fcpp_vec_sub_f32(const float *a, const float *b, float *y, uint32_t n);
-
+void fcpp_vec_sub_f32(const float* a, const float* b, float* y, uint32_t n);
