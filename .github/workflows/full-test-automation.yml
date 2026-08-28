@@ -41,7 +41,7 @@ jobs:
 
       - name: Install Conan
         run: |
-          pip install --only-binary :all: conan==2.24.0
+          pip install --only-binary :all: conan==2.31.2
 
       - name: Set metadata from inputs
         id: read_metadata
