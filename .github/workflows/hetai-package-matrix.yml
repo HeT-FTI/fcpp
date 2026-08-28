@@ -80,6 +80,7 @@ jobs:
             .hetai/build-matrix.yml \
             --mode "${{ steps.mode.outputs.mode }}" \
             --selected-targets-json '${{ steps.mode.outputs.selected_targets_json }}' \
+            --target-catalog "$HETAI_PLAN_ROOT/ops/board/contracts/board_ci_target_catalog.json" \
             --format github-output >> "$GITHUB_OUTPUT"
 
   build:
@@ -110,6 +111,11 @@ jobs:
             --arch '${{ matrix.arch }}' \
             --target-key '${{ matrix.target_key }}' \
             --toolchain-version '${{ matrix.toolchain_version }}' \
+            --toolchain-package '${{ matrix.benchmark_toolchain_package }}' \
+            --toolchain-family '${{ matrix.toolchain_family }}' \
+            --toolchain-availability '${{ matrix.toolchain_availability }}' \
+            --toolchain-compiler-version '${{ matrix.benchmark_compiler_version }}' \
+            --target-catalog-schema-version '${{ matrix.target_catalog_schema_version }}' \
             --recipe-subdir '${{ matrix.recipe_subdir }}'
 
       - name: Build benchmark bundle

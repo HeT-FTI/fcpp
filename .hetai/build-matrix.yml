@@ -22,7 +22,7 @@ targets:
       target_abi: arm-linux-gnueabihf
       profile_arch: armv7
       artifact_kind: linux-elf
-      toolchain_package: arm-toolchain/11.3.rel1
+      toolchain_package: auto
       float_abi: hard
       fpu: neon-vfpv4
       extra_cflags: []
@@ -50,7 +50,7 @@ targets:
       target_abi: aarch64-linux-gnu
       profile_arch: armv8
       artifact_kind: linux-elf
-      toolchain_package: arm-toolchain/11.3.rel1
+      toolchain_package: auto
       float_abi: ""
       fpu: ""
       extra_cflags: []
@@ -78,7 +78,7 @@ targets:
       target_abi: aarch64-linux-gnu
       profile_arch: armv8
       artifact_kind: linux-elf
-      toolchain_package: arm-toolchain/11.3.rel1
+      toolchain_package: auto
       float_abi: ""
       fpu: ""
       extra_cflags: []
@@ -106,7 +106,7 @@ targets:
       target_abi: aarch64-linux-gnu
       profile_arch: armv8
       artifact_kind: linux-elf
-      toolchain_package: arm-toolchain/11.3.rel1
+      toolchain_package: auto
       float_abi: ""
       fpu: ""
       extra_cflags: []
@@ -116,7 +116,7 @@ targets:
       ssh_host: ""
       execution_route: ssh-board
       route_id: raspberry-bcm2712-a76
-      route_note: Raspberry Pi 5 AArch64 route is configured but blocked until 71.89 SSH authorization is granted
+      route_note: Raspberry Pi 5 AArch64 route is active after 71.89 SSH public-key authorization
 
   # RISC-V is intentionally paused in this board-CI iteration. Keep the
   # declaration for future recovery but do not include it in any CI matrix.
@@ -164,7 +164,7 @@ targets:
       target_abi: x86_64-linux-gnu
       profile_arch: x86_64
       artifact_kind: linux-elf
-      toolchain_package: system-gcc/11
+      toolchain_package: auto
       float_abi: ""
       fpu: ""
       extra_cflags: []
@@ -192,7 +192,7 @@ targets:
       target_abi: arm-none-eabi
       profile_arch: cortex-m4
       artifact_kind: baremetal-bin
-      toolchain_package: arm-toolchain/11.3.rel1
+      toolchain_package: auto
       float_abi: hard
       fpu: fpv4-sp-d16
       extra_cflags: []
@@ -220,7 +220,7 @@ targets:
       target_abi: arm-none-eabi
       profile_arch: cortex-m0
       artifact_kind: baremetal-bin
-      toolchain_package: arm-toolchain/11.3.rel1
+      toolchain_package: auto
       float_abi: soft
       fpu: none
       extra_cflags: []
