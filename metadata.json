@@ -42,7 +42,7 @@
     "build": true,
     "tests": true,
     "release": false,
-    "docs": false,
+    "docs": true,
     "security_scan": true
   }
 }
