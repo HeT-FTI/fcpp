@@ -14,7 +14,7 @@ targets:
     os: Linux
     arch: armv7
     toolchain_versions:
-      - 14.3.rel1
+      - 11.3.rel1
     benchmark:
       enabled: true
       target_os: Linux
@@ -42,7 +42,7 @@ targets:
     os: Linux
     arch: armv8
     toolchain_versions:
-      - 14.3.rel1
+      - 11.3.rel1
     benchmark:
       enabled: true
       target_os: Linux
@@ -70,7 +70,7 @@ targets:
     os: Linux
     arch: armv8
     toolchain_versions:
-      - 14.3.rel1
+      - 11.3.rel1
     benchmark:
       enabled: true
       target_os: Linux
@@ -98,7 +98,7 @@ targets:
     os: Linux
     arch: armv8
     toolchain_versions:
-      - 14.3.rel1
+      - 11.3.rel1
     benchmark:
       enabled: true
       target_os: Linux
