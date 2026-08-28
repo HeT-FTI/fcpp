@@ -63,7 +63,7 @@ jobs:
       - name: System dependencies (Ubuntu)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
-          sudo apt install -y libnsl-dev
+          sudo apt install -y libnsl-dev lcov
 
       - name: Cache Conan packages
         uses: actions/cache@v4
