@@ -38,6 +38,8 @@ REPOSITORY_SEMGREP_ARGUMENTS:
   - "--include"
   - "src/"
 
+REPOSITORY_CHECKOV_CONFIG_FILE: ".github/misc/.checkov.yml"
+
 REPOSITORY_CHECKOV_ARGUMENTS:
   # NOTE: no `-d .` here — the checkov descriptor already runs `--directory .`,
   # adding it again makes checkov scan the repo TWICE (every finding duplicated).
