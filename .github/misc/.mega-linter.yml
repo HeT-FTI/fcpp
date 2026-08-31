@@ -1,4 +1,9 @@
 # .mega-linter.yml
+#
+# Version note: this config is consumed by BOTH CI and local runs. The MegaLinter
+# image version is pinned outside this file — in the CI action
+# (oxsecurity/megalinter@e08c2b05... = v8.8.0) and in .github/misc/run-megalinter.sh
+# (--release v8.8.0). Keep those two in sync.
 FILTER_REGEX_INCLUDE: "(include|src)/"
 
 ENABLE: "C,CPP"
@@ -34,8 +39,8 @@ REPOSITORY_SEMGREP_ARGUMENTS:
   - "src/"
 
 REPOSITORY_CHECKOV_ARGUMENTS:
-  - "-d"
-  - "."
+  # NOTE: no `-d .` here — the checkov descriptor already runs `--directory .`,
+  # adding it again makes checkov scan the repo TWICE (every finding duplicated).
   - "--skip-path"
   - "include/"
   - "--skip-path"
@@ -44,6 +49,9 @@ REPOSITORY_CHECKOV_ARGUMENTS:
   - "test_package/test/"
   - "--skip-path"
   - "test_package/main.cpp"
+  # Avoid scanning MegaLinter's own report output from a previous run
+  - "--skip-path"
+  - "megalinter-reports/"
 
 REPOSITORY_DEVSKIM_ARGUMENTS:
   - "--include-globs"
@@ -51,23 +59,12 @@ REPOSITORY_DEVSKIM_ARGUMENTS:
   - "--ignore-globs"
   - "**/test_package/**"
 
-C_CLANG_TIDY:
-  ENABLE: true
-  CONFIG_FILE: ".github/misc/.clang-tidy"
-  FILE_EXTENSIONS: [".h", ".c"]
-
-CPP_CLANG_TIDY:
-  ENABLE: true
-  CONFIG_FILE: ".github/misc/.clang-tidy"
-  FILE_EXTENSIONS: [".hpp", ".cpp"]
-
-C_CLANG_FORMAT:
-  ENABLE: true
-  CONFIG_FILE: ".github/misc/.clang-format-c"
-
-CPP_CLANG_FORMAT:
-  ENABLE: true
-  CONFIG_FILE: ".github/misc/.clang-format-cpp"
+# clang-format configs. NOTE: must use the FLAT <LINTER>_CONFIG_FILE form —
+# MegaLinter reads `C_CLANG_FORMAT_CONFIG_FILE` as a top-level key; the nested
+# `C_CLANG_FORMAT: {CONFIG_FILE: ...}` form is NOT parsed and silently falls
+# back to clang-format's LLVM defaults (which is why every line was flagged).
+C_CLANG_FORMAT_CONFIG_FILE: ".github/misc/.clang-format-c"
+CPP_CLANG_FORMAT_CONFIG_FILE: ".github/misc/.clang-format-cpp"
 
 SARIF_REPORTER: true
 MARKDOWN_SUMMARY_REPORTER: true

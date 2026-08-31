@@ -155,6 +155,16 @@ link (no need modification on *CMakeLists.txt*).
 Requirements for your project can be the package archived on [Conan Center](https://conan.io/center), or user 
 built ones. If the later one, at least you need a locale Conan server for managing your libraries.
 
+### 5. Run MegaLinter locally (advisory SAST)
+
+Mirrors the CI `megalinter` job: same config (`.github/misc/.mega-linter.yml`), same full image,
+and the same MegaLinter version (`v8.8.0`, pinned to match the CI action). Requires Docker/Podman + Node.js ≥ 20.
+
+```bash
+bash .github/misc/run-megalinter.sh            # or: npm run lint:megalinter
+bash .github/misc/run-megalinter.sh --fix      # auto-apply fixes
+```
+
 ## All-in-one Project Structure
 
 ```

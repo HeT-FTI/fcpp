@@ -136,6 +136,8 @@ jobs:
       # the REQUIRED gates are the native quality-gates job above.
       - name: MegaLinter (with Grafana reporter)
         if: steps.check_grafana.outputs.available == 'true'
+        # Pinned to MegaLinter v8.8.0 — keep in sync with `--release` in
+        # .github/misc/run-megalinter.sh so local runs match CI exactly.
         uses: oxsecurity/megalinter@e08c2b05e3dbc40af4c23f41172ef1e068a7d651
         continue-on-error: false
         id: ml_grafana
@@ -155,6 +157,7 @@ jobs:
       # Run MegaLinter WITHOUT Grafana API reporter as fallback
       - name: MegaLinter (artifact-only)
         if: steps.check_grafana.outputs.available != 'true'
+        # Pinned to MegaLinter v8.8.0 (same as the Grafana path above).
         uses: oxsecurity/megalinter@e08c2b05e3dbc40af4c23f41172ef1e068a7d651
         continue-on-error: false
         id: ml_fallback

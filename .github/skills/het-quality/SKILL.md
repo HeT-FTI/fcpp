@@ -21,6 +21,9 @@ user-invocable: true
    find include src -type f \( -name '*.c' -o -name '*.h' \) -exec clang-format --dry-run --Werror --style=file:.github/misc/.clang-format-c {} +
    find include src -type f \( -name '*.cpp' -o -name '*.hpp' \) -exec clang-format --dry-run --Werror --style=file:.github/misc/.clang-format-cpp {} +
    clang-tidy --config-file=.github/misc/.clang-tidy src/*.cpp -- -std=c++17 -Iinclude
+   # SAST (advisory) — mirrors CI `megalinter` job; requires Docker/Podman + Node
+   # version pinned to v8.8.0 (same as the pinned CI action) so results match CI
+   bash .github/misc/run-megalinter.sh   # or: npm run lint:megalinter  (--fix to auto-fix)
    ```
 2. Commit with `ci(:shield:): ...` (or open a PR — quality gates run on every PR).
 3. Actions → `Security Scan / Quality Gates` job; MegaLinter SAST report is advisory (artifact `MegaLinter reports`).

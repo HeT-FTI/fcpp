@@ -23,3 +23,7 @@ __pycache__/
 /test_package/test/export/
 /test_package/build/
 CMakeUserPresets.json
+
+# megalinter reports
+/megalinter-reports/
+mega-linter.log

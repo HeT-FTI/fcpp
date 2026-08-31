@@ -26,6 +26,12 @@
       "problemMatcher": []
     },
     {
+      "label": "megalinter",
+      "type": "shell",
+      "command": "bash .github/misc/run-megalinter.sh",
+      "problemMatcher": []
+    },
+    {
       "label": "test",
       "type": "shell",
       "command": "conan create . -s build_type=Debug --build=missing",

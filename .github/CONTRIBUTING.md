@@ -38,6 +38,9 @@ npx ajv validate -s .github/misc/metadata.schema.json -d metadata.json --spec=dr
 find include src -type f \( -name '*.c' -o -name '*.h' \) -exec clang-format --dry-run --Werror --style=file:.github/misc/.clang-format-c {} +
 find include src -type f \( -name '*.cpp' -o -name '*.hpp' \) -exec clang-format --dry-run --Werror --style=file:.github/misc/.clang-format-cpp {} +
 clang-tidy --config-file=.github/misc/.clang-tidy src/*.cpp -- -std=c++17 -Iinclude
+# MegaLinter SAST（advisory，镜像 CI 的 megalinter job；需 Docker/Podman）
+# 版本已固定为 v8.8.0，与 CI action（oxsecurity/megalinter@e08c2b05...）一致
+bash .github/misc/run-megalinter.sh          # 或 npm run lint:megalinter；--fix 自动修复
 
 # 构建 + 测试
 conan create . -s build_type=Debug --build=missing
