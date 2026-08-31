@@ -276,6 +276,17 @@ class PackageRecipe(ConanFile):
         _cpp_deps = [f"{k}@{' '.join(v)}" for k, v in {**_common, **_cpp}.items()]
         return _c_deps, list(set(_cpp_deps).union(set(_infra_deps)))
 
+    def package_id(self):
+        # float_abi/fpu 通过 profile [conf] 的 tools.build:cflags 注入，不属于 settings/options，
+        # 默认不参与 package_id；不同 MCU（如 cortex-m3 soft 与 cortex-m7 hard+fpu）在 Conan 里
+        # 可能共享同一个 arch（如 armv7），导致误复用不兼容 ABI 的缓存二进制，链接期报 VFP 寄存器不匹配。
+        # 把交叉编译标志纳入 package_id，确保不同 ABI 组合各自产出独立二进制。
+        for key in ("tools.build:cflags", "tools.build:cxxflags"):
+            value = self.conf.get(key, default=None)
+            if value:
+                self.info.conf.define(key, str(value))
+
+
     def build(self):
         cmake = CMake(self)
         cmake.configure()
