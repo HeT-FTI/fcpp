@@ -14,7 +14,7 @@
   "build_cppstd": "17",
   "build_cstd": "11",
   "build_type": "Debug",
-  "activate_code_coverage": false,
+  "activate_code_coverage": true,
   "is_shared": false,
   "is_header": false,
   "generate_modules_inplace": false,
@@ -42,7 +42,7 @@
     "build": true,
     "tests": true,
     "release": false,
-    "docs": true,
+    "docs": false,
     "security_scan": true
   }
 }
