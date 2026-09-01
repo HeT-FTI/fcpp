@@ -260,7 +260,7 @@ targets:
       ssh_host: ""
       execution_route: openocd-serial
       route_id: stm32f205-cortex-m3
-      route_note: STM32F205 Cortex-M3 route waits for 71.89 to enable its serial-bound ST-Link inventory entry
+      route_note: STM32F205 Cortex-M3 route is contract-blocked until 71.89 enables its serial-bound ST-Link inventory entry
 
   - id: baremetal-cortex-m7
     target_key: baremetal-cortex-m7
@@ -290,4 +290,4 @@ targets:
       ssh_host: ""
       execution_route: jlink-serial
       route_id: stm32f767-cortex-m7
-      route_note: STM32F767IG Cortex-M7 route waits for 71.89 to register its dedicated J-Link probe and inventory entry
+      route_note: STM32F767IG Cortex-M7 bundle route is contract-blocked until 71.89 registers its dedicated J-Link probe and inventory entry
