@@ -69,6 +69,37 @@ platform/bench_config_rk3506.json
 
 CI 临时配置可由 CI 脚本生成，不要求提交到仓库。
 
+### Cortex-M3 / M7 受控 CI 配置
+
+M3 与 M7 使用独立 target，不能以两个重复的 matrix 块表示同一块板：
+
+| target_key | MCU | Conan build arch | watcher profile_arch | ABI |
+| --- | --- | --- | --- | --- |
+| `baremetal-cortex-m3` | STM32F205 | `cortex-m3` | `cortex-m3` | soft / 无 FPU |
+| `baremetal-cortex-m7` | STM32F767IG | `cortex-m7d` | `cortex-m7` | hard / `fpv5-d16` |
+
+两个 target 都固定使用 `arm-toolchain/11.3.rel1`（compiler major `11`）。M7 的
+`cortex-m7d` 仅用于区分 Conan 构建 ABI；交付给 watcher 的物理核心字段仍必须是
+`target_cpu=cortex-m7` 和 `profile_arch=cortex-m7`。
+
+CI 使用 `platform/bench_config_ci_cortex_m3.json` 与
+`platform/bench_config_ci_cortex_m7.json`。不要将 ST-Link/J-Link 的唯一序列号写入
+仓库或 CI 配置；它由 71.89 watcher inventory 独占管理。
+
+M3/M7 成功 bundle 必须同时具备：
+
+```text
+artifacts/benchmark-<target>-11.3.rel1.elf
+artifacts/benchmark-<target>-11.3.rel1.bin   # 或 .hex
+artifacts/benchmark-info.json
+board-transfer.files
+board-transfer.json
+```
+
+`benchmark-info.json` 的 ELF 路径/哈希、`board-transfer.json.artifact_contract`、
+实际 ELF 及 flash sidecar 必须一致。CI 只构建和投递 bundle，不会自行选择 71.89 的
+物理 probe 或解除 watcher 的 route 阻塞状态。
+
 ## 4. 本机构建验证
 
 只构建，不部署：

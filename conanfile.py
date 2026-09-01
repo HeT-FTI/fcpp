@@ -278,6 +278,20 @@ class PackageRecipe(ConanFile):
         _cpp_deps = [f"{k}@{' '.join(v)}" for k, v in {**_common, **_cpp}.items()]
         return _c_deps, list(set(_cpp_deps).union(set(_test_deps)))
 
+    def package_id(self):
+        """Keep Cortex-M float ABI/FPU flags in the Conan binary identity.
+
+        M3 soft-float and STM32F767 M7 hard-float both compile for the Arm
+        M-profile family.  The flags are injected through profile ``[conf]``
+        and are not part of Conan's default package-id calculation, so omit
+        them only at the cost of reusing an ABI-incompatible archive.
+        """
+
+        for key in ("tools.build:cflags", "tools.build:cxxflags"):
+            value = self.conf.get(key, default=None)
+            if value:
+                self.info.conf.define(key, str(value))
+
     def build(self):
         cmake = CMake(self)
         cmake.configure()
@@ -409,6 +423,7 @@ class PackageRecipe(ConanFile):
         cpu_arch = attrs.get("Tag_CPU_arch", "unknown")
         thumb_isa = attrs.get("Tag_THUMB_ISA_use", "")
         arm_isa = attrs.get("Tag_ARM_ISA_use", "No")
+        cpu_arch_profile = attrs.get("Tag_CPU_arch_profile", "")
 
         expected = {
             "armv6": {"v6-M", "v6S-M"},
@@ -416,8 +431,16 @@ class PackageRecipe(ConanFile):
             "armv8_32": {"v8-M.base", "v8-M.mainline"},
         }.get(target_arch, set())
 
+        # GCC 11.3 can split the M-profile suffix into
+        # Tag_CPU_arch="v7" + Tag_CPU_arch_profile="Microcontroller".
+        # Accept that canonical encoding alongside legacy "v7-M" output.
+        expected_bases = {tag.split("-M")[0].split(".")[0] for tag in expected}
+        arch_ok = (not expected) or (cpu_arch in expected) or (
+            cpu_arch in expected_bases and cpu_arch_profile == "Microcontroller"
+        )
+
         problems = []
-        if expected and cpu_arch not in expected:
+        if not arch_ok:
             problems.append(f"Tag_CPU_arch={cpu_arch} not in expected {sorted(expected)}")
 
         if arm_isa.lower() in {"yes", "1", "true"}:

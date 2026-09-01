@@ -86,7 +86,12 @@ def generate_profile(cfg: dict, lib_name: str) -> Path:
     toolchain_version = str(cfg.get("toolchain_package_version", "11.3.rel1"))
     extra_cflags      = cfg.get("extra_cflags", [])
 
-    arch     = CONAN_ARCH_MAP.get(mcu, "armv7")
+    # ``profile_arch`` is the physical-core contract consumed by the watcher,
+    # whereas ``conan_arch`` may carry an ABI-qualified build selector (for
+    # example Cortex-M7 double-precision hard-float).  Keep both explicit so
+    # the package built by the runner and this benchmark resolve the same
+    # Conan binary identity.
+    arch     = str(cfg.get("conan_arch") or CONAN_ARCH_MAP.get(mcu, "armv7"))
     pkg_name = f"{lib_name}_bench_mcu"
 
     flags = [f"-mcpu={mcu}", "-mthumb", f"-mfloat-abi={float_abi}"]

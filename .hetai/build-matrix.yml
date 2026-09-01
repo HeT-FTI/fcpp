@@ -179,7 +179,9 @@ targets:
   - id: baremetal-cortex-m4
     target_key: baremetal-cortex-m4
     default: false
-    enabled: true
+    # There is no provisioned M4 board route. Keep its declaration as a
+    # template, but exclude it from the all-mode automated-board matrix.
+    enabled: false
     build_kind: baremetal
     os: baremetal
     arch: cortex-m4
@@ -231,3 +233,61 @@ targets:
       execution_route: jlink-serial
       route_id: bat32-baremetal-cortex-m0
       route_note: BAT32 Cortex-M0 route via J-Link and UART
+
+  - id: baremetal-cortex-m3
+    target_key: baremetal-cortex-m3
+    default: false
+    enabled: true
+    build_kind: baremetal
+    os: baremetal
+    arch: cortex-m3
+    toolchain_versions:
+      - 11.3.rel1
+    benchmark:
+      enabled: true
+      target_os: baremetal
+      target_cpu: cortex-m3
+      target_abi: arm-none-eabi
+      profile_arch: cortex-m3
+      artifact_kind: baremetal-elf
+      toolchain_package: auto
+      float_abi: soft
+      fpu: none
+      extra_cflags: []
+      config_rel: platform/bench_config_ci_cortex_m3.json
+      remote_path: /tmp/fcpp_benchmark_m3/benchmark
+      deploy_tool: openocd
+      ssh_host: ""
+      execution_route: openocd-serial
+      route_id: stm32f205-cortex-m3
+      route_note: STM32F205 Cortex-M3 route waits for 71.89 to enable its serial-bound ST-Link inventory entry
+
+  - id: baremetal-cortex-m7
+    target_key: baremetal-cortex-m7
+    default: false
+    enabled: true
+    build_kind: baremetal
+    os: baremetal
+    # cortex-m7d is the Conan build ABI selector; benchmark.profile_arch stays
+    # cortex-m7 because the V3 watcher contract identifies the physical core.
+    arch: cortex-m7d
+    toolchain_versions:
+      - 11.3.rel1
+    benchmark:
+      enabled: true
+      target_os: baremetal
+      target_cpu: cortex-m7
+      target_abi: arm-none-eabi
+      profile_arch: cortex-m7
+      artifact_kind: baremetal-elf
+      toolchain_package: auto
+      float_abi: hard
+      fpu: fpv5-d16
+      extra_cflags: []
+      config_rel: platform/bench_config_ci_cortex_m7.json
+      remote_path: /tmp/fcpp_benchmark_m7/benchmark
+      deploy_tool: jlink
+      ssh_host: ""
+      execution_route: jlink-serial
+      route_id: stm32f767-cortex-m7
+      route_note: STM32F767IG Cortex-M7 route waits for 71.89 to register its dedicated J-Link probe and inventory entry
