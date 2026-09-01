@@ -113,14 +113,15 @@
  * @post add the post-conditions, or status here after applying the function
  * @warning add warning messages here if necessary
  * @exception std::invalid_argument if wrong arguments assigned
- * @todo further optimization if element object is vector like
+ * @note Low priority: batched transformation could be optimized further if the element object is vector-like.
  * @since 1.0
  * @version 1.0.3 change to left-value argument
  * @version 1.0.4 change to left-value return
  */
-template <typename T, typename F>
-T& inplace_transform(T& a, F f) {
-    for (auto& ele: a) { f(ele); }
+template <typename T, typename F> T& inplace_transform(T& a, F f) {
+    for (auto& ele : a) {
+        f(ele);
+    }
     return a;
 }
 

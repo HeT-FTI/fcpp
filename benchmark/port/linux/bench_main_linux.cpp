@@ -2,44 +2,43 @@
  * bench_main_linux.c  —  A-core / Linux host port
  *
  * ============================================================
- *  这是 A 核 Linux 构建的唯一新增文件。
- *  它扮演的角色等同于 MCU 侧 Base Firmware 的 bench_host.c：
- *    • 提供 main() 入口
- *    • 实现 HostInterface（计时 + 输出）
- *    • 调用 bench_module_entry()
+ *  This is the only file added for A-core Linux builds.
+ *  It plays the same role as bench_host.c in MCU-side Base Firmware:
+ *    • provide the main() entry
+ *    • implement HostInterface (timing + output)
+ *    • call bench_module_entry()
  *
- *  bench_entry.c / het_bench_core.c 与 MCU 构建完全共用，无需修改。
+ *  bench_entry.c / het_bench_core.c are shared with MCU builds as-is.
  *
- *  输出格式与 MCU UART 协议完全一致，可被相同的 CI 解析器处理：
+ *  Output format matches the MCU UART protocol, so the same CI parsers work:
  *    BENCHMARK_START
- *    MODULE|<名称>|cases=N
- *    RESULT|<用例名>|<微秒数>
+ *    MODULE|<name>|cases=N
+ *    RESULT|<case>|<microseconds>
  *    BENCHMARK_END
  * ============================================================
  */
 
 #include <stdio.h>
 #include <stdint.h>
-#include <time.h>
+#include <chrono>
 #include "core/het_bench_core.h"
 
-/* bench_module_entry 由 bench_entry.c 中的 BENCHMARK_IMPLEMENTATION 宏定义 */
+/* bench_module_entry is defined by the BENCHMARK_IMPLEMENTATION macro in bench_entry.c */
 extern int bench_module_entry(const HostInterface *hostApi);
 
 /**
- * 计时：CLOCK_MONOTONIC，单位微秒（µs）。
- * uint32_t 可容纳约 71 分钟；benchmark 用例通常在秒级内完成，不会溢出。
+ * Timing: steady_clock (CLOCK_MONOTONIC on Linux), in microseconds (µs).
+ * uint32_t holds ~71 minutes; benchmark cases finish in seconds, so no overflow.
  */
 static uint32_t linux_get_ticks(void)
 {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (uint32_t)((uint64_t)ts.tv_sec * 1000000ULL
-                    + (uint64_t)ts.tv_nsec / 1000ULL);
+    using namespace std::chrono;
+    const auto us = duration_cast<microseconds>(steady_clock::now().time_since_epoch()).count();
+    return static_cast<uint32_t>(us);
 }
 
 /**
- * 输出：写入 stdout，deploy 脚本（ADB / SSH）直接捕获。
+ * Output: write to stdout, captured directly by the deploy scripts (ADB / SSH).
  */
 static void linux_write(const char *data, uint32_t len)
 {
@@ -50,6 +49,6 @@ static void linux_write(const char *data, uint32_t len)
 int main(void)
 {
     static const HostInterface host = {linux_get_ticks, linux_write};
-    /* bench_module_entry 返回 1 = 全部通过，0 = 有用例失败 */
+    /* bench_module_entry returns 1 = all passed, 0 = some case failed */
     return bench_module_entry(&host) ? 0 : 1;
 }

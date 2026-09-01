@@ -22,7 +22,7 @@ void bind_test_sum(py::module& m, const char* name) {
  * @brief bindings for the class Color<int>
  *   due to there is instance of template class Color<int> in cpptest.cpp, binding that concrete class
  */
-void bind_color_int(py::module& m) {
+void bind_color_int(const py::module &m) {
     py::class_<Color<int>>(m, "ColorInt", "RGB Color class with integer components")
         .def(py::init<>(), "Default constructor (black)")
         .def(py::init<int, int, int>(), "Constructor with r, g, b values", 

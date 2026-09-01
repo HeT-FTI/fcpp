@@ -93,12 +93,20 @@ jobs:
           saving_tests_log=$(jq -r '.saving_tests_log // false | tostring | ascii_downcase' metadata.json)
           activate_code_coverage=$(jq -r '.activate_code_coverage // false | tostring | ascii_downcase' metadata.json)
           
-          # Read workflow_triggers flags (default to true for backward compatibility)
-          wf_build=$(jq -r '.workflow_triggers.build // true | tostring | ascii_downcase' metadata.json)
-          wf_tests=$(jq -r '.workflow_triggers.tests // true | tostring | ascii_downcase' metadata.json)
-          wf_release=$(jq -r '.workflow_triggers.release // true | tostring | ascii_downcase' metadata.json)
-          wf_docs=$(jq -r '.workflow_triggers.docs // true | tostring | ascii_downcase' metadata.json)
-          wf_security=$(jq -r '.workflow_triggers.security_scan // true | tostring | ascii_downcase' metadata.json)
+          # Read workflow_triggers flags (fail-loud: missing switch aborts CI, no silent defaults)
+          # NOTE 1: jq `//` treats `false` as falsy — use has() for existence, read value separately.
+          # NOTE 2: JSON key is `security_scan` but the variable is `wf_security` — keep the pair map explicit.
+          # NOTE 3: associative array instead of eval (no command injection surface).
+          declare -A wf
+          for pair in "build build" "tests tests" "release release" "docs docs" "security security_scan"; do
+            set -- $pair
+            _var="$1"; _key="$2"
+            jq -e --arg k "$_key" '.workflow_triggers | has($k)' metadata.json >/dev/null \
+              || { echo "❌ metadata.json missing workflow_triggers.$_key"; exit 1; }
+            wf["$_var"]=$(jq -r --arg k "$_key" '.workflow_triggers[$k] | tostring | ascii_downcase' metadata.json)
+          done
+          wf_build=${wf[build]}; wf_tests=${wf[tests]}; wf_release=${wf[release]}
+          wf_docs=${wf[docs]}; wf_security=${wf[security]}
           
           # Output all values
           echo "pkg_name=$pkg_name" >> $GITHUB_OUTPUT
@@ -204,6 +212,16 @@ jobs:
             fi
           fi
           
+          # Shift-left on pull_request: build/tests are required gates, no emoji needed
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            if [[ "$WF_BUILD" == "true" ]]; then
+              trigger_build="true"
+            fi
+            if [[ "$WF_TESTS" == "true" && "$BUILD_TYPE" == "Debug" && "$TRIGGER_TESTS_FLAG" == "true" ]]; then
+              trigger_tests="true"
+            fi
+          fi
+
           # Output trigger flags
           echo "trigger_build=$trigger_build" >> $GITHUB_OUTPUT
           echo "trigger_tests=$trigger_tests" >> $GITHUB_OUTPUT

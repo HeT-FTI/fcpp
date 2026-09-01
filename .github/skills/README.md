@@ -1,6 +1,6 @@
 # fcpp Skills System（技能体系）
 
-> Library-level skills for the fcpp template — 15 `het-*` skills + 1 routing agent, invocable from VS Code Copilot Chat by typing `/`. 模板库级技能：15 个 `het-*` 技能 + 1 个路由 Agent，在 Copilot Chat 输入 `/` 即可调用。
+> Library-level skills for the fcpp template — 16 `het-*` skills + 1 routing agent, invocable from VS Code Copilot Chat by typing `/`. 模板库级技能：16 个 `het-*` 技能 + 1 个路由 Agent，在 Copilot Chat 输入 `/` 即可调用。
 
 ## Directory（目录结构）
 

@@ -11,7 +11,7 @@ user-invocable: true
 
 ## Startup Flow（启动流程）
 
-1. **Load context（加载上下文）**: `skills/manifest.json` (registry), `PLAN-skills.md` (architecture), project layout (`include/`, `src/`, `test_package/`, `benchmark/`, `metadata.json`).
+1. **Load context（加载上下文）**: `skills/manifest.json` (registry), `.github/misc/Codegen-Starter.txt` (project blueprint), project layout (`include/`, `src/`, `test_package/`, `benchmark/`, `metadata.json`).
 2. **Intent recognition（意图识别）**: map natural language to one or more skills (manifest `intents` + semantics). 映射到技能。
 3. **Compose & order（组合与排序）**: order by dependencies (e.g. audit → testgen → commit). 按依赖排序。
 4. **Action plan（行动计划）**: list each step (what, which files, which skill), **wait for confirmation** when writes are involved. 写操作先出计划等确认。

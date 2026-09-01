@@ -452,6 +452,20 @@ sudo apt install openocd   # Ubuntu
 brew install open-ocd       # macOS
 ```
 
+**ST-Link 使用注意事项**（以 STM32F205 + ST-Link/V2.1 为例）：
+
+1. **`transport select` 与 interface cfg 冲突**：`interface/stlink.cfg` 内部通过 HLA（High-Level Adapter）协议自动选定 `hla_swd`/`hla_jtag`，若命令行再显式指定 `swd`/`jtag`（不带 `hla_` 前缀）会报错 `Can't change session's transport after the initial selection was made`。`download.py` 已按 `--interface` 文件名自动加上 `hla_` 前缀，无需手动处理；若看到 `Warn: Transport "hla_swd" was already selected`，这只是提示，不影响烧录。
+2. **`LIBUSB_ERROR_ACCESS`**：Linux 下普通用户默认没有权限直接访问 USB 设备节点，需添加 udev 规则（VID:PID 可用 `lsusb` 查看，ST-Link/V2.1 通常是 `0483:374b`）：
+   ```bash
+   sudo tee /etc/udev/rules.d/49-stlink.rules > /dev/null <<'EOF'
+   SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="374b", MODE="0666", GROUP="plugdev"
+   EOF
+   sudo udevadm control --reload-rules && sudo udevadm trigger
+   ```
+   规则生效后需**拔插一次 ST-Link**（udev 只在设备重新枚举时应用规则）。
+3. **烧录成功的标志**：`** Programming Finished **` → `** Verify Started **` → `** Verified OK **` → `** Resetting Target **`，全部出现即代表烧录并回读校验通过。
+4. **openocd 不会捕获串口输出**：与 `adb`/`ssh` 模式不同，`openocd` 只负责烧录+复位，看不到 benchmark 的 `BENCHMARK_START/RESULT/BENCHMARK_END` 输出，需要另开串口终端（`screen /dev/ttyUSB0 <serial_baud>`）读取 UART。
+
 ### PyOCD
 
 ```bash

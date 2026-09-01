@@ -5,17 +5,19 @@
 
 
 
-auto version_test_func() {
-    std::cout << "the version_test_func function" << std::endl;
-};
+auto version_test_func() { std::cout << "the version_test_func function" << '\n'; };
 
 
 
-void stage_a() {}
+void stage_a() {
+    // Intentionally empty: staged demo placeholder, see the call graph in stage_d.
+}
 
 
 
-void stage_b() {}
+void stage_b() {
+    // Intentionally empty: staged demo placeholder, see the call graph in stage_d.
+}
 
 
 

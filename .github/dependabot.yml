@@ -1,0 +1,34 @@
+# Dependabot consolidation — keep open dependency PRs at ~1-2 total.
+#
+# Rationale (aligns with the repo's gitmoji/switch-driven CI):
+#   * CI is PR-shift-left (build/tests/security run on every PR), so a flood of
+#     per-dependency PRs is heavy — group all updates per ecosystem into ONE PR.
+#   * `groups` merges same-ecosystem bumps into a single PR; `open-pull-requests-limit`
+#     caps how many are open at once; `monthly` lowers the check frequency.
+version: 2
+updates:
+  # One grouped PR for all GitHub Actions bumps, once a month.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    open-pull-requests-limit: 1
+    labels:
+      - ":bricks: infrastructure"
+
+  # One grouped PR for all npm dev-tooling bumps (semantic-release, commitlint, ajv).
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      dev-tooling:
+        patterns:
+          - "*"
+    open-pull-requests-limit: 1
+    labels:
+      - ":bricks: infrastructure"

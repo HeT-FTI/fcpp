@@ -15,5 +15,7 @@ CheckOptions:
   - key: cppcoreguidelines-avoid-magic-numbers.CheckStrings
     value: '0'
 WarningsAsErrors: '*'
-HeaderFilterRegex: "include/.*"
-
+# Anchored to repo paths only: third-party headers must not be flagged.
+# Invoke clang-tidy with relative paths (e.g. `clang-tidy src/x.cpp`) so that
+# repo headers resolve as `include/...`; apt-installed deps are system headers.
+HeaderFilterRegex: "^(include|src)/"

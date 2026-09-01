@@ -7,7 +7,7 @@ user-invocable: true
 
 # S2 · het-release — Release / Versioning（发布新版本）
 
-> Facts: `.github/skills/_shared/gitmoji.md`、`metadata-contract.md`、`.releaserc.json`。
+> Facts: `.github/skills/_shared/gitmoji.md`、`metadata-contract.md`、`.github/misc/.releaserc.json`。
 
 ## Mental Model（心智模型）
 
