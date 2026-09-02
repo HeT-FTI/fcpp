@@ -10,6 +10,7 @@
   "toolchain_package_version": "11.3.rel1",
   "extra_cflags":              [],
 
+
   "flash_tool":        "openocd",
   "openocd_interface": "interface/cmsis-dap.cfg",
   "openocd_target":    "target/gd32e23x.cfg",
