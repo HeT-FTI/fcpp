@@ -14,6 +14,8 @@ on:
 jobs:
   gate:
     name: Release Gate
+    # Skip on the template instantiation push (fresh repo, nothing to release).
+    if: ${{ github.event_name != 'push' || github.event.commits[0].message != 'Initial commit' }}
     runs-on: ubuntu-latest
     outputs:
       should_release: ${{ steps.gate.outputs.should_release }}

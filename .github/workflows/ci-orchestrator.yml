@@ -29,6 +29,10 @@ jobs:
   # Step 1: Call the metadata controller to analyze metadata.json
   controller:
     name: Analyze Metadata
+    # Template instantiation pushes the generated "Initial commit"; the
+    # template CI is already validated upstream, so a fresh repo skips every
+    # pipeline on its first run. Real pushes run the full pipeline as usual.
+    if: ${{ github.event_name != 'push' || github.event.commits[0].message != 'Initial commit' }}
     uses: ./.github/workflows/metadata-controller.yml
     with:
       event_name: ${{ github.event_name }}
@@ -69,6 +73,8 @@ jobs:
   # Step 2b: Enforce commit conventions (canonical form, see .github/misc/commitlint.config.js)
   commit-lint:
     name: Commit Lint
+    # Skip on the template instantiation push (see controller job above).
+    if: ${{ github.event_name != 'push' || github.event.commits[0].message != 'Initial commit' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -109,6 +115,8 @@ jobs:
   # Step 2c: Validate metadata.json against the machine-readable contract
   schema-check:
     name: Metadata Schema
+    # Skip on the template instantiation push (see controller job above).
+    if: ${{ github.event_name != 'push' || github.event.commits[0].message != 'Initial commit' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
