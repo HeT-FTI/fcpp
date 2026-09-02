@@ -18,6 +18,7 @@ From a software project (any language/framework), this skill:
    - §2 Technical solution (problem → full solution with PlantUML/Mermaid diagrams → beneficial effects)
    - §3 Alternative embodiments
    - §4 Key technical protection points
+3. **Post-processes every draft through a de-AI writing pass** (see [de-ai-rules.md](./references/de-ai-rules.md)) — removes AI-stereotypical phrasing while preserving patent formalism, quantitative anchors, and mechanism-level claims
 
 **Output language:** Default is **Chinese (中文)**. English is supported if the user explicitly requests it.
 **Diagram format:** **PlantUML** preferred; Mermaid as fallback. Both use editable text syntax.
@@ -256,10 +257,25 @@ After all drafts are generated, apply the expert review guidelines from [expert-
 
 ---
 
+### Phase 6: De-AI Post-Processing
+
+After the quality-enhancement pass, run a **de-AI writing pass** on every draft following [de-ai-rules.md](./references/de-ai-rules.md):
+
+1. **Lock protected spans first** — numbers with their objects, step numbers (S1-S5), figure/formula references, mechanism terms, patent idioms (其特征在于/所述/实施例/优选地), and all PlantUML/Mermaid/KaTeX blocks are **never touched**.
+2. **Tier-graded rewriting** — Tier 1 (delete): opening clichés ("随着……的不断发展"), value inflation ("具有重要意义"), filler intensifiers (显著/极大/高效), sourceless authority claims; Tier 2 (restructure): translation-style long chains, adjective triads, nominalizations, synonym cycling; Tier 3 (keep): patent formalism.
+3. **Scope by section** — long text uses `bounded` (filler sentences go to a "suggested deletion" list; 空话进"建议删除"清单); §4 protection points use `in-place` (reword only, no sentence deletion; 只改词不删句).
+4. **Fidelity readback（硬约束）** — every protected span survives forward; no new numbers/attributions appear backward; missing data is flagged, never invented.
+5. **Residual audit** — final scan against the blacklist/whitelist tables; Tier 3 leftovers may stay if recorded.
+
+**Do not colloquialize**: the target register is a restrained professional patent voice, not casual prose — strip the AI boilerplate, keep the patent boilerplate. 去的是 AI 定式表达，保的是专利定式表达。
+
+---
+
 ## Resources
 
 - [Patent disclosure template](./references/patent-template.md) — Section-by-section format reference with PlantUML/Mermaid diagram examples
 - [Expert guidelines](./references/expert-guidelines.md) — Language quality rules, rejection-avoidance patterns, self-review checklist
+- [De-AI rules](./references/de-ai-rules.md) — Phase 6 post-processing: removes AI writing patterns (methodology adapted from shuorenhua/humanizer-zh) while preserving patent professionalism
 
 ---
 
@@ -279,4 +295,5 @@ After all drafts are generated, apply the expert review guidelines from [expert-
 - Each draft targets ~3000-5000 words of substantive technical content.
 - Visual elements: **PlantUML** (preferred) or **Mermaid** (fallback) for diagrams; **tables** for structured data; **KaTeX** for formulas when beneficial.
 - Output is in Chinese by default. Switch to English only on explicit user request.
+- Every draft goes through the Phase 6 de-AI pass — AI-stereotypical phrasing is removed; patent formalism, numbers, step references, and mechanism claims are preserved verbatim.
 
