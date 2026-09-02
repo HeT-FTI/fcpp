@@ -37,8 +37,10 @@ Additional findings（附加发现）: public APIs without test coverage (→ su
 
 ## Output（输出格式）
 
-1. **Markdown report** (default): `AUDIT-<date>.md` — scope, axis 1 (✅/⚠️/❌ + evidence file:line), axis 2 (feature | contract | implementation | verdict), prioritized suggestions. 默认 Markdown 报告。
-2. **Optional JSON**: `AUDIT-<date>.json` for CI. 可选 JSON。
+**Report location（报告位置）**: all reports go under `workspace/` at repo root — if `workspace/` does not exist, create it first, then write inside. 报告统一放根目录 `workspace/` 下；若无该目录，先创建再写入。
+
+1. **Markdown report** (default): `workspace/AUDIT-<date>.md` — scope, axis 1 (✅/⚠️/❌ + evidence file:line), axis 2 (feature | contract | implementation | verdict), prioritized suggestions. 默认 Markdown 报告。
+2. **Optional JSON**: `workspace/AUDIT-<date>.json` for CI. 可选 JSON。
 3. Issues map to the 12 repo labels (e.g. `:recycle: refactor`, `:test_tube: tests`). 问题可挂 labels。
 
 ## Workflow（工作流）
@@ -47,7 +49,7 @@ Additional findings（附加发现）: public APIs without test coverage (→ su
 2. Read fact sources: `.github/skills/_shared/*.md`. 读取事实源。
 3. Collect evidence: `include/`, `src/`, `test_package/`, `metadata.json`, git log. 收集证据。
 4. Judge per axis. 逐轴判定。
-5. Output report (read-only; no files modified). 输出报告（只读）。
+5. Output report: check for `workspace/` at repo root — create it if missing (`mkdir -p workspace/`), then write `AUDIT-<date>.md` inside it (source code untouched; only the report file is created). 输出报告：检查根目录 `workspace/`，不存在则先创建，再将 `AUDIT-<date>.md` 写入其中（不改动源码，仅生成报告文件）。
 6. If user wants fixes/tests → then invoke `het-testgen` / other skills (write ops need confirmation). 需要补测/修复时再进入写操作。
 
 ## Checklist（自检清单）
