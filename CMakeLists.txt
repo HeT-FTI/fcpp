@@ -198,7 +198,9 @@ else()  # general package
 
 
   # code coverage options
-  if(ENABLE_COVERAGE)
+  # 交叉编译（MCU 裸机 / Linux 目标板）没有 libgcov 运行时，插桩会导致
+  # __gcov_init/__gcov_exit 等符号链接期未定义；覆盖率只对本机测试构建生效。
+  if(ENABLE_COVERAGE AND NOT CMAKE_CROSSCOMPILING)
       if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
           set(COVERAGE_FLAGS "--coverage" "-O0" "-g")
           set(LINK_FLAGS "--coverage")

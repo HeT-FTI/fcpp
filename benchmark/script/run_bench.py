@@ -89,6 +89,11 @@ def generate_profile(cfg: dict, lib_name: str) -> Path:
     flags.extend(extra_cflags)
     flags_str = _flags_list(flags)
 
+    # 裸机不需要 C++ 异常/RTTI；必须在 profile 级别（而非仅 benchmark 目标）生效，
+    # 否则 Conan 单独编译的 fcpp 静态库仍带 .ARM.exidx 展开表，链接期报
+    # __exidx_start/__exidx_end 未定义（在 v8-M baseline 等核上尤其容易触发）。
+    cxx_flags_str = _flags_list(flags + ["-fno-exceptions", "-fno-rtti"])
+
     profile_content = (
         "[settings]\n"
         "os=baremetal\n"
@@ -110,7 +115,7 @@ def generate_profile(cfg: dict, lib_name: str) -> Path:
         "tools.cmake.cmaketoolchain:system_name=Generic\n"
         "tools.cmake.cmaketoolchain:system_processor=arm\n"
         f"tools.build:cflags={flags_str}\n"
-        f"tools.build:cxxflags={flags_str}\n"
+        f"tools.build:cxxflags={cxx_flags_str}\n"
         f"tools.build:sharedlinkflags={flags_str}\n"
         f"tools.build:exelinkflags={flags_str}\n"
         "\n"
@@ -257,6 +262,8 @@ def flash(cfg: dict) -> None:
             return
         cmd += ["--interface", cfg.get("openocd_interface", "interface/stlink.cfg")]
         cmd += ["--target", target_cfg]
+        if cfg.get("openocd_cmsis_vid_pid"):
+            cmd += ["--cmsis-vid-pid", cfg["openocd_cmsis_vid_pid"]]
 
     elif flash_tool == "pyocd":
         target = cfg.get("pyocd_target", "")

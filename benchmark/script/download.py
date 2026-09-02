@@ -32,6 +32,7 @@ def main():
     p.add_argument("--device", help="J-Link 目标器件名（jlink 模式必填），如 BAT32G157GK64FB")
     p.add_argument("--speed", default="4000", help="J-Link 接口速度(kHz)，默认 4000")
     p.add_argument("--no-verify", action="store_true", help="MCU 烧录后不做 verify")
+    p.add_argument("--cmsis-vid-pid", help="非标准 CMSIS-DAP 探针的 VID:PID如沩恒 WCH-Link），格式 0x1a86:0x8012")
     args = p.parse_args()
 
     if not os.path.isfile(args.binary):
@@ -75,15 +76,20 @@ def main():
         if "stlink" in args.interface.lower():
             transport = f"hla_{args.transport}"
 
-        run([
-            "openocd",
-            "-f", args.interface,
+        cmd = ["openocd", "-f", args.interface]
+        if args.cmsis_vid_pid:
+            # 非 ARM 官方 VID/PID（如沩恒 WCH-Link 的 0x1a86:0x8012）不在 openocd 内置白名单中，
+            # 即使协议兼容也会报 "unable to find a matching CMSIS-DAP device"，需显式白名单。
+            vid, pid = args.cmsis_vid_pid.split(":")
+            cmd += ["-c", f"cmsis_dap_vid_pid {vid} {pid}"]
+        cmd += [
             "-f", args.target,
             "-c", f"transport select {transport}",
             "-c", "init",
             "-c", "halt",
             "-c", program_cmd,
-        ])
+        ]
+        run(cmd)
 
     elif args.mode == "pyocd":
         if not args.target:

@@ -423,7 +423,7 @@ class PackageRecipe(ConanFile):
         expected = {
             "armv6": {"v6-M", "v6S-M"},
             "armv7": {"v7-M", "v7E-M"},
-            "armv8_32": {"v8-M.base", "v8-M.mainline"},
+            "armv8_32": {"v8-M.baseline", "v8-M.mainline"},
         }.get(target_arch, set())
 
         # 部分 GCC 版本（如 11.3.1）不再把 M-profile 后缀拼进 Tag_CPU_arch（如 "v7-M"），
@@ -440,7 +440,8 @@ class PackageRecipe(ConanFile):
         if arm_isa.lower() in {"yes", "1", "true"}:
             problems.append("ARM ISA is enabled, but baremetal Cortex-M targets require Thumb code")
 
-        if "Thumb" not in thumb_isa:
+        # v6/v7 内核用 "Thumb-1"/"Thumb-2" 字符串；v8-M（如 Cortex-M23/M33）用布尔式 "Yes"。
+        if thumb_isa.lower() not in {"yes", "1", "true"} and "Thumb" not in thumb_isa:
             problems.append("Thumb ISA attribute is missing")
 
         ok = not problems
