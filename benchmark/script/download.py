@@ -68,10 +68,11 @@ def main():
             # ELF/HEX 由 openocd 根据文件元信息处理地址
             program_cmd = f"program {args.binary}{verify_part} reset exit"
 
-        # ST-Link/CMSIS-DAP 等 HLA 适配器在 interface cfg 中已固定 transport，
-        # 需要用 hla_swd/hla_jtag 前缀；显式再选 swd/jtag 会与其冲突报错。
+        # ST-Link 走 HLA（High-Level Adapter）私有协议，interface cfg 已固定 transport，
+        # 需要用 hla_swd/hla_jtag 前缀，显式再选 swd/jtag 会与其冲突报错。
+        # CMSIS-DAP 等标准适配器走普通 swd/jtag，不带 hla_ 前缀。
         transport = args.transport
-        if "stlink" in args.interface.lower() or "cmsis-dap" in args.interface.lower():
+        if "stlink" in args.interface.lower():
             transport = f"hla_{args.transport}"
 
         run([
