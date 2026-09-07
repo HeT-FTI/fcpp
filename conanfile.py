@@ -428,12 +428,14 @@ class PackageRecipe(ConanFile):
         expected = {
             "armv6": {"v6-M", "v6S-M"},
             "armv7": {"v7-M", "v7E-M"},
-            "armv8_32": {"v8-M.base", "v8-M.mainline"},
+            "armv8_32": {"v8-M.base", "v8-M.baseline", "v8-M.mainline"},
         }.get(target_arch, set())
 
         # GCC 11.3 can split the M-profile suffix into
-        # Tag_CPU_arch="v7" + Tag_CPU_arch_profile="Microcontroller".
-        # Accept that canonical encoding alongside legacy "v7-M" output.
+        # Tag_CPU_arch="v7" + Tag_CPU_arch_profile="Microcontroller", and
+        # encodes the Armv8-M baseline profile as "v8-M.baseline". Accept
+        # those canonical encodings alongside legacy "v7-M"/"v8-M.base"
+        # output.
         expected_bases = {tag.split("-M")[0].split(".")[0] for tag in expected}
         arch_ok = (not expected) or (cpu_arch in expected) or (
             cpu_arch in expected_bases and cpu_arch_profile == "Microcontroller"
@@ -446,7 +448,10 @@ class PackageRecipe(ConanFile):
         if arm_isa.lower() in {"yes", "1", "true"}:
             problems.append("ARM ISA is enabled, but baremetal Cortex-M targets require Thumb code")
 
-        if "Thumb" not in thumb_isa:
+        # readelf reports Thumb capability either as an ISA name (for example
+        # "Thumb-2") or as the canonical EABI boolean "Yes" for M-profile
+        # objects such as Cortex-M23.
+        if "Thumb" not in thumb_isa and thumb_isa.lower() not in {"yes", "1", "true"}:
             problems.append("Thumb ISA attribute is missing")
 
         ok = not problems
