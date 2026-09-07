@@ -39,7 +39,7 @@ class BenchMcuConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     # 不需要 shared/fPIC，MCU benchmark 永远是静态裸机
     options = {
-        "target_mcu": ["cortex-m0", "cortex-m3", "cortex-m4", "cortex-m7",
+        "target_mcu": ["cortex-m0", "cortex-m3", "cortex-m4", "cortex-m7", "cortex-m23",
                         "cortex-m33", "cortex-m55", "ANY"],
         "float_abi": ["soft", "softfp", "hard"],
         "fpu": ["none", "fpv4-sp-d16", "fpv5-sp-d16", "fpv5-d16", "auto"],
@@ -99,6 +99,7 @@ class BenchMcuConan(ConanFile):
             "cortex-m3": "none",
             "cortex-m4": "fpv4-sp-d16",
             "cortex-m7": "fpv5-d16",
+            "cortex-m23": "none",
             "cortex-m33": "fpv5-sp-d16",
             "cortex-m55": "fpv5-d16",
         }

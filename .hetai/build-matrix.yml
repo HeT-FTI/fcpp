@@ -179,9 +179,7 @@ targets:
   - id: baremetal-cortex-m4
     target_key: baremetal-cortex-m4
     default: false
-    # There is no provisioned M4 board route. Keep its declaration as a
-    # template, but exclude it from the all-mode automated-board matrix.
-    enabled: false
+    enabled: true
     build_kind: baremetal
     os: baremetal
     arch: cortex-m4
@@ -193,18 +191,74 @@ targets:
       target_cpu: cortex-m4
       target_abi: arm-none-eabi
       profile_arch: cortex-m4
-      artifact_kind: baremetal-bin
+      artifact_kind: baremetal-elf
       toolchain_package: auto
       float_abi: hard
       fpu: fpv4-sp-d16
       extra_cflags: []
       config_rel: platform/bench_config_ci_cortex_m4.json
       remote_path: /tmp/fcpp_benchmark_m4/benchmark
-      deploy_tool: manual
+      deploy_tool: openocd
       ssh_host: ""
-      execution_route: manual-placeholder
-      route_id: pending-baremetal-cortex-m4
-      route_note: Placeholder route until Cortex-M4 hardware is provisioned
+      execution_route: openocd-serial
+      route_id: gd32f470-cortex-m4
+      route_note: GD32F470 Cortex-M4 bundle route is contract-blocked pending Base Firmware, Slot erase policy, and UART start-protocol verification on 71.89
+
+  - id: baremetal-cortex-m23
+    target_key: baremetal-cortex-m23
+    default: false
+    enabled: true
+    build_kind: baremetal
+    os: baremetal
+    arch: armv8_32
+    toolchain_versions:
+      - 11.3.rel1
+    benchmark:
+      enabled: true
+      target_os: baremetal
+      target_cpu: cortex-m23
+      target_abi: arm-none-eabi
+      profile_arch: cortex-m23
+      artifact_kind: baremetal-elf
+      toolchain_package: auto
+      float_abi: soft
+      fpu: none
+      extra_cflags: []
+      config_rel: platform/bench_config_ci_cortex_m23.json
+      remote_path: /tmp/fcpp_benchmark_m23/benchmark
+      deploy_tool: openocd
+      ssh_host: ""
+      execution_route: openocd-serial
+      route_id: gd32l233-cortex-m23
+      route_note: GD32L233 Cortex-M23 bundle route is contract-blocked because the 71.89 xPack OpenOCD 0.12.0 stack has no verified WCH-Link driver; do not flash until a supported probe is validated
+
+  - id: baremetal-cortex-m33
+    target_key: baremetal-cortex-m33
+    default: false
+    enabled: true
+    build_kind: baremetal
+    os: baremetal
+    arch: armv8_32
+    toolchain_versions:
+      - 11.3.rel1
+    benchmark:
+      enabled: true
+      target_os: baremetal
+      target_cpu: cortex-m33
+      target_abi: arm-none-eabi
+      profile_arch: cortex-m33
+      artifact_kind: baremetal-elf
+      toolchain_package: auto
+      float_abi: hard
+      fpu: fpv5-sp-d16
+      extra_cflags: []
+      config_rel: platform/bench_config_ci_cortex_m33.json
+      remote_path: /tmp/fcpp_benchmark_m33/benchmark
+      deploy_tool: openocd
+      ssh_host: ""
+      execution_route: openocd-serial
+      route_id: stm32u575-cortex-m33
+      route_note: STM32U575 Cortex-M33 bundle route is contract-blocked pending Base Firmware, Slot erase policy, and UART start-protocol verification on 71.89
 
   - id: baremetal-cortex-m0
     target_key: baremetal-cortex-m0
