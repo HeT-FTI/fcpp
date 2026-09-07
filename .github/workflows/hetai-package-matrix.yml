@@ -109,6 +109,9 @@ jobs:
             --build-kind '${{ matrix.build_kind }}' \
             --os-name '${{ matrix.os_name }}' \
             --arch '${{ matrix.arch }}' \
+            --target-cpu '${{ matrix.benchmark_target_cpu }}' \
+            --float-abi '${{ matrix.benchmark_float_abi }}' \
+            --fpu '${{ matrix.benchmark_fpu }}' \
             --target-key '${{ matrix.target_key }}' \
             --toolchain-version '${{ matrix.toolchain_version }}' \
             --toolchain-package '${{ matrix.benchmark_toolchain_package }}' \
