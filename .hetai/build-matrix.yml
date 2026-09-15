@@ -62,6 +62,38 @@ targets:
       route_id: orangepi-rk3566-a55
       route_note: OrangePi 3B AArch64 board route
 
+  # RK3588 is a separate board-level contract from the other AArch64 targets.
+  # It participates in explicit full-matrix builds and produces a versioned
+  # bundle, while the 71.89 watcher keeps execution blocked until its inventory
+  # and SSH route are provisioned under its own change control.
+  - id: linux-orangepi-rk3588-A76
+    target_key: linux-orangepi-rk3588-A76
+    default: false
+    enabled: true
+    build_kind: linux
+    os: Linux
+    arch: armv8
+    toolchain_versions:
+      - 11.3.rel1
+    benchmark:
+      enabled: true
+      target_os: Linux
+      target_cpu: cortex-a76
+      target_abi: aarch64-linux-gnu
+      profile_arch: armv8
+      artifact_kind: linux-elf
+      toolchain_package: auto
+      float_abi: ""
+      fpu: ""
+      extra_cflags: []
+      config_rel: platform/bench_config_ci_rk3588.json
+      remote_path: /tmp/fcpp_benchmark_orangepi_rk3588/benchmark
+      deploy_tool: ssh
+      ssh_host: ""
+      execution_route: ssh-board
+      route_id: orangepi-rk3588-a76
+      route_note: OrangePi RK3588 Cortex-A76 CI bundle route is reserved; 71.89 inventory and SSH route must be registered before execution
+
   - id: linux-orangepi-h6-A53
     target_key: linux-orangepi-h6-A53
     default: false

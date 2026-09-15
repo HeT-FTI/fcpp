@@ -69,6 +69,18 @@ platform/bench_config_rk3506.json
 
 CI 临时配置可由 CI 脚本生成，不要求提交到仓库。
 
+### OrangePi RK3588 CI 预留
+
+`linux-orangepi-rk3588-A76` 是独立于 OrangePi 3B、OrangePi 3 LTS 和 Raspberry Pi 5 的
+板级目标。它固定使用 `Linux/armv8`、`target_cpu=cortex-a76`、
+`aarch64-linux-gnu`、`ELF64/AArch64` 和 `arm-toolchain/11.3.rel1`，bundle 路径使用
+独立的 `orangepi-rk3588-a76` route。该目标已启用但不属于普通 `default` 选择；在
+`all` 或显式 `selected` 矩阵中会构建并传输 bundle。
+
+该预留的 watcher 执行态为 `blocked`：CI 成功仅代表 package、ELF 和 bundle 合同成功，
+不代表已连接或运行 OrangePi。89 侧必须先受控登记共享 catalog、inventory、SSH route 和
+目标板运行前置条件，随后才能将该 route 切换为可执行状态。
+
 ### Cortex-M3 / M4 / M7 / M23 / M33 受控 CI 配置
 
 每块 Cortex-M 板均使用独立 target，不能以重复的 matrix 块或泛用 `armv7` / `armv8_32`
