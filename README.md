@@ -265,6 +265,22 @@ migration to fit the future C++ standard.
 - **Desktop**: Windows, Linux, MacOS
 - **Mobile**: arm-linux, risc-v
 
+## Downstream Contract (HeT DevTools)
+
+This template is also built by the **HeT DevTools** VS Code extension in a *managed lane*: it creates its
+own private venv / `CONAN_HOME` and a **generated** Conan profile instead of probing the user's machine.
+The interfaces below are **backward compatible** — by default the behaviour is byte-for-byte the CI one.
+
+| Interface | Value | Default | Meaning |
+|---|---|---|---|
+| `HET_CMAKE_MIN` | version string (e.g. `3.15`) | unset | Overrides the `cmake_minimum_required` floor (CI baseline is 3.28) |
+| `HET_CMAKE_BUILD_REQUIRE` | `none` or a version | unset | Skips / replaces the ConanCenter `cmake/<metadata.cmake_version>` (read by **both** recipes) |
+| `metadata.graphviz_bin` | directory path | **absent** | Absent = use `dot` from `PATH`. This is a **machine-specific** field and normally should not be committed |
+| `conancenter` remote name | keep the standard name | — | A downstream private `CONAN_HOME` may point it at a corporate mirror — never assume its URL |
+| Coverage artifact | `test_package/test/export/coverage/coverage_report/index.html` | — | The path and the `genhtml` layout are a **downstream parsing contract** — do not change them |
+
+(The implementations live in `CMakeLists.txt`, `conanfile.py`, `test_package/conanfile.py` and `docs/build.py`.)
+
 ## Benchmark (on-board)
 
 `benchmark/` cross-compiles the library to real hardware and measures performance on-board:
