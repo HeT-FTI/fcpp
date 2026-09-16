@@ -2,8 +2,9 @@ name: github
 
 on:
   push:
+    # [macos-dev validation] temporary — revert to 'main' before merge.
     branches:
-      - 'main'
+      - 'macos-dev'
     paths:
       - '.github/misc/labels.yml'
   pull_request:

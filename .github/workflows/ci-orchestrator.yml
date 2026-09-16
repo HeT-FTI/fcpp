@@ -3,11 +3,13 @@ name: CI Orchestrator
 # Main entry point for all CI workflows
 # Analyzes metadata.json once and triggers downstream workflows conditionally
 
+# [macos-dev validation] Triggers temporarily point at macos-dev so the branch
+# can be validated end-to-end; revert to [main] before merging back.
 on:
   push:
-    branches: [main]
+    branches: [macos-dev]
   pull_request:
-    branches: [main]
+    branches: [macos-dev]
   workflow_dispatch:
     inputs:
       commit_messages:

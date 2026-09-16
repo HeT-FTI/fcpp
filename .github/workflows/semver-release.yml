@@ -9,7 +9,8 @@ on:
   workflow_call:
     # No inputs needed - this workflow uses secrets
   push:
-    branches: [main]
+    # [macos-dev validation] temporary — revert to [main] before merge.
+    branches: [macos-dev]
 
 jobs:
   gate:
