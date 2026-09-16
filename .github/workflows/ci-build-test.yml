@@ -21,11 +21,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         build_type: [Debug, Release]
         exclude:
           - os: windows-latest
             build_type: Debug
+          # macOS runs Debug only: it is the leg that exercises clang coverage.
+          - os: macos-latest
+            build_type: Release
 
     steps:
       - name: Checkout code
@@ -64,6 +67,12 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           sudo apt install -y libnsl-dev lcov
+
+      - name: System dependencies (macOS)
+        if: ${{ matrix.os == 'macos-latest' }}
+        # lcov/genhtml are not shipped with the Xcode CLT but are required by the
+        # clang coverage path (see test_package/conanfile.py).
+        run: brew install lcov
 
       - name: Cache Conan packages
         uses: actions/cache@v4
