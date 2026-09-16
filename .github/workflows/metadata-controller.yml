@@ -42,9 +42,9 @@ on:
       trigger_security:
         description: 'Whether to trigger security scan workflow'
         value: ${{ jobs.analyze.outputs.trigger_security }}
-        trigger_cross_compile:
-          description: 'Whether to trigger the online cross-compile workflow'
-          value: ${{ jobs.analyze.outputs.trigger_cross_compile }}
+      trigger_cross_compile:
+        description: 'Whether to trigger the online cross-compile workflow'
+        value: ${{ jobs.analyze.outputs.trigger_cross_compile }}
       
       # Test configuration
       saving_tests_log:
