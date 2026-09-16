@@ -29,8 +29,11 @@ jobs:
       matrix:
         include:
           # A-core / arm-linux (OS present) and M-core / baremetal (no OS)
+          # NOTE: the g++ driver is a separate package for the Linux targets
+          # (gcc-aarch64-linux-gnu ships only the C compiler); arm-none-eabi
+          # bundles both, hence the asymmetry.
           - target: arm-linux-a53
-            packages: gcc-aarch64-linux-gnu
+            packages: gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
           - target: mcu-m4
             packages: gcc-arm-none-eabi
 
