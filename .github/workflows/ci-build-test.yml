@@ -20,6 +20,9 @@ jobs:
     name: Build and Test (${{ matrix.os }}, ${{ matrix.build_type }})
     runs-on: ${{ matrix.os }}
     strategy:
+      # Every platform leg must report its own result: a red macOS leg must not
+      # cancel the in-flight ubuntu/windows legs (their output is the C1 gate).
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         build_type: [Debug, Release]
