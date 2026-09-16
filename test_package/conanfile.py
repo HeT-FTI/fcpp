@@ -7,6 +7,8 @@ from pathlib import Path
 import subprocess
 import shutil
 import yaml
+import re
+import sys
 import os
 sep = os.path.sep
 MAIN_CPP = 'main.cpp'
@@ -139,6 +141,12 @@ class PackageTestConan(ConanFile):
             self.output.info("Cross-compilation detect. Skipping test execution.")
             return
 
+        # The LLVM profile runtime decides where to write at process start, so
+        # for clang this has to be in place before main/ctest run -- not when the
+        # report is assembled afterwards.
+        if self._is_llvm_coverage():
+            self._prepare_llvm_profile_env()
+
         # scripting in test_package/main.cpp
         if can_run(self):
             cmd = os.path.join(self.cpp.build.bindirs[0], "main")
@@ -177,6 +185,30 @@ class PackageTestConan(ConanFile):
 
     def _compiler_name(self):
         return getattr(self.settings, 'compiler').__str__()
+
+    def _is_llvm_coverage(self):
+        """True when coverage is on and the toolchain writes LLVM raw profiles."""
+        return bool(self.metadata.get('activate_code_coverage')) and \
+            self._compiler_name() in ('clang', 'apple-clang')
+
+    def _profraw_folder(self):
+        return self.recipe_folder + sep + 'build' + sep + 'profraw'
+
+    def _prepare_llvm_profile_env(self):
+        """Send every LLVM raw profile to one folder, one file per process.
+
+        The runtime only writes where it is told at process start, and two
+        processes sharing a name would clobber each other, hence `%p`. Setting
+        it in os.environ is enough: conan runs the binaries through
+        ``Popen(..., shell=True)`` without an explicit ``env``, so children
+        inherit the environment we set here.
+        """
+        _folder = self._profraw_folder()
+        if os.path.exists(_folder):
+            shutil.rmtree(_folder)
+        os.makedirs(_folder)
+        os.environ['LLVM_PROFILE_FILE'] = _folder + sep + 'het-%p.profraw'
+        self.output.info(f"[coverage:llvm] LLVM_PROFILE_FILE={os.environ['LLVM_PROFILE_FILE']}")
 
     def _coverage_folder(self):
         """`<recipe>/test/export/coverage`, recreated empty.
@@ -218,6 +250,81 @@ class PackageTestConan(ConanFile):
             raise RuntimeError(f'conan cache path {_name}/{_ver}:{_pkg_uid} returned "{_pkg_folder}"')
         return _pkg_root
 
+    def _instrumented_binaries(self, build_folder):
+        """The instrumented executables of this test package.
+
+        `llvm-cov export` consumes binaries (the gcc path can consume
+        .gcda/.gcno instead), and which executables exist is only known after
+        the test package is configured, so derive them from ctest's own
+        metadata rather than hard-coding names.
+
+        Two sources are needed, and taking only the first is a trap:
+          * every target gtest discovery ran, i.e. each `<target>[<n>]_*.cmake`
+            -- this is the only way to reach `main`, which defines no TEST()
+            and therefore never shows up in an `add_test` command, yet is the
+            executable that links the library and so carries the coverage we
+            actually want;
+          * the `add_test` commands, which give the executables ctest runs.
+        """
+        _add_test = (r'add_test\s*\(\s*(?:\[=\[.*?\]=\]|"[^"]*"|\S+)\s+'
+                     r'(?:\[=\[.*?\]=\]|"([^"]+)"|(\S+))')
+        _discovered = r'([^/\\"]+)\[\d+\]_(?:tests|include)\.cmake'
+
+        _paths, _names = [], set()
+        for _cmake_file in sorted(Path(build_folder).rglob('CTestTestfile.cmake')) + \
+                sorted(Path(build_folder).rglob('*_tests.cmake')):
+            for _m in re.finditer(_discovered, _cmake_file.name):
+                _names.add(_m.group(1))
+            _text = _cmake_file.read_text(encoding='utf-8', errors='replace')
+            for _m in re.finditer(_discovered, _text):
+                _names.add(_m.group(1))
+            for _m in re.finditer(_add_test, _text):
+                _bin = _m.group(1) or _m.group(2)
+                if _bin and os.path.isfile(_bin):
+                    _paths.append(_bin)
+
+        for _name in sorted(_names):
+            _direct = os.path.join(build_folder, _name)   # single-config layout
+            if os.path.isfile(_direct):
+                _paths.append(_direct)
+                continue
+            _hits = [str(_) for _ in Path(build_folder).rglob(_name) if _.is_file()]
+            _paths.extend(sorted(_hits))
+
+        _found, _seen = [], set()
+        for _p in _paths:
+            _key = os.path.realpath(_p)      # add_test paths and the joined
+            if _key not in _seen:            # ones may be different spellings
+                _seen.add(_key)              # of the same executable
+                _found.append(_p)
+        return _found
+
+    def _clang_coverage_tools(self):
+        """Resolve llvm-profdata / llvm-cov plus the lcov renderer.
+
+        Apple ships the LLVM tools with the Xcode command line tools but usually
+        keeps them off PATH, so `xcrun -f` is the supported way to find them.
+        Missing tools are reported loudly with the command that fixes it (C2).
+        """
+        _tools = {}
+        for _name in ('llvm-profdata', 'llvm-cov'):
+            _path = shutil.which(_name)
+            if _path is None and sys.platform == 'darwin':
+                _probe = subprocess.run(['xcrun', '-f', _name], capture_output=True, text=True)
+                _path = _probe.stdout.strip() if _probe.returncode == 0 else None
+            if not _path or not os.path.isfile(_path):
+                raise RuntimeError(f'Code coverage: cannot locate `{_name}`, which is '
+                                   f'required to turn LLVM raw profiles into a report. '
+                                   f'On macOS install the Xcode command line tools '
+                                   f'(`xcode-select --install`); elsewhere install an '
+                                   f'LLVM toolchain that ships it.')
+            _tools[_name] = _path
+        for _name in ('lcov', 'genhtml'):
+            if shutil.which(_name) is None:
+                raise RuntimeError(f'Code coverage: cannot locate `{_name}`. '
+                                   f'On macOS install it with `brew install lcov`.')
+        return _tools['llvm-profdata'], _tools['llvm-cov']
+
     def _render_html_report(self, coverage_folder, info_file, pkg_root):
         """Filter the tracefile down to OUR entry, render the HTML, clean up.
 
@@ -250,13 +357,57 @@ class PackageTestConan(ConanFile):
         compiler = self._compiler_name()
         if compiler == 'gcc':
             self._code_coverage_gcc()
-        elif compiler == 'clang':
+        elif compiler in ('clang', 'apple-clang'):
             self._code_coverage_clang()
         else:
             raise NotImplementedError(f'Compiler {compiler} is not supported.')
 
     def _code_coverage_clang(self):
-        raise NotImplementedError('Clang is under implementation')
+        """Apple/LLVM clang coverage: profraw -> profdata -> lcov -> html.
+
+        GNU lcov/gcov cannot read LLVM's raw profiles, so the front of this
+        pipeline necessarily differs from the gcc one. The tail -- filter to our
+        cache entry, render, clean up -- is shared verbatim so the two can never
+        drift, which is what keeps the artifact path a stable contract.
+
+        Difference in the numbers is expected and is not a bug: llvm-cov counts
+        lines and functions its own way, and it also reports inline code from
+        headers that gcc/gcov attributes to the caller.
+        """
+        _profdata_bin, _cov_bin = self._clang_coverage_tools()
+        coverage_folder = self._coverage_folder()
+
+        _profraw = sorted(str(_) for _ in Path(self._profraw_folder()).glob('*.profraw'))
+        if not _profraw:
+            raise RuntimeError(f'Code coverage: no LLVM raw profile (*.profraw) found in '
+                               f'{self._profraw_folder()}. The instrumented binaries did '
+                               f'not run, or they did not inherit LLVM_PROFILE_FILE.')
+        self.output.info(f'[coverage:llvm] merging {len(_profraw)} raw profile(s)')
+
+        _profdata = coverage_folder + sep + 'coverage_test.profdata'
+        cmd1 = [_profdata_bin, 'merge', '-sparse', *_profraw, '-o', _profdata]
+        subprocess.run(cmd1, check=True)
+
+        _bins = self._instrumented_binaries(self.build_folder)
+        if not _bins:
+            raise RuntimeError(f'Code coverage: ctest registered no runnable executable '
+                               f'under {self.build_folder}. `llvm-cov export` needs the '
+                               f'instrumented binaries themselves, not their object files.')
+        self.output.info(f'[coverage:llvm] exporting {len(_bins)} instrumented binary(ies)')
+
+        # One `llvm-cov export` per binary: handed several objects it reports
+        # only the FIRST one's coverage, which silently drops the library's own
+        # files (the executable that links it is not necessarily the first).
+        # The lcov tracefile format is a plain sequence of records, so
+        # concatenating the per-binary exports is a valid tracefile.
+        _info = os.path.join(coverage_folder, 'coverage_test.info')
+        with open(_info, 'w', encoding='utf-8') as _handle:
+            for _bin in _bins:
+                cmd2 = [_cov_bin, 'export', f'-instr-profile={_profdata}',
+                        '-format=lcov', _bin]
+                subprocess.run(cmd2, check=True, stdout=_handle)
+
+        self._render_html_report(coverage_folder, _info, self._package_root())
 
     def _code_coverage_gcc(self):
 
