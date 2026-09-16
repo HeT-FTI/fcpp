@@ -206,7 +206,9 @@ else()  # general package
           set(LINK_FLAGS "--coverage")
       elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
           set(COVERAGE_FLAGS "-fprofile-instr-generate" "-fcoverage-mapping" "-O0" "-g")
-          set(LINK_FLAGS "")
+          # -fprofile-instr-generate is a driver flag: the LLVM profile runtime is
+          # only pulled in when the flag also appears on the link line.
+          set(LINK_FLAGS "-fprofile-instr-generate")
       else()
           message(FATAL_ERROR "Code coverage not support for compiler: ${CMAKE_CXX_COMPILER_ID}")
       endif()
@@ -215,7 +217,8 @@ else()  # general package
       target_compile_options(${LIB_NAME}_c PRIVATE ${COVERAGE_FLAGS})
       target_compile_options(${LIB_NAME}_cpp PRIVATE ${COVERAGE_FLAGS})
 
-      if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+      # Applies to GNU (--coverage) and Clang (-fprofile-instr-generate) alike.
+      if(LINK_FLAGS)
           target_link_options(${LIB_NAME}_c PRIVATE ${LINK_FLAGS})
           target_link_options(${LIB_NAME}_cpp PRIVATE ${LINK_FLAGS})
       endif()
