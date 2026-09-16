@@ -50,14 +50,15 @@
     "enable_python_bindings": { "type": "boolean" },
     "workflow_triggers": {
       "type": "object",
-      "required": ["build", "tests", "release", "docs", "security_scan"],
+      "required": ["build", "tests", "release", "docs", "security_scan", "cross_compile"],
       "additionalProperties": false,
       "properties": {
         "build": { "type": "boolean" },
         "tests": { "type": "boolean" },
         "release": { "type": "boolean" },
         "docs": { "type": "boolean" },
-        "security_scan": { "type": "boolean" }
+        "security_scan": { "type": "boolean" },
+        "cross_compile": { "type": "boolean" }
       }
     }
   },

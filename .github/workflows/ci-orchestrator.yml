@@ -56,6 +56,7 @@ jobs:
           echo "  📦 Release:    ${{ needs.controller.outputs.trigger_release }}"
           echo "  📚 Docs:       ${{ needs.controller.outputs.trigger_docs }}"
           echo "  🛡️  Security:  ${{ needs.controller.outputs.trigger_security }}"
+          echo "  🛠️  Cross compile: ${{ needs.controller.outputs.trigger_cross_compile }}"
           echo ""
           echo "⚙️  Test Configuration:"
           echo "  Save Logs: ${{ needs.controller.outputs.saving_tests_log }}"
@@ -163,4 +164,12 @@ jobs:
     uses: ./.github/workflows/security-linters.yml
     with:
       validate_all_codebase: ${{ github.event_name == 'push' && 'true' || 'false' }}
+
+  cross-compile:
+    name: Cross Compile
+    needs: controller
+    if: needs.controller.outputs.trigger_cross_compile == 'true'
+    uses: ./.github/workflows/cross-compile.yml
+    with:
+      pkg_name: ${{ needs.controller.outputs.pkg_name }}
 

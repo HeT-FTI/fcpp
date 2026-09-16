@@ -42,6 +42,7 @@
     "tests": true,
     "release": false,
     "docs": false,
-    "security_scan": true
+    "security_scan": true,
+    "cross_compile": true
   }
 }

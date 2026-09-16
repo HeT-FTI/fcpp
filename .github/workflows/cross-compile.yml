@@ -1,0 +1,101 @@
+name: Cross Compile
+
+# Online (GitHub-hosted) cross-compile smoke test, called by ci-orchestrator.yml
+# on the :hammer_and_wrench: gitmoji. It answers one question: does the target
+# toolchain turn source into objects of the expected architecture?
+# The on-board route (real hardware, self-hosted runner) is hetai-package-matrix.yml.
+on:
+  workflow_call:
+    inputs:
+      pkg_name:
+        description: 'Package name from metadata.json'
+        required: true
+        type: string
+
+env:
+  PROBE: .github/misc/cross-probe.c
+  OUT: build-cross
+  # readelf prints localized field names, which would silently break the
+  # Class/Machine parsing below -- pin the locale.
+  LC_ALL: C
+
+jobs:
+  cross-compile:
+    name: Cross Compile (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      # fail-fast off: each target must report its own result
+      fail-fast: false
+      matrix:
+        include:
+          - target: arm-linux-a53
+            packages: gcc-aarch64-linux-gnu
+            cc: aarch64-linux-gnu-gcc
+            ar: aarch64-linux-gnu-ar
+            flags: -mcpu=cortex-a53
+            elf_class: ELF64
+            machine: AArch64
+          - target: mcu-m4
+            packages: gcc-arm-none-eabi
+            cc: arm-none-eabi-gcc
+            ar: arm-none-eabi-ar
+            flags: -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
+            elf_class: ELF32
+            machine: ARM
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install the cross toolchain
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.packages }}
+          ${{ matrix.cc }} --version | head -1
+
+      - name: Cross-compile the probe
+        shell: bash
+        run: |
+          mkdir -p "$OUT"
+          ${{ matrix.cc }} ${{ matrix.flags }} -Wall -Wextra -O2 -c "$PROBE" -o "$OUT/cross-probe.o"
+          ${{ matrix.ar }} rcs "$OUT/lib${{ inputs.pkg_name }}_cross.a" "$OUT/cross-probe.o"
+
+      - name: Report and check the artifact architecture
+        shell: bash
+        run: |
+          obj="$OUT/cross-probe.o"
+          header="$(readelf -h "$obj")"
+          attrs="$(readelf -A "$obj" 2>/dev/null || true)"
+
+          elf_class="$(sed -n 's/^ *Class: *//p' <<<"$header" | head -1)"
+          machine="$(sed -n 's/^ *Machine: *//p' <<<"$header" | head -1)"
+
+          {
+            echo "### Cross compile (${{ matrix.target }})"
+            echo
+            echo "| field | value |"
+            echo "| --- | --- |"
+            echo "| toolchain | ${{ matrix.cc }} $(${{ matrix.cc }} -dumpversion) |"
+            echo "| flags | ${{ matrix.flags }} |"
+            echo "| Class | $elf_class |"
+            echo "| Machine | $machine |"
+            echo "| artifact | $OUT/lib${{ inputs.pkg_name }}_cross.a |"
+            echo
+            echo '```'
+            echo "$attrs"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "Class=$elf_class Machine=$machine"
+          echo "$attrs"
+
+          status=0
+          [ "$elf_class" = "${{ matrix.elf_class }}" ] \
+            || { echo "::error::expected Class ${{ matrix.elf_class }}, got '$elf_class'"; status=1; }
+          [ "$machine" = "${{ matrix.machine }}" ] \
+            || { echo "::error::expected Machine ${{ matrix.machine }}, got '$machine'"; status=1; }
+          if [ "${{ matrix.target }}" = "mcu-m4" ]; then
+            grep -q 'Tag_THUMB_ISA_use' <<<"$attrs" || { echo "::error::Cortex-M requires Thumb code but no Tag_THUMB_ISA_use"; status=1; }
+          fi
+          exit $status
