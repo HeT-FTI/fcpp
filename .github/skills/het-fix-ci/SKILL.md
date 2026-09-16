@@ -56,10 +56,11 @@ user-invocable: true
 1. **gitmoji not triggered**: emoji spelling? Use canonical `type(:emoji:): description`（emoji 放括号）；`workflow_triggers.*` = true?
 2. **Switches off**: `workflow_triggers` all false → turn on first. 开关没开。
 3. **Cross Compile red**: the emoji is `:hammer_and_wrench:` (not `:fire:`, which is the
-   self-hosted board route). Failures are usually the apt toolchain package name or an
-   unexpected Class/Machine — the job prints both. 在线交叉编译腿失败先看工具链包名与产物架构。
-3. **Artifacts not found**: download from the bottom **Artifacts** area. 产物在 Actions 页底部 Artifacts。
-4. **Reproduce locally**: `conan create . -s build_type=Debug --build=missing` is faster than CI. 本地复现更快。
+   self-hosted board route). The leg prints the generated profile first (a wrong `arch` or
+   `-mcpu` shows up there), then the apt toolchain package, then Class/Machine.
+   在线交叉编译腿失败：先看你打出的 profile，再看工具链包名与产物架构。
+4. **Artifacts not found**: download from the bottom **Artifacts** area. 产物在 Actions 页底部 Artifacts。
+5. **Reproduce locally**: `conan create . -s build_type=Debug --build=missing` is faster than CI. 本地复现更快。
 
 ## Route to Specific Skills（定位后转交）
 

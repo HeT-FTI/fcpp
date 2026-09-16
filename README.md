@@ -104,7 +104,7 @@ as a **soft rule** the emoji also triggers from anywhere in the message:
 | Release | `(:package:):` | `workflow_triggers.release` (needs `build_type=Release`) |
 | Docs | `:book:` | `workflow_triggers.docs` |
 | Security / lint | `:shield:` | `workflow_triggers.security_scan` (also runs on every PR) |
-| Online cross-compile | `:hammer_and_wrench:` | `workflow_triggers.cross_compile` (decoupled: the emoji starts only this one) |
+| Online cross-compile | `:hammer_and_wrench:` | `workflow_triggers.cross_compile` (Conan cross-build from a generated profile; decoupled: the emoji starts only this one) |
 | Board cross-build | `:fire:` (or `🔥`) | hetai self-hosted runner |
 
 > **Note**: `workflow_triggers.build` / `.tests` / `.security_scan` / `.cross_compile` are enabled by default
