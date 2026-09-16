@@ -18,8 +18,7 @@ on:
         default: "[]"
         type: string
   push:
-    # [macos-dev validation] temporary — revert to [main, fcpp-dev] before merge.
-    branches: [macos-dev, fcpp-dev]
+    branches: [main, fcpp-dev]
     paths:
       - ".github/workflows/hetai-package-matrix.yml"
       - ".hetai/build-matrix.yml"
