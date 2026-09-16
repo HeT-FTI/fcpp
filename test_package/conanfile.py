@@ -175,8 +175,79 @@ class PackageTestConan(ConanFile):
 
             self._remove_entries()
 
+    def _compiler_name(self):
+        return getattr(self.settings, 'compiler').__str__()
+
+    def _coverage_folder(self):
+        """`<recipe>/test/export/coverage`, recreated empty.
+
+        Its `coverage_report/` subfolder is the artifact downstream parses, so
+        the layout is a contract (C3) -- both coverage paths must use this.
+        """
+        target_folder = self.recipe_folder + sep + 'test' + sep + 'export'
+        coverage_folder = target_folder + sep + 'coverage'
+        if not os.path.exists(target_folder):
+            os.mkdir(target_folder)
+        else:
+            if os.path.exists(coverage_folder):
+                shutil.rmtree(coverage_folder)
+        os.mkdir(coverage_folder)
+        return coverage_folder
+
+    def _package_root(self):
+        """Root of THIS package's entry inside the conan cache.
+
+        `conan cache path <ref>` prints the PACKAGE folder of the cache entry:
+          <CONAN_HOME>/p/b/<pkgname-prefix><hash>/p
+        Its parent is the entry root that holds this package's b/ (build +
+        copied sources) and p/ trees -- the only reliable scope for our code.
+        """
+        _name, _ver = [self.metadata.get(_) for _ in ['name', 'version']]
+        _tmp = subprocess.run(["conan", "list", f"{_name}/{_ver}:*"], capture_output=True, text=True)
+        _tmp_ref = [str(_).strip() for _ in _tmp.stdout.split('\n')]
+        _marked = [i for i, _ in enumerate(_tmp_ref) if _ == 'packages']
+        if not _marked:
+            raise RuntimeError(f'conan list {_name}/{_ver}:* listed no package; '
+                               f'cannot scope the coverage report')
+        _pkg_uid = _tmp_ref[_marked[0] + 1]
+        _tmp = subprocess.run(["conan", "cache", "path", f"{_name}/{_ver}:{_pkg_uid}"],
+                              capture_output=True, text=True)
+        _pkg_folder = _tmp.stdout.strip()
+        _pkg_root = sep.join(_pkg_folder.split(sep)[:-1])
+        if not _pkg_root:
+            raise RuntimeError(f'conan cache path {_name}/{_ver}:{_pkg_uid} returned "{_pkg_folder}"')
+        return _pkg_root
+
+    def _render_html_report(self, coverage_folder, info_file, pkg_root):
+        """Filter the tracefile down to OUR entry, render the HTML, clean up.
+
+        Shared verbatim by the gcc and clang paths so the two cannot drift: the
+        artifact path produced here is what downstream parses.
+        """
+        # Downstream contract (HeT DevTools): scope the report to OUR package by
+        # the DERIVED cache entry root.
+        # The cache folder is named `<pkgname-prefix><hash>` (e.g. fcpp2501d113050e3),
+        # so neither the old literal `*/.conan2/p/b/<name[:3]>*` (breaks as soon as
+        # CONAN_HOME is renamed) nor a package-id based pattern (matches nothing at
+        # all) is the folder name. A non-matching filter makes lcov 2.x abort with
+        # `ERROR: no valid records found in tracefile ...` -> the whole `conan create`
+        # fails and no coverage report is produced.
+        cmd2 = ['lcov', '--extract', info_file,
+                pkg_root.replace(sep, '/') + '/*', '--output-file',
+                os.path.join(coverage_folder, 'coverage_test.filtered.info')]
+        subprocess.run(cmd2, check=True)
+        cmd3 = ['genhtml', os.path.join(coverage_folder, 'coverage_test.filtered.info'),
+                '--output-directory', os.path.join(coverage_folder, 'coverage_report')]
+        subprocess.run(cmd3, check=True)
+
+        # remove intermediate files
+        for _f in os.listdir(coverage_folder):
+            _full_name = coverage_folder + sep + _f
+            if not os.path.isdir(_full_name):
+                os.remove(_full_name)
+
     def _code_coverage_auto(self):
-        compiler = getattr(self.settings, 'compiler').__str__()
+        compiler = self._compiler_name()
         if compiler == 'gcc':
             self._code_coverage_gcc()
         elif compiler == 'clang':
@@ -190,34 +261,14 @@ class PackageTestConan(ConanFile):
     def _code_coverage_gcc(self):
 
         # get conan build folder
-        _name, _ver = [self.metadata.get(_) for _ in ['name', 'version']]
-        _tmp = subprocess.run(["conan", "list", f"{_name}/{_ver}:*"], capture_output=True, text=True)
-        _tmp_ref = [str(_).strip() for _ in _tmp.stdout.split('\n')]
-        _pkg_uid = _tmp_ref[[i for i, _ in enumerate(_tmp_ref) if _ == 'packages'][0] + 1]
-        _tmp = subprocess.run(["conan", "cache", "path", f"{_name}/{_ver}:{_pkg_uid}"],
-                              capture_output=True, text=True)
-        # `conan cache path <ref>` prints the PACKAGE folder of the cache entry:
-        #   <CONAN_HOME>/p/b/<pkgname-prefix><hash>/p
-        # Its parent is the entry root that holds THIS package's b/ (build +
-        # copied sources) and p/ trees — the only reliable scope for our code.
-        _pkg_folder = _tmp.stdout.strip()
-        _pkg_root = sep.join(_pkg_folder.split(sep)[:-1])
-        if not _pkg_root:
-            raise RuntimeError(f'conan cache path {_name}/{_ver}:{_pkg_uid} returned "{_pkg_folder}"')
+        _pkg_root = self._package_root()
         _main_pkg_build_fd = _pkg_root + sep + 'b' + sep + 'build'
 
         # collect code coverage files to export/coverage/
         _gcda = [str(_) for _ in Path(_main_pkg_build_fd).rglob('*.gcda')]
         _gcno = [_[:-4] + 'gcno' for _ in _gcda]
 
-        target_folder = self.recipe_folder + sep + 'test' + sep + 'export'
-        coverage_folder = target_folder + sep + 'coverage'
-        if not os.path.exists(target_folder):
-            os.mkdir(target_folder)
-        else:
-            if os.path.exists(coverage_folder):
-                shutil.rmtree(coverage_folder)
-        os.mkdir(coverage_folder)
+        coverage_folder = self._coverage_folder()
 
         for v1, v2 in zip(_gcda, _gcno):
             shutil.copy2(v1, coverage_folder + sep + _get_file_name(v1))
@@ -227,27 +278,10 @@ class PackageTestConan(ConanFile):
         cmd1 = ['lcov', '--directory', coverage_folder, '--capture', '--output-file',
                 os.path.join(coverage_folder, 'coverage_test.info'), '--rc', 'geninfo_auto_base=1']
         subprocess.run(cmd1, check=True)
-        # Downstream contract (HeT DevTools): scope the report to OUR package by
-        # the DERIVED cache entry root.
-        # The cache folder is named `<pkgname-prefix><hash>` (e.g. fcpp2501d113050e3),
-        # so neither the old literal `*/.conan2/p/b/<name[:3]>*` (breaks as soon as
-        # CONAN_HOME is renamed) nor a package-id based pattern (matches nothing at
-        # all) is the folder name. A non-matching filter makes lcov 2.x abort with
-        # `ERROR: no valid records found in tracefile …` → the whole `conan create`
-        # fails and no coverage report is produced.
-        cmd2 = ['lcov', '--extract', os.path.join(coverage_folder, 'coverage_test.info'),
-                _pkg_root.replace(sep, '/') + '/*', '--output-file',
-                os.path.join(coverage_folder, 'coverage_test.filtered.info')]
-        subprocess.run(cmd2, check=True)
-        cmd3 = ['genhtml', os.path.join(coverage_folder, 'coverage_test.filtered.info'),
-                '--output-directory', os.path.join(coverage_folder, 'coverage_report')]
-        subprocess.run(cmd3, check=True)
 
-        # remove intermediate files
-        for _f in os.listdir(coverage_folder):
-            _full_name = coverage_folder + sep + _f
-            if not os.path.isdir(_full_name):
-                os.remove(_full_name)
+        self._render_html_report(coverage_folder,
+                                 os.path.join(coverage_folder, 'coverage_test.info'),
+                                 _pkg_root)
 
     def _add_entries(self):
         if self.metadata.get('trigger_tests'):
