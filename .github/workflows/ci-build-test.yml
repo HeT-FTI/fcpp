@@ -105,6 +105,40 @@ jobs:
           -c tools.system.package_manager:mode=install -c tools.system.package_manager:tool=choco
         timeout-minutes: 55
 
+      - name: Assert the coverage report
+        if: ${{ matrix.os != 'windows-latest' }}
+        shell: bash
+        # The report is what downstream parses, so assert on the artifact itself
+        # rather than on the recipe's log. Both non-Windows legs is deliberate:
+        # it keeps the Linux number visible next to the macOS one, which is the
+        # only place they can be compared (the recipe deletes its intermediates).
+        run: |
+          report=test_package/test/export/coverage/coverage_report/index.html
+          if [ ! -f "$report" ]; then
+            echo "::error::coverage report was not produced at $report"
+            exit 1
+          fi
+          pct=$(python3 -c "import re,sys;h=open(sys.argv[1],encoding='utf-8').read();m=re.search(r'headerItem[^>]*>Lines:</td>\s*<td[^>]*>([0-9.]+)',h);print(m.group(1) if m else '')" "$report")
+          if [ -z "$pct" ]; then
+            echo "::error::no line-coverage rate found in $report"
+            exit 1
+          fi
+          if ! python3 -c 'import sys; sys.exit(0 if float(sys.argv[1]) > 0 else 1)' "$pct"; then
+            echo "::error::line coverage is ${pct}% -- expected greater than zero"
+            exit 1
+          fi
+          {
+            echo "### Coverage (${{ matrix.os }}, ${{ matrix.build_type }})"
+            echo
+            echo "| metric | value |"
+            echo "| --- | --- |"
+            echo "| line coverage | ${pct}% |"
+            echo "| artifact | test_package/test/export/coverage/coverage_report/index.html |"
+            echo
+            echo "lcov:    $(lcov --version)"
+            echo "genhtml: $(genhtml --version)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Clean up test_package builds
         shell: bash
         run: |
