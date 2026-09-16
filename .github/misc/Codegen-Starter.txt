@@ -126,9 +126,10 @@ generate/modify each one according to the project design above.
      • Set "trigger_tests" to true, "saving_tests_log" to true.
      • Set "workflow_triggers" to the team default:
          {"build": true, "tests": true, "release": false,
-          "docs": false, "security_scan": true}
+          "docs": false, "security_scan": true, "cross_compile": true}
        build/test/security gates are on by default (PR shift-left);
-       release/docs are opt-in via gitmoji.
+       cross_compile is on but decoupled (only :hammer_and_wrench: starts it,
+       and it never runs on a PR); release/docs are opt-in via gitmoji.
      • Configure "doc_languages", "doc_versions", "doc_doxygen_folders",
        "doc_doxygen_suffix" as appropriate.
 

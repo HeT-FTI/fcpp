@@ -104,9 +104,10 @@ as a **soft rule** the emoji also triggers from anywhere in the message:
 | Release | `(:package:):` | `workflow_triggers.release` (needs `build_type=Release`) |
 | Docs | `:book:` | `workflow_triggers.docs` |
 | Security / lint | `:shield:` | `workflow_triggers.security_scan` (also runs on every PR) |
+| Online cross-compile | `:hammer_and_wrench:` | `workflow_triggers.cross_compile` (decoupled: the emoji starts only this one) |
 | Board cross-build | `:fire:` (or `🔥`) | hetai self-hosted runner |
 
-> **Note**: `workflow_triggers.build` / `.tests` / `.security_scan` are enabled by default
+> **Note**: `workflow_triggers.build` / `.tests` / `.security_scan` / `.cross_compile` are enabled by default
 > (commit-lint & schema gates always run on push/PR; build/tests/security shift-left on PRs).
 > `release` and `docs` require both the gitmoji and the switch (`build_type` must match too).
 

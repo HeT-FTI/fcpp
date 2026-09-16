@@ -39,7 +39,7 @@
 | `activate_code_coverage` | coverage (lcov + genhtml) |
 | `saving_tests_log` | save test log |
 | `enable_python_bindings` | build pybind11 module |
-| `workflow_triggers.*` | CI master switches (build/tests/release/docs/security_scan); **all false = gitmoji triggers nothing** |
+| `workflow_triggers.*` | CI master switches (build/tests/release/docs/security_scan/cross_compile); **all false = gitmoji triggers nothing**; `cross_compile` is not part of PR shift-left |
 | `baremetal_white_list` | baremetal cross-compile whitelist (default `["etl","ArduinoJson"]`); applied in both deps & requirements |
 
 ### Docs（文档）

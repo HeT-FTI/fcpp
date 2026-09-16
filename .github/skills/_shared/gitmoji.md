@@ -11,11 +11,15 @@
 | Release（发布） | `(:package:):` | push + `build_type=Release` + `workflow_triggers.release=true` | `workflow_triggers.release` |
 | Docs（文档） | `:book:` | push + `workflow_triggers.docs=true` | `workflow_triggers.docs` |
 | Quality/security（质量/安全） | `:shield:` | push with emoji, or **any PR** (shift-left) + `workflow_triggers.security_scan=true` | `workflow_triggers.security_scan` |
+| Online cross-compile（在线交叉编译验证） | `:hammer_and_wrench:` | push + `workflow_triggers.cross_compile=true` | `workflow_triggers.cross_compile` |
 | hetai cross-compile/board（上板） | `:fire:` (or `🔥`) | push（`hetai-package-matrix.yml` separate check） | self-hosted, no switch |
 
 ## General Rules（通用规则）
 
-- **Soft rule（软性规则）**: an emoji anywhere in the message is grep-matched (`grep -q`) — even in the description it triggers. emoji 出现在任意位置即可触发。
+- **Soft rule（软性规则）**: an emoji anywhere in the message is grep-matched (`grep -q`) — even in the description it triggers. 换句话说：提交正文里**写出**某个 emoji 也会触发对应流水线。emoji 出现在任意位置即可触发。
+- `:hammer_and_wrench:` is **decoupled**: it starts only the cross-compile pipeline, no other emoji
+  starts it, and it is deliberately excluded from the PR shift-left set. `:fire:` remains the
+  self-hosted on-board route. 在线与上板两条路线互不触发。
 - **Canonical form（规范写法，推荐）**: emoji in the **parentheses right after the commit word**（放在主 commit 词后的括号里）:
   `<type>(<emoji>): <description>`
   e.g. `feat(:fire:): cross-compile support`, `test(:beer:): vector add cases`, `chore(:package:): prepare release`.
