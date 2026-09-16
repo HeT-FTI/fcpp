@@ -294,6 +294,19 @@ class PackageRecipe(ConanFile):
         self._validate_built_archives()
 
     def _validate_built_archives(self):
+        # ELF-only check: this validation reads ELF attributes with readelf to
+        # compare the built archives against the target architecture (added for
+        # the Cortex-M M3/M7 ABI issue). Mach-O (Apple) and PE (Windows) targets
+        # have neither the binutil nor the ELF attribute semantics, so skip with
+        # an explicit reason instead of failing on a missing tool.
+        _non_elf_os = {"Macos", "iOS", "watchOS", "tvOS", "Windows"}
+        if str(self.settings.os) in _non_elf_os:
+            self.output.info(
+                f"[compat:SKIP] os={self.settings.os}: ELF attribute validation "
+                "is not applicable (Mach-O/PE target)"
+            )
+            return
+
         archive_names = [f"lib{self.name}_c.a", f"lib{self.name}_cpp.a"]
         build_dir = Path(self.build_folder)
 
