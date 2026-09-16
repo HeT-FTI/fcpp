@@ -1,9 +1,6 @@
 name: Release
 
-# Release runs standalone (on push to main) so it can hold scoped write
-# permissions and create tags/releases. It is gated by metadata.json:
-#   workflow_triggers.release == true  -> semantic-release may bump a version.
-# It is also still callable via workflow_call for manual/backward-compat use.
+# Standalone on push to main so it can hold write permissions; gated by workflow_triggers.release
 
 on:
   workflow_call:
@@ -58,8 +55,7 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund --ignore-scripts
 
-      # Snapshot metadata.json before semantic-release touches it, so we can
-      # prove afterwards that ONLY the version field changed (format preserved).
+      # snapshot metadata.json first, so we can prove only the version field changed
       - name: Snapshot metadata.json
         run: cp metadata.json /tmp/metadata.pre.json
 
@@ -67,17 +63,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # NOTE 1: `--extends` resolves relative paths as ESM modules and fails
-          # with MODULE_NOT_FOUND for .json — always use the absolute path.
-          # NOTE 2: repositoryUrl is derived from runner env, no hardcoded URL.
+          # `--extends` needs an absolute path for .json; repositoryUrl comes from the runner env
           ./node_modules/.bin/semantic-release -r "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" --extends "$GITHUB_WORKSPACE/.github/misc/.releaserc.json" 2>&1 | tee /tmp/semantic-release.log
           test "${PIPESTATUS[0]}" -eq 0
 
       - name: Verify metadata.json format preserved
         run: |
-          # Closed-loop guard: the release may change ONLY the version field.
-          # Any other byte-level change (reformatting by a future tool, etc.)
-          # fails the job loudly instead of silently drifting the file format.
+          # the release may change ONLY the version field, else the job fails loudly
           python3 - <<'PY'
           import json, difflib, sys
           pre = open('/tmp/metadata.pre.json', encoding='utf-8').read()

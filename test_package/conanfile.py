@@ -58,12 +58,7 @@ class PackageTestConan(ConanFile):
         self.metadata = yaml.safe_load(metadata_path.read_text())
 
     def build_requirements(self):
-        # Downstream contract (HeT DevTools): same opt-out as the main recipe —
-        # WITHOUT this the test package always fetched the ConanCenter cmake
-        # (45 MB) even when a perfectly good cmake was already available, so the
-        # "one CMake instead of two" promise only held for the library build.
-        #   HET_CMAKE_BUILD_REQUIRE=none      → use the cmake already on PATH
-        #   HET_CMAKE_BUILD_REQUIRE=3.30.5    → pin another version
+        # escape: HET_CMAKE_BUILD_REQUIRE=none also skips the test package's 45 MB cmake
         _override = (os.environ.get('HET_CMAKE_BUILD_REQUIRE') or '').strip()
         if _override.lower() == 'none':
             return
@@ -141,9 +136,7 @@ class PackageTestConan(ConanFile):
             self.output.info("Cross-compilation detect. Skipping test execution.")
             return
 
-        # The LLVM profile runtime decides where to write at process start, so
-        # for clang this has to be in place before main/ctest run -- not when the
-        # report is assembled afterwards.
+        # set LLVM_PROFILE_FILE before main/ctest: the runtime picks its path at process start
         if self._is_llvm_coverage():
             self._prepare_llvm_profile_env()
 
@@ -331,14 +324,7 @@ class PackageTestConan(ConanFile):
         Shared verbatim by the gcc and clang paths so the two cannot drift: the
         artifact path produced here is what downstream parses.
         """
-        # Downstream contract (HeT DevTools): scope the report to OUR package by
-        # the DERIVED cache entry root.
-        # The cache folder is named `<pkgname-prefix><hash>` (e.g. fcpp2501d113050e3),
-        # so neither the old literal `*/.conan2/p/b/<name[:3]>*` (breaks as soon as
-        # CONAN_HOME is renamed) nor a package-id based pattern (matches nothing at
-        # all) is the folder name. A non-matching filter makes lcov 2.x abort with
-        # `ERROR: no valid records found in tracefile ...` -> the whole `conan create`
-        # fails and no coverage report is produced.
+        # scope the report to this package's derived cache root; a non-matching filter makes lcov 2.x abort
         cmd2 = ['lcov', '--extract', info_file,
                 pkg_root.replace(sep, '/') + '/*', '--output-file',
                 os.path.join(coverage_folder, 'coverage_test.filtered.info')]
@@ -395,11 +381,7 @@ class PackageTestConan(ConanFile):
                                f'instrumented binaries themselves, not their object files.')
         self.output.info(f'[coverage:llvm] exporting {len(_bins)} instrumented binary(ies)')
 
-        # One `llvm-cov export` per binary: handed several objects it reports
-        # only the FIRST one's coverage, which silently drops the library's own
-        # files (the executable that links it is not necessarily the first).
-        # The lcov tracefile format is a plain sequence of records, so
-        # concatenating the per-binary exports is a valid tracefile.
+        # llvm-cov export reports only the FIRST object, so export per binary and concatenate
         _info = os.path.join(coverage_folder, 'coverage_test.info')
         with open(_info, 'w', encoding='utf-8') as _handle:
             for _bin in _bins:

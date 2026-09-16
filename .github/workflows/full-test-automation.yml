@@ -1,8 +1,6 @@
 name: Tests
 
-# This workflow can be triggered in two ways:
-# 1. Via workflow_call from ci-orchestrator.yml (recommended)
-# 2. Directly on push/pull_request (for backward compatibility)
+# Called by ci-orchestrator.yml; also runs standalone on push/pull_request
 
 on:
   workflow_call:

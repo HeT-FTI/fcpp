@@ -1,8 +1,6 @@
 name: Metadata Controller
 
-# Reusable workflow that analyzes metadata.json and outputs decision flags
-# for downstream workflows. This is the single source of truth for
-# workflow triggering logic.
+# Single source of truth for triggering: reads metadata.json and emits decision flags
 
 on:
   workflow_call:
@@ -93,10 +91,7 @@ jobs:
           saving_tests_log=$(jq -r '.saving_tests_log // false | tostring | ascii_downcase' metadata.json)
           activate_code_coverage=$(jq -r '.activate_code_coverage // false | tostring | ascii_downcase' metadata.json)
           
-          # Read workflow_triggers flags (fail-loud: missing switch aborts CI, no silent defaults)
-          # NOTE 1: jq `//` treats `false` as falsy — use has() for existence, read value separately.
-          # NOTE 2: JSON key is `security_scan` but the variable is `wf_security` — keep the pair map explicit.
-          # NOTE 3: associative array instead of eval (no command injection surface).
+          # fail-loud on a missing switch; jq `//` treats false as falsy, so use has()
           declare -A wf
           for pair in "build build" "tests tests" "release release" "docs docs" "security security_scan"; do
             set -- $pair
@@ -176,33 +171,27 @@ jobs:
             has_security_emoji="true"
           fi
           
-          # Compute build trigger
-          # Build triggers on :building_construction: emoji on push AND workflow_triggers.build is true
+          # build: :building_construction: on push + workflow_triggers.build
           if [[ "$EVENT_NAME" == "push" && "$has_build_emoji" == "true" && "$WF_BUILD" == "true" ]]; then
             trigger_build="true"
           fi
           
-          # Compute test trigger
-          # Tests trigger on :beer: emoji on push AND build_type is Debug AND trigger_tests is true AND workflow_triggers.tests is true
+          # tests: :beer: on push + Debug + trigger_tests + workflow_triggers.tests
           if [[ "$EVENT_NAME" == "push" && "$has_test_emoji" == "true" && "$BUILD_TYPE" == "Debug" && "$TRIGGER_TESTS_FLAG" == "true" && "$WF_TESTS" == "true" ]]; then
             trigger_tests="true"
           fi
           
-          # Compute release trigger
-          # Release triggers on (:package:): emoji on push AND build_type is Release AND workflow_triggers.release is true
+          # release: (:package:): on push + Release + workflow_triggers.release
           if [[ "$EVENT_NAME" == "push" && "$has_release_emoji" == "true" && "$BUILD_TYPE" == "Release" && "$WF_RELEASE" == "true" ]]; then
             trigger_release="true"
           fi
           
-          # Compute docs trigger
-          # Docs trigger on :book: emoji on push AND workflow_triggers.docs is true
+          # docs: :book: on push + workflow_triggers.docs
           if [[ "$EVENT_NAME" == "push" && "$has_docs_emoji" == "true" && "$WF_DOCS" == "true" ]]; then
             trigger_docs="true"
           fi
           
-          # Compute security trigger
-          # Security scan triggers on :shield: emoji on push AND workflow_triggers.security_scan is true
-          # Also triggers on pull_request events when security_scan is enabled (shift-left security)
+          # security: :shield: on push (or any PR, shift-left) + workflow_triggers.security_scan
           if [[ "$WF_SECURITY" == "true" ]]; then
             if [[ "$EVENT_NAME" == "push" && "$has_security_emoji" == "true" ]]; then
               trigger_security="true"

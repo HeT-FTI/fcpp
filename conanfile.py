@@ -47,8 +47,7 @@ _metadata = _inherit_root_metadata()
 
 
 def _get_export_objects(x: list[str], tag: Literal['@exporter', '@attacher'] = TAG_EXPORTER) -> list[str]:
-    # Note: split on '\n\n' (two blank lines) per the repo convention between
-    # global objects; revisit '\n\n\n' if module namespaces ever need it.
+    # Global objects are separated by two blank lines (repo convention)
     _cache = (''.join(x)).split('\n\n')
     _export_objs = [_ for _ in _cache if tag in _]
 
@@ -190,12 +189,7 @@ class PackageRecipe(ConanFile):
         return _tmp + ['"' + _ + '.hpp";' for _ in self.meta.get("user_modules")]
 
     def build_requirements(self):
-        # Downstream contract (HeT DevTools): CI pins the CMake binary through
-        # metadata.cmake_version (ConanCenter, reproducible). A self-provisioned
-        # toolchain (the managed-lane venv already has cmake on PATH) can opt out
-        # to avoid a SECOND CMake download:
-        #   HET_CMAKE_BUILD_REQUIRE=none      → skip
-        #   HET_CMAKE_BUILD_REQUIRE=3.30.5    → pin another version
+        # escape: HET_CMAKE_BUILD_REQUIRE=none keeps the cmake on PATH, a version pins another
         _override = (os.environ.get('HET_CMAKE_BUILD_REQUIRE') or '').strip()
         if _override.lower() == 'none':
             return
@@ -286,10 +280,7 @@ class PackageRecipe(ConanFile):
         return _c_deps, list(set(_cpp_deps).union(set(_infra_deps)))
 
     def package_id(self):
-        # float_abi/fpu 通过 profile [conf] 的 tools.build:cflags 注入，不属于 settings/options，
-        # 默认不参与 package_id；不同 MCU（如 cortex-m3 soft 与 cortex-m7 hard+fpu）在 Conan 里
-        # 可能共享同一个 arch（如 armv7），导致误复用不兼容 ABI 的缓存二进制，链接期报 VFP 寄存器不匹配。
-        # 把交叉编译标志纳入 package_id，确保不同 ABI 组合各自产出独立二进制。
+        # Fold tools.build:cflags/cxxflags into package_id so each MCU ABI gets its own binary
         for key in ("tools.build:cflags", "tools.build:cxxflags"):
             value = self.conf.get(key, default=None)
             if value:
@@ -303,11 +294,7 @@ class PackageRecipe(ConanFile):
         self._validate_built_archives()
 
     def _validate_built_archives(self):
-        # ELF-only check: this validation reads ELF attributes with readelf to
-        # compare the built archives against the target architecture (added for
-        # the Cortex-M M3/M7 ABI issue). Mach-O (Apple) and PE (Windows) targets
-        # have neither the binutil nor the ELF attribute semantics, so skip with
-        # an explicit reason instead of failing on a missing tool.
+        # escape Linux/baremetal, two cross-compilation cases (Mach-O/PE have neither readelf nor ELF attributes)
         _non_elf_os = {"Macos", "iOS", "watchOS", "tvOS", "Windows"}
         if str(self.settings.os) in _non_elf_os:
             self.output.info(
@@ -448,8 +435,7 @@ class PackageRecipe(ConanFile):
             "armv8_32": {"v8-M.baseline", "v8-M.mainline"},
         }.get(target_arch, set())
 
-        # 部分 GCC 版本（如 11.3.1）不再把 M-profile 后缀拼进 Tag_CPU_arch（如 "v7-M"），
-        # 而是拆分到独立的 Tag_CPU_arch_profile="Microcontroller"；两种写法均视为合法。
+        # GCC 11+ may drop the -M suffix from Tag_CPU_arch; both spellings are valid
         expected_bases = {tag.split("-M")[0].split(".")[0] for tag in expected}
         arch_ok = (not expected) or (cpu_arch in expected) or (
             cpu_arch in expected_bases and cpu_arch_profile == "Microcontroller"
@@ -462,7 +448,7 @@ class PackageRecipe(ConanFile):
         if arm_isa.lower() in {"yes", "1", "true"}:
             problems.append("ARM ISA is enabled, but baremetal Cortex-M targets require Thumb code")
 
-        # v6/v7 内核用 "Thumb-1"/"Thumb-2" 字符串；v8-M（如 Cortex-M23/M33）用布尔式 "Yes"。
+        # v6/v7 report "Thumb-1"/"Thumb-2"; v8-M (Cortex-M23/M33) reports a boolean "Yes"
         if thumb_isa.lower() not in {"yes", "1", "true"} and "Thumb" not in thumb_isa:
             problems.append("Thumb ISA attribute is missing")
 
@@ -495,9 +481,7 @@ class PackageRecipe(ConanFile):
 
 
     def _module_elements(self, x: list[str], m_name: str):
-        # two transformations if matches:
-        # 1. #include <lib> => import <lib>;
-        # 2. #include "lib.hpp" => import "lib.hpp";
+        # transforms: <lib> -> import <lib>; "lib.hpp" -> import "lib.hpp"
 
         _flag, _is_import_lines, _splitter = 1, [], 0
         for i, _l in enumerate(x):

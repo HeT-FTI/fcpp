@@ -190,7 +190,7 @@ def _generate_docs_index(languages: list[str], versions: list[str], lib: str) ->
 
     version_groups = ""
     for version in sorted(versions, reverse=True):
-        group = f'    <!-- 版本 {version} -->\n'
+        group = f'    <!-- version {version} -->\n'
         group += '    <div class="version-group">\n'
         group += f'      <h2 class="version-title">Version {version}</h2>\n'
         group += '      <ul class="lang-links">\n'
@@ -343,8 +343,7 @@ class AutomationDoc:
         subprocess.run(["make", "-C", _path, "html"])
 
     def _copy_images_for_doxygen_and_sphinx(self):
-        # # customize prefix syntax here
-        # # IN: => doxygen; OUT: => sphinx; ALL: => both
+        # prefix syntax: IN: doxygen; OUT: sphinx; ALL: both
 
         # clean if exists
         _no_recursive_clean_img(self._images_doxygen_destination)

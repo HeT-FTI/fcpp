@@ -89,9 +89,7 @@ def generate_profile(cfg: dict, lib_name: str) -> Path:
     flags.extend(extra_cflags)
     flags_str = _flags_list(flags)
 
-    # 裸机不需要 C++ 异常/RTTI；必须在 profile 级别（而非仅 benchmark 目标）生效，
-    # 否则 Conan 单独编译的 fcpp 静态库仍带 .ARM.exidx 展开表，链接期报
-    # __exidx_start/__exidx_end 未定义（在 v8-M baseline 等核上尤其容易触发）。
+    # baremetal needs -fno-exceptions/-fno-rtti at profile level, else .ARM.exidx breaks the link
     cxx_flags_str = _flags_list(flags + ["-fno-exceptions", "-fno-rtti"])
 
     profile_content = (
@@ -132,10 +130,7 @@ def generate_profile(cfg: dict, lib_name: str) -> Path:
 
 
 def build(profile_path: Path) -> None:
-    # Clean stale build artifacts before each build.
-    # Different targets (arch/OS/toolchain) produce incompatible CMake cache files,
-    # so the build directory must be wiped when switching targets.
-    # Conan's global package cache (~/.conan2/) is unaffected.
+    # wipe the build dir between targets: CMake caches are not portable across toolchains
     build_dir = BENCH_DIR / "build"
     if build_dir.exists():
         import shutil
