@@ -6,6 +6,7 @@ from conan.tools.env import VirtualRunEnv, VirtualBuildEnv
 from pathlib import Path
 import subprocess
 import shutil
+import json
 import yaml
 import re
 import sys
@@ -69,6 +70,16 @@ class PackageTestConan(ConanFile):
         for req in self.conandata.get("requirements", []):
             self.requires(req)
 
+    def _tests_enabled(self):
+        """Whether this run builds and runs the test suite.
+
+        metadata.trigger_tests states the project's intent; `-c user.fcpp:run_tests=False`
+        narrows it for one run, which is how the build-only CI leg reuses this very
+        recipe instead of a second one that could drift away from it.
+        """
+        return bool(self.metadata.get('trigger_tests')) and \
+            self.conf.get('user.fcpp:run_tests', default=True, check_type=bool)
+
     def generate(self):
         self._add_entries()
         build_env, run_env = VirtualBuildEnv(self), VirtualRunEnv(self)
@@ -79,8 +90,9 @@ class PackageTestConan(ConanFile):
         lib_name = self.tested_reference_str.split("/")[0]
         tc.variables["LIB_NAME"] = lib_name
         tc.variables["CXX_DEPS"] = self._get_targets()
-        tc.variables["TRIGGER_TESTS"] = self.metadata.get('trigger_tests')
-        tc.variables['ENABLE_COVERAGE'] = self.metadata.get('activate_code_coverage')
+        tc.variables["TRIGGER_TESTS"] = self._tests_enabled()
+        # coverage reads the gcda files the instrumented tests leave behind, so it rides the same switch
+        tc.variables['ENABLE_COVERAGE'] = self._tests_enabled() and self.metadata.get('activate_code_coverage')
         tc.variables["MAIN_LIB_TARGET"] = [_a := self.metadata.get('target'),
                                            f'{lib_name}::{lib_name}' if _a == 'auto' else _a][-1]
         tc.variables["RESOURCES_PATH"] = os.path.join(self.build_folder, "resources").replace("\\", "/")
@@ -146,11 +158,11 @@ class PackageTestConan(ConanFile):
             self.run(cmd, env="conanrun")
 
         # test cases in test_pacakge/test/*.cpp
-        if self.metadata.get('trigger_tests'):
+        if self._tests_enabled():
             self._run_ctest_suite()
 
-        if self.metadata.get('activate_code_coverage'):
-            self._code_coverage_auto()
+            if self.metadata.get('activate_code_coverage'):
+                self._code_coverage_auto()
 
     def _run_ctest_suite(self):
         try:
@@ -318,6 +330,25 @@ class PackageTestConan(ConanFile):
                                    f'On macOS install it with `brew install lcov`.')
         return _tools['llvm-profdata'], _tools['llvm-cov']
 
+    def _coverage_totals(self, info_file):
+        """Sum the tracefile's own records into the coverage contract.
+
+        LF/LH are lines found/hit, FNF/FNH functions, BRF/BRH branches. Every file
+        record carries its own totals, so a plain sum is the report's total.
+        """
+        _sums = {}
+        with open(info_file, 'r', encoding='utf-8') as f:
+            for _line in f:
+                _key, _, _value = _line.strip().partition(':')
+                if _key in ('LF', 'LH', 'FNF', 'FNH', 'BRF', 'BRH') and _value.isdigit():
+                    _sums[_key] = _sums.get(_key, 0) + int(_value)
+        _rate = lambda hit, found: round(100.0 * hit / found, 2) if found else 0.0
+        return {_what: {'hit': _sums.get(_h, 0), 'found': _sums.get(_f, 0),
+                        'percent': _rate(_sums.get(_h, 0), _sums.get(_f, 0))}
+                for _what, _h, _f in [('lines', 'LH', 'LF'),
+                                      ('functions', 'FNH', 'FNF'),
+                                      ('branches', 'BRH', 'BRF')]}
+
     def _render_html_report(self, coverage_folder, info_file, pkg_root):
         """Filter the tracefile down to OUR entry, render the HTML, clean up.
 
@@ -333,11 +364,19 @@ class PackageTestConan(ConanFile):
                 '--output-directory', os.path.join(coverage_folder, 'coverage_report')]
         subprocess.run(cmd3, check=True)
 
+        _totals = self._coverage_totals(os.path.join(coverage_folder, 'coverage_test.filtered.info'))
+
         # remove intermediate files
         for _f in os.listdir(coverage_folder):
             _full_name = coverage_folder + sep + _f
             if not os.path.isdir(_full_name):
                 os.remove(_full_name)
+
+        # the CI gate reads this, not genhtml's HTML: the tracefile is the upstream format
+        # and summing it is exact, while the HTML is a template genhtml may change at will
+        with open(os.path.join(coverage_folder, 'coverage_summary.json'), 'w', encoding='utf-8') as f:
+            json.dump(_totals, f, indent=2, sort_keys=True)
+            f.write('\n')
 
     def _code_coverage_auto(self):
         compiler = self._compiler_name()
@@ -417,7 +456,7 @@ class PackageTestConan(ConanFile):
                                  _pkg_root)
 
     def _add_entries(self):
-        if self.metadata.get('trigger_tests'):
+        if self._tests_enabled():
 
             _f_stress = self.recipe_folder + sep + 'test' + sep + 'stress'
             if not os.path.exists(_m := _f_stress + sep + MAIN_CPP):
@@ -440,7 +479,7 @@ class PackageTestConan(ConanFile):
                         f.write(''.join(_entry_lists()))
 
     def _remove_entries(self):
-        if not self.metadata.get('trigger_tests'):
+        if not self._tests_enabled():
             return
 
         stress_main = self.recipe_folder + sep + 'test' + sep + 'stress' + sep + MAIN_CPP

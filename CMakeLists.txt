@@ -12,7 +12,6 @@ string(JSON TARGET_NAMESPACE_VALUE ERROR_VARIABLE json_error GET "${METADATA_JSO
 string(JSON PROJECT_VERSION_VALUE ERROR_VARIABLE json_error GET "${METADATA_JSON}" "version")
 string(JSON BUILD_CPPSTD ERROR_VARIABLE json_error GET "${METADATA_JSON}" "build_cppstd")
 string(JSON BUILD_CSTD ERROR_VARIABLE json_error GET "${METADATA_JSON}" "build_cstd")
-string(JSON ENABLE_COVERAGE ERROR_VARIABLE json_error GET "${METADATA_JSON}" "activate_code_coverage")
 string(JSON IS_SHARED ERROR_VARIABLE json_error GET "${METADATA_JSON}" "is_shared")
 string(JSON IS_HEADER ERROR_VARIABLE json_error GET "${METADATA_JSON}" "is_header")
 string(JSON STD_MODULES ERROR_VARIABLE json_error GET "${METADATA_JSON}" "std_modules")
@@ -24,6 +23,14 @@ else()
     set(PROJECT_NAMESPACE "${LIB_NAME}")
 endif()
 project(${LIB_NAME} LANGUAGES C CXX)
+
+# Coverage is decided once per build and injected by the recipe; it must be read after
+# project(), which is when the Conan toolchain that carries it is processed. An instrumented
+# library cannot be linked by an uninstrumented consumer, so the two must never disagree.
+# A direct `cmake -S . -B build` has nobody to inject it, so metadata.json stays the default.
+if(NOT DEFINED ENABLE_COVERAGE)
+    string(JSON ENABLE_COVERAGE ERROR_VARIABLE json_error GET "${METADATA_JSON}" "activate_code_coverage")
+endif()
 
 
 function(parse_conan_deps INPUT_VAR OUTPUT_VAR)
