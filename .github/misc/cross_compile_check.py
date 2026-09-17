@@ -6,6 +6,9 @@ Mirrors the template's own conventions:
   * the profile fields and the CPU -> conan `arch` mapping follow
     `benchmark/script/run_bench.py` (os/arch/-mcpu/-mthumb/-mfloat-abi/-mfpu,
     `system_name=Generic` for baremetal, `-fno-exceptions -fno-rtti` for C++);
+  * `compiler.cppstd` and `build_type` deliberately do NOT follow run_bench.py: this
+    check must mirror the project's declared configuration, while the board benchmark
+    pins Release because optimised code is the thing it measures;
   * the artifact is located the same way the test package does it.
 
 No board and no test package: this only answers "does the target toolchain turn
@@ -25,6 +28,24 @@ from pathlib import Path
 
 # CPU -> conan arch, copied from the mapping benchmark/script/run_bench.py owns.
 CONAN_ARCH = {'cortex-a53': 'armv8', 'cortex-m4': 'armv7'}
+
+_METADATA = None
+
+
+def _meta(key):
+    """Read one field from metadata.json, the single source of truth for the build config.
+
+    A profile value still decides what the *dependencies* resolve against even though the
+    recipe forces its own node to metadata's cppstd, so a literal here would put two
+    standards inside one build. Resolved from this file's location, not the caller's cwd.
+    """
+    global _METADATA
+    if _METADATA is None:
+        _root = Path(__file__).resolve().parents[2]
+        _METADATA = json.loads((_root / 'metadata.json').read_text(encoding='utf-8'))
+    if key not in _METADATA:
+        raise SystemExit(f'metadata.json has no "{key}", which this check requires.')
+    return _METADATA[key]
 
 TARGETS = {
     'arm-linux-a53': {
@@ -100,9 +121,9 @@ def generate_profile(cfg, path):
         f"arch={CONAN_ARCH[cfg['mcpu']]}",
         'compiler=gcc',
         f"compiler.version={_compiler_major(cfg['cc'])}",
-        'compiler.cppstd=17',
+        f"compiler.cppstd={_meta('build_cppstd')}",
         'compiler.libcxx=libstdc++11',
-        'build_type=Release',
+        f"build_type={_meta('build_type')}",
         '',
         '[conf]',
     ]
