@@ -34,7 +34,7 @@ user-invocable: true
 | Tests（测试） | `test(:beer:): ...` | GTest + coverage |
 | Release（发版） | `chore(:package:): ...` | Auto release + version bump |
 | Docs（文档） | `docs(:book:): ...` | Bilingual docs |
-| Quality / security（质量/安全） | `ci(:shield:): ...` | Native gates (format/tidy/gitleaks) + advisory SAST |
+| Quality / security（质量/安全） | `ci(:shield:): ...` | Native gates (format/tidy/gitleaks) + MegaLinter SAST — both block |
 | Board（上板） | `feat(:fire:): ...` | Cross-compile + board transfer |
 
 > Canonical form: `type(:emoji:): description`. Prerequisite: the matching `workflow_triggers.*` must be `true` in `metadata.json`. 规范格式 `type(:emoji:): 描述`；前提是对应开关为 true（模板默认 build/tests/docs/security_scan/cross_compile 已开启，release 需自行打开；cross_compile 可单独用 `:hammer_and_wrench:` 触发）。

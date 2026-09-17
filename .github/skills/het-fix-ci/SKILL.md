@@ -48,6 +48,7 @@ user-invocable: true
 | format red | clang-format violation | `clang-format -i` |
 | clang-tidy warning | WarningsAsErrors | fix code |
 | secret alert | secret committed | check gitleaks report |
+| devskim `Banned C function detected` | a banned function (e.g. the printf family) in include/ + src/ | rewrite with `fputs`-style calls; MegaLinter scans only those two roots |
 
 ### Board（上板）
 | Symptom | Cause | Fix |

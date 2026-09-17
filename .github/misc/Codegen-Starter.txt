@@ -462,7 +462,7 @@ SECTION 6 — OTHER FILES FOR PROJECT COMPLETENESS
        .github/misc/commitlint.config.js).
 
 6.8  .github/misc/.mega-linter.yml
-     • Advisory SAST config (MegaLinter runs as non-blocking in CI).
+     • SAST config (MegaLinter also fails the build; devskim bans C functions under include/ and src/)
        Optionally adjust linter settings for your coding style preferences.
        Required quality gates (clang-format/clang-tidy/gitleaks) live in
        .github/workflows/security-linters.yml and use the configs in

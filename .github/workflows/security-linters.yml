@@ -84,9 +84,9 @@ jobs:
           /tmp/gitleaks detect -c .github/misc/.gitleaks.toml --no-banner
 
   megalinter:
-    name: MegaLinter (advisory)
+    name: MegaLinter
     runs-on: ubuntu-latest
-    # MegaLinter is advisory and only uploads a report: keep it read-only so callers stay least-privilege
+    # MegaLinter blocks on the rules it is configured with; it only reads, so callers stay least-privilege
     permissions:
       contents: read
 
@@ -112,7 +112,7 @@ jobs:
           API_USER: ${{ secrets.API_REPORTER_BASIC_AUTH_USERNAME }}
           API_PASS: ${{ secrets.API_REPORTER_BASIC_AUTH_PASSWORD }}
 
-      # [advisory] semgrep/checkov/devskim need runner logs to be deterministic; the native gate above is required
+      # devskim/semgrep/checkov block as well; the native gate above is the deterministic baseline
       - name: MegaLinter (with Grafana reporter)
         if: steps.check_grafana.outputs.available == 'true'
         # Pinned to MegaLinter v8.8.0 -- keep in sync with run-megalinter.sh --release

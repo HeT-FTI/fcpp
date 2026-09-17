@@ -157,11 +157,11 @@ link (no need modification on *CMakeLists.txt*).
 Requirements for your project can be the package archived on [Conan Center](https://conan.io/center), or user 
 built ones. If the later one, at least you need a locale Conan server for managing your libraries.
 
-### 5. Run MegaLinter locally (advisory SAST)
+### 5. Run MegaLinter locally (blocking SAST)
 
 MegaLinter mirrors the CI `megalinter` job (`.github/workflows/security-linters.yml`): same config
 (`.github/misc/.mega-linter.yml`), same full image, and the same version (`v8.8.0`, pinned to match the
-CI action). It runs the **advisory** SAST layer — gitleaks / semgrep / checkov / devskim, plus clang-format
+CI action). It runs the SAST layer — gitleaks / semgrep / checkov / devskim, plus clang-format
 & cppcheck. The **required** gates (clang-format / clang-tidy / gitleaks with pinned tool versions) are the
 native `quality-gates` job of the same workflow.
 
