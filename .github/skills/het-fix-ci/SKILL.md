@@ -25,6 +25,9 @@ user-invocable: true
 | Windows build odd | shared forced to static | expected, not an error |
 | `Could not create named generator Visual Studio 18 2026` | `cmake_version` is below the 4.2 floor, so CMake cannot name the generator Conan derives for msvc 195 | raise `metadata.json` `cmake_version` — the recipe now rejects that pair up front with this very message |
 | coverage artifact missing | switches off, **or** the run was build-only | check `trigger_tests`/`activate_code_coverage`; a `-c user.het:run_tests=False` run produces none by design |
+| `Reconcile coverage` red: legs instrumented different translation units | one toolchain skipped a source file, so one report is incomplete | read the `::error::` line: it names the file per leg. A missing file on **both** legs is a build-config problem, on **one** it is a toolchain problem |
+| `Reconcile coverage` red: expected a summary from every leg | an `Auto Testing` leg produced no `coverage_summary.json` | look at that leg first; reconcile only runs when both legs succeeded |
+| `Auto Testing (windows-latest)` fails at configure | the test chain has no MSVC coverage backend | Windows is intentionally not in this chain — do not add it until coverage is implemented for MSVC |
 | coverage gate red in `Tests` | the report was produced but the summary is absent or 0% | the gate reads `coverage_summary.json`; 0% means no test reached the library |
 
 ### Release（发布）

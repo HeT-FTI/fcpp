@@ -45,6 +45,16 @@ def _entry_lists() -> list[str]:
             '}\n']
 
 
+def _source_relpath(tracefile_path: str) -> str:
+    """Trim a tracefile's absolute path to the project-relative part, so two platforms can compare file sets."""
+    _normalised = tracefile_path.replace('\\', '/')
+    for _root in ('/src/', '/include/', '/api/'):
+        _at = _normalised.rfind(_root)
+        if _at != -1:
+            return _normalised[_at + 1:]
+    return _normalised.rsplit('/', 1)[-1]
+
+
 class PackageTestConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     export_sources = "resources/*"
@@ -327,18 +337,24 @@ class PackageTestConan(ConanFile):
 
     def _coverage_totals(self, info_file):
         """Sum the tracefile's own LF/LH/FNF/FNH/BRF/BRH records; each file record carries its totals, so a plain sum is the report's."""
-        _sums = {}
+        _sums, _files = {}, set()
         with open(info_file, 'r', encoding='utf-8') as f:
             for _line in f:
+                if _line.startswith('SF:'):
+                    _files.add(_source_relpath(_line[3:].strip()))
+                    continue
                 _key, _, _value = _line.strip().partition(':')
                 if _key in ('LF', 'LH', 'FNF', 'FNH', 'BRF', 'BRH') and _value.isdigit():
                     _sums[_key] = _sums.get(_key, 0) + int(_value)
         _rate = lambda hit, found: round(100.0 * hit / found, 2) if found else 0.0
-        return {_what: {'hit': _sums.get(_h, 0), 'found': _sums.get(_f, 0),
-                        'percent': _rate(_sums.get(_h, 0), _sums.get(_f, 0))}
-                for _what, _h, _f in [('lines', 'LH', 'LF'),
-                                      ('functions', 'FNH', 'FNF'),
-                                      ('branches', 'BRH', 'BRF')]}
+        _totals = {_what: {'hit': _sums.get(_h, 0), 'found': _sums.get(_f, 0),
+                           'percent': _rate(_sums.get(_h, 0), _sums.get(_f, 0))}
+                   for _what, _h, _f in [('lines', 'LH', 'LF'),
+                                         ('functions', 'FNH', 'FNF'),
+                                         ('branches', 'BRH', 'BRF')]}
+        # the file set is what two platforms can compare; the rates cannot match (see _code_coverage_clang)
+        _totals['files'] = sorted(_files)
+        return _totals
 
     def _render_html_report(self, coverage_folder, info_file, pkg_root):
         """Filter the tracefile down to OUR entry, render the HTML, clean up.

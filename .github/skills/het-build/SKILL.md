@@ -25,7 +25,7 @@ user-invocable: true
 1. `metadata.json`: `trigger_tests = true`、`activate_code_coverage = true`、`workflow_triggers.tests = true`
 2. `build_type` decides the config this chain builds — nothing else does
 3. Commit with `test(:beer:): ...`
-4. Actions → `Tests` → `Auto Testing` job; download `Coverage-report-*` → `coverage_report/index.html`, but read the rate from `coverage_summary.json`（不是 HTML）
+4. Actions → `Tests` → both `Auto Testing (<os>)` legs run in parallel; download the canonical `Coverage-report` artifact → `coverage_report/index.html`, but read rates from `coverage_summary.json`（不是 HTML）。`Coverage-report-<os>-<ts>` 是各腿原始证据，`Reconcile coverage` 才是一致性门禁
 
 **Scenario C: verify locally first (recommended)（本地先验证，推荐）**
 ```bash
