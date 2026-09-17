@@ -41,6 +41,14 @@ One sentence of *why* is enough. No bullet lists, no "files changed", no test/ve
 restating the diff — those belong in a code comment or the PR description. History is never rewritten to
 apply this rule, so older long commits stay as they are.
 
+## Requesting Several Pipelines（一次请求多条流水线）
+
+One push can ask for more than one pipeline: the controller greps **every** commit message in the push, not just the head. For a full sweep put the emoji that fits the change in the parentheses and the rest on a body line -- that is the one place a body may carry emojis (`_shared/gitmoji.md` → Full Sweep). 一次请求多条流水线：主 emoji 放括号，其余写正文。
+
+    feat(:building_construction:): add a C11 _Generic exercise to the C line
+
+    Requests the full sweep too: :beer: :book: :shield: :hammer_and_wrench:
+
 ## Type → Emoji Map（触发对应 CI）
 
 | Change（改动内容） | Type | Emoji（trigger） |

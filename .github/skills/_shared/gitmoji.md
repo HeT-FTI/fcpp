@@ -26,6 +26,18 @@
   e.g. `feat(:fire:): cross-compile support`, `test(:beer:): vector add cases`, `chore(:package:): prepare release`.
 - Versioning is driven by `commit-analyzer` (semantic-release) reading the **conventional prefix** (feat/fix/...), orthogonal to the emoji. 版本由 conventional 前缀决定，与 emoji 正交。
 
+## Full Sweep（全量 / 全量测试）
+
+"全量" / "全量测试" / "走一遍全量" = **every online pipeline except auto-release**: build + tests + docs + security + cross-compile. It never drags in `:package:` (release) or `:fire:` (the self-hosted board route). 全量 = 除自动发版与上板外的全部在线流水线。
+
+Triggers are grep-matched across **every** commit message in the push, so one push can request several pipelines at once. For a sweep, keep the emoji that fits the change in the parentheses and list the rest on a body line:
+
+    feat(:building_construction:): add a C11 _Generic exercise to the C line
+
+    Requests the full sweep too: :beer: :book: :shield: :hammer_and_wrench:
+
+This is the only sanctioned use of emojis inside a body. 主 emoji 放括号、其余写正文，是正文里唯一允许出现 emoji 的场合。
+
 ## Conventional Type → Emoji Map（类型 → emoji 映射，`het-commit` N5 使用）
 
 | Type（类型） | Purpose（用途） | Suggested emoji（建议 emoji） |
