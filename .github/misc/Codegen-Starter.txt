@@ -122,7 +122,8 @@ generate/modify each one according to the project design above.
      • Set "is_shared", "is_header", "enable_python_bindings",
        "activate_code_coverage" from Section 1.
      • Populate "dependencies" → common/c/cpp/infra from Section 3.
-     • Set "cmake_version" to "4.0.1" (or newer).
+     • Set "cmake_version" to "4.2.3" (or newer). 4.2 is the floor for MSVC:
+       below it CMake cannot name the Visual Studio generator Conan derives.
      • Set "trigger_tests" to true, "saving_tests_log" to true.
      • Set "workflow_triggers" to the team default (all six true):
          {"build": true, "tests": true, "release": true,

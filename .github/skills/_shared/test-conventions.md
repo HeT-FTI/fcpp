@@ -33,12 +33,17 @@ test_package/
 | `activate_code_coverage` | coverage cases + lcov/genhtml report |
 | `saving_tests_log` | save LastTest.log to `test/export/TestResult.log` |
 
+A **run** may narrow this set with the conf `-c user.fcpp:run_tests=False`: no CTest, no
+coverage, and the library stays uninstrumented. The build-only CI leg uses exactly that.
+运行期可用 conf 收窄成“只构建”。
+
 ## Coverage Flow（覆盖率流程）
 
 1. Turn on `activate_code_coverage=true` + `trigger_tests=true`.
 2. Recipe auto-generates `ucov_*.cpp` coverage cases. 自动生成覆盖用例。
 3. `conan create .` (GCC) → collect `*.gcda/*.gcno` → `lcov` extract → `genhtml`.
-4. Artifacts: `test_package/test/export/coverage/coverage_report/`.
+4. Artifacts: `test_package/test/export/coverage/` — `coverage_summary.json` is the machine-readable
+   rate (`lines`/`functions`/`branches` hit, found, percent); the CI gate reads it instead of the HTML.
 
 ## Writing Test Cases（编写测试用例规范）
 

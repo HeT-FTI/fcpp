@@ -23,7 +23,9 @@ user-invocable: true
 | `conan create` timeout | deps compile too slow (55 min) | raise timeout / pre-cache |
 | deps not found | network / bad version | check `conandata.yml` / `--build=missing` |
 | Windows build odd | shared forced to static | expected, not an error |
-| coverage artifact missing | switches off | turn on `trigger_tests`/`activate_code_coverage` |
+| `Could not create named generator Visual Studio 18 2026` | `cmake_version` is below the 4.2 floor, so CMake cannot name the generator Conan derives for msvc 195 | raise `metadata.json` `cmake_version` — the recipe now rejects that pair up front with this very message |
+| coverage artifact missing | switches off, **or** the run was build-only | check `trigger_tests`/`activate_code_coverage`; a `-c user.fcpp:run_tests=False` run produces none by design |
+| coverage gate red in `Tests` | the report was produced but the summary is absent or 0% | the gate reads `coverage_summary.json`; 0% means no test reached the library |
 
 ### Release（发布）
 | Symptom | Cause | Fix |
