@@ -24,6 +24,13 @@
 - **Canonical form（规范写法，推荐）**: emoji in the **parentheses right after the commit word**（放在主 commit 词后的括号里）:
   `<type>(<emoji>): <description>`
   e.g. `feat(:fire:): cross-compile support`, `test(:beer:): vector add cases`, `chore(:package:): prepare release`.
+- **Placement is free; the *set* is what counts（位置随意，看的是集合）**: only *which* emojis appear decides the pipelines — the controller greps the whole message. A long trigger name eats the header budget (`fix(:building_construction:): ` is 31 of 72 characters), so when the description needs the room put a **short non-triggering** emoji in the parentheses and move the pipeline emoji(s) to the body:
+
+      fix(:bug:): replace the banned printf in the _Generic test
+
+      Requests :building_construction: for this push.
+
+  长 emoji 吃掉标题预算；需要篇幅时括号里放短的无触发 emoji，把要触发的 emoji 搬到正文。
 - Versioning is driven by `commit-analyzer` (semantic-release) reading the **conventional prefix** (feat/fix/...), orthogonal to the emoji. 版本由 conventional 前缀决定，与 emoji 正交。
 
 ## Full Sweep（全量 / 全量测试）

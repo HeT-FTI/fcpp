@@ -37,6 +37,11 @@ body, so it still shows up under ⚠ BREAKING CHANGES — one-line bodies never 
 | Body | **optional**; ≤ 3 lines and ≤ 200 chars in total | nothing — the changelog is the only cost |
 | Blank line between subject and body | required once a body exists | — |
 
+The 72 is the **whole header**, so the emoji costs real space — `fix(:building_construction:): ` is 31 of it.
+When the description needs the room, keep a short emoji in the parentheses (any gitmoji, e.g. `:bug:`) and move
+the pipeline emoji to a body line: the pipelines follow *which* emojis appear, not where
+(`_shared/gitmoji.md` → Placement）。长 emoji 吃预算：括号放短的，要触发的搬正文。
+
 One sentence of *why* is enough. No bullet lists, no "files changed", no test/verification narrative, no
 restating the diff — those belong in a code comment or the PR description. History is never rewritten to
 apply this rule, so older long commits stay as they are.
