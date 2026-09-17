@@ -26,6 +26,16 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 BENCH_DIR  = SCRIPT_DIR.parent
 ROOT_DIR   = BENCH_DIR.parent
 
+_BUILD_CPPSTD = None
+
+
+def build_cppstd():
+    """metadata.json owns the standard; build_type stays Release on purpose, since the board benchmarks optimised code."""
+    global _BUILD_CPPSTD
+    if _BUILD_CPPSTD is None:
+        _BUILD_CPPSTD = json.loads((ROOT_DIR / "metadata.json").read_text(encoding="utf-8"))["build_cppstd"]
+    return _BUILD_CPPSTD
+
 # Cortex-M target → Conan arch mapping
 CONAN_ARCH_MAP = {
     # ── Cortex-M (baremetal) ──────────────────────────────────────
@@ -98,7 +108,7 @@ def generate_profile(cfg: dict, lib_name: str) -> Path:
         f"arch={arch}\n"
         "compiler=gcc\n"
         f"compiler.version={compiler_version}\n"
-        "compiler.cppstd=17\n"
+        f"compiler.cppstd={build_cppstd()}\n"
         "compiler.libcxx=libstdc++11\n"
         "build_type=Release\n"
         "\n"
@@ -169,7 +179,7 @@ def generate_profile_linux(cfg: dict, lib_name: str) -> Path:
         f"arch={arch}\n"
         "compiler=gcc\n"
         f"compiler.version={compiler_version}\n"
-        "compiler.cppstd=17\n"
+        f"compiler.cppstd={build_cppstd()}\n"
         "compiler.libcxx=libstdc++11\n"
         "build_type=Release\n"
         "\n"
