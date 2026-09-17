@@ -107,9 +107,10 @@ as a **soft rule** the emoji also triggers from anywhere in the message:
 | Online cross-compile | `:hammer_and_wrench:` | `workflow_triggers.cross_compile` (Conan cross-build from a generated profile; decoupled: the emoji starts only this one) |
 | Board cross-build | `:fire:` (or `🔥`) | hetai self-hosted runner |
 
-> **Note**: `workflow_triggers.build` / `.tests` / `.security_scan` / `.cross_compile` are enabled by default
-> (commit-lint & schema gates always run on push/PR; build/tests/security shift-left on PRs).
-> `release` and `docs` require both the gitmoji and the switch (`build_type` must match too).
+> **Note**: `workflow_triggers.build` / `.tests` / `.docs` / `.security_scan` / `.cross_compile` are
+> enabled by default (commit-lint & schema gates always run on push/PR; build/tests/security
+> shift-left on PRs).
+> `release` requires both the gitmoji and the switch (`build_type` must match too).
 
 ## Crash Course of Build
 

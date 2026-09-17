@@ -32,12 +32,12 @@ user-invocable: true
    /** @brief [zh] 测试用C函数 */
    ```
 2. Commit with `docs(:book:): ...`. 按规范格式提交。
-3. `metadata.json`: `workflow_triggers.docs = true` → Actions → `Docs` workflow.
+3. `metadata.json`: `workflow_triggers.docs = true`（模板默认已开启）→ Actions → `Docs` workflow.
 
 ## Related Switches（相关开关）
 
 - `doc_languages`（默认 en/zh）→ `docs/build.py` 语言过滤；`doc_versions`（默认 1.0/2.0）→ 按 `@since` 版本过滤。
-- `workflow_triggers.docs` — CI master switch（默认 false，先打开）。
+- `workflow_triggers.docs` — CI master switch（模板默认 `true`，提交带 `:book:` 即构建文档）。
 
 ## Local Build（本地生成）
 
