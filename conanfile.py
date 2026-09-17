@@ -1,6 +1,8 @@
 from conan import ConanFile
+from conan.errors import ConanInvalidConfiguration
 from conan.tools.cmake import CMakeToolchain, CMake, CMakeDeps, cmake_layout
 from conan.tools.build import cross_building
+from conan.tools.scm import Version
 from typing import Literal
 from pathlib import Path
 import yaml
@@ -24,6 +26,10 @@ conan_targets = {
     'ZLIB::ZLIB': 'zlib::zlib',
     'Catch2::Catch2': 'catch2::catch2'
 }
+
+# CMake only learned to name the newest Visual Studio generator in 4.2; an older one
+# makes an MSVC host die at configure with "Could not create named generator".
+CMAKE_MSVC_FLOOR = '4.2'
 
 # Module annotation / include-guard literals (extracted to avoid drift).
 METADATA_FILENAME = 'metadata.json'
@@ -193,7 +199,14 @@ class PackageRecipe(ConanFile):
         _override = (os.environ.get('HET_CMAKE_BUILD_REQUIRE') or '').strip()
         if _override.lower() == 'none':
             return
-        self.build_requires(f"cmake/{_override or self.meta.get('cmake_version')}")
+        _cmake = _override or self.meta.get('cmake_version')
+        # fail here with the fix, rather than inside CMake with a generator name it never heard of
+        if str(self.settings.get_safe('compiler')) == 'msvc' and Version(_cmake) < Version(CMAKE_MSVC_FLOOR):
+            raise ConanInvalidConfiguration(
+                f"cmake/{_cmake} cannot name the Visual Studio generator Conan picks for "
+                f"msvc/{self.settings.get_safe('compiler.version')}: CMake {CMAKE_MSVC_FLOOR}+ is required. "
+                f"Raise metadata.json 'cmake_version', or set HET_CMAKE_BUILD_REQUIRE to a newer version.")
+        self.build_requires(f"cmake/{_cmake}")
 
     def config_options(self):
         if self.settings.os == "Windows":
@@ -229,6 +242,17 @@ class PackageRecipe(ConanFile):
             with open(_f, 'w', encoding='utf-8') as f:
                 f.write(''.join(_new_text))
 
+    def _coverage_enabled(self):
+        """Whether this run instruments the library.
+
+        metadata declares the project default; `-c user.fcpp:run_tests=False` narrows it
+        for one run. A build-only run must leave the library uninstrumented, otherwise the
+        cached package carries gcov symbols and every consumer has to link them too.
+        """
+        if not self.conf.get('user.fcpp:run_tests', default=True, check_type=bool):
+            return False
+        return bool(self.meta.get("activate_code_coverage"))
+
     def _test_dependencies_enabled(self):
         return bool(self.meta.get("trigger_tests"))
 
@@ -253,6 +277,7 @@ class PackageRecipe(ConanFile):
     def generate(self):
         tc = CMakeToolchain(self)
         tc.variables['C_DEPS'], tc.variables['CPP_DEPS'] = self._preparing_deps_links()
+        tc.variables['ENABLE_COVERAGE'] = self._coverage_enabled()
 
         if cross_building(self) and self.settings.os == "baremetal":  # cross build to MCU
             tc.variables["CMAKE_TRY_COMPILE_TARGET_TYPE"] = "STATIC_LIBRARY"
