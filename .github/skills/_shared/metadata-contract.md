@@ -46,7 +46,7 @@
 | Field | Purpose |
 |------|------|
 | `doc_languages` / `doc_versions` | docs/build.py multi-language/version |
-| `doc_doxygen_folders` / `doc_doxygen_suffix` | Doxygen scan scope |
+| `doc_doxygen_folders` / `doc_doxygen_suffix` | Doxygen scan scope; the suffix list applies to every folder, so it does **not** enforce that `.dox`/`.cxx` stay under `docs/doxygen/dox/` (see `code-conventions.md`) |
 
 ## Common Mistakes（易错点）
 

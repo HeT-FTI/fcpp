@@ -131,7 +131,10 @@ generate/modify each one according to the project design above.
        cross_compile is on but decoupled (only :hammer_and_wrench: starts it,
        and it never runs on a PR); release is opt-in via gitmoji.
      • Configure "doc_languages", "doc_versions", "doc_doxygen_folders",
-       "doc_doxygen_suffix" as appropriate.
+       "doc_doxygen_suffix" as appropriate. Keep .dox/.cxx as documentation-only
+       suffixes: every .dox/.cxx file must live under docs/doxygen/dox/, never
+       under include/ or src/ (the suffix list applies to all folders, so it
+       does not enforce this by itself).
 
 4.2  conandata.yml  (dependency specs)
      ─────────────
@@ -268,6 +271,10 @@ via `python ./docs/build.py`. The agent must generate:
      • For each major feature, create a .dox file with explanatory docstring
        and a paired .cxx file with runnable example code.
      • Use @example, @code{.cpp} / @endcode, @ingroup as in the template.
+     • IMPORTANT: .dox and .cxx are documentation-only. They live exclusively
+       under docs/doxygen/dox/ and must never be created under include/ or
+       src/, which carry .h/.c/.hpp/.cpp only. A .dox/.cxx in those trees is a
+       layout violation (see docs/doxygen/dox/ for the canonical set).
 
 5.4  Sphinx documentation  (index.rst as a mini journal paper)
      ─────────────────────

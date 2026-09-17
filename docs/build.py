@@ -492,12 +492,15 @@ class AutomationDoc:
            must be included when create;
         6. internalization support is available, use [lang] to note; no [lang]
            component is of global;
-        7. images can be stored in ./docs/_images, prefix 'IN_' for doxygen
+        7. images can be stored in ./docs/images, prefix 'IN_' for doxygen
            system, 'OUT_' for sphinx system, and 'ALL_' for both;
-        8. ./include/dox/ for .dox files, syntax use multi-lined /*! ... */
+        8. ./docs/doxygen/dox/ for .dox files, syntax use multi-lined /*! ... */
            commands;
-        9. ./include/dox/demos/ for demos, *.dox for tutorial files with
+        9. ./docs/doxygen/dox/demos/ for demos, *.dox for tutorial files with
            pure /*! ... @example ... */ inside; and *.cxx for example files;
+       10. .dox and .cxx are doc-only suffixes: they live only under
+           ./docs/doxygen/dox/ and never under ./include/ or ./src/, which hold
+           .h/.c/.hpp/.cpp only;
         ============================== Guide Over ==============================
         """
         print(_content)

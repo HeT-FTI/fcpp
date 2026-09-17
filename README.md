@@ -27,7 +27,8 @@ capabilities.
 - **Component Structure**:
     - pairwise header and source assumption
     - suffix distinguishment, (.h, .c) for C part, and (.hpp, .cpp) for C++ part
-    - documenting system uses .dox for pure docstring, .cxx for examples codes
+    - documenting system uses .dox for pure docstring, .cxx for examples codes; both are
+      documentation-only and live exclusively under `docs/doxygen/dox/`, never in `include/`/`src/`
 
 ## Features
 
@@ -218,8 +219,8 @@ project-root/
 ├── wokspace/                 # Agentic Coding work products (git-ignored)
 ├── docs/                     # Documentations root
 │   ├── doxygen/              # Doxygen system main root
-│   │   ├── dox/              # Pure documentations' folder
-│   │   │   ├── demos/        # Examples catalogue
+│   │   ├── dox/              # Pure documentations' folder (the only home of .dox/.cxx)
+│   │   │   ├── demos/        # Examples catalogue (hand-written, standalone)
 │   │   │   │   ├── *.dox     # Documenting docstring
 │   │   │   │   └── *.cxx     # Example codes
 │   │   │   └── *.dox         # Main pages and etc
@@ -240,6 +241,11 @@ project-root/
     ├── conanfile.py          # Conan recipe for test_package
     └── CMakeLists.txt        # CMake build workflow for test_package
 ```
+
+> **Suffix rule**: `.dox` and `.cxx` are **documentation-only**. They live exclusively under
+> `docs/doxygen/dox/` as hand-written standalone files (`mainpage.dox`, `demos/*.dox`,
+> `demos/*.cxx`) and are never written as a docstring inside `include/` or `src/`, which carry
+> `.h/.c/.hpp/.cpp` only.
 
 ## Module Generation (experimental)
 

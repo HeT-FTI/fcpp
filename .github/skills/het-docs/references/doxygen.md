@@ -37,9 +37,22 @@ void test_c_compiler();
 - Must be inside a **multi-line Doxygen comment**; global objects separated by **2 blank lines**. 必须在多行 Doxygen 注释内；全局对象间 2 空行。
 - Full spec: `.github/skills/_shared/code-conventions.md`.
 
+## Doc-only Files（文档专属文件）
+
+- `.dox` and `.cxx` are **documentation-only** suffixes. They live **only** under `docs/doxygen/dox/`. 文档专属后缀只放该目录。
+- Three kinds of hand-written standalone files live there — none of them has an `include/`-or-`src/` counterpart by design: 均为手写独立文件，不作为 docstring 存在于 include/src：
+  | File | Role |
+  |------|------|
+  | `docs/doxygen/dox/mainpage.dox` | Doxygen landing page, via `@mainpage` |
+  | `docs/doxygen/dox/demos/*.dox` | Example catalogue pages, via `@example` |
+  | `docs/doxygen/dox/demos/*.cxx` | Example code, pulled in by a `.dox` page's `@include` |
+- `include/` and `src/` carry `.h/.c/.hpp/.cpp` only. A `.dox` or `.cxx` placed there violates the layout rule. include/src 不得出现。
+- Wiring: `.dox` files must be reachable by Doxygen's `INPUT`; `.cxx` files are resolved through `EXAMPLE_PATH` when a `.dox` page does `@include`/`@example`. `.dox` 需进 INPUT，`.cxx` 走 EXAMPLE_PATH。
+
 ## Doxyfile Notes（Doxyfile 关键点）
 
-- `doc_doxygen_folders` / `doc_doxygen_suffix` in metadata drive what Doxygen scans. metadata 驱动扫描范围与后缀。
+- `doc_doxygen_folders` / `doc_doxygen_suffix` in metadata drive what Doxygen scans. The suffix list applies to **every** folder, so it cannot by itself keep a stray `.dox`/`.cxx` out of `include/`/`src/` — the layout rule above is the real guard. metadata 驱动扫描范围；后缀表对每个目录统一生效，布局约束需另行保证。
+- `MAIN_PAGE` is not a Doxygen option (it is ignored); the landing page works because `mainpage.dox` carries `@mainpage`. 该行是无效配置。
 - Images: `docs/images/` with `IN:`/`OUT:`/`ALL:` prefix routing (see `docs/build.py`). 图片按 IN/OUT/ALL 前缀路由。
 
 ## Pitfalls（易踩坑）
@@ -48,4 +61,5 @@ void test_c_compiler();
 2. `@exporter` outside a multi-line Doxygen comment → module silently not generated. 注解位置不对 → 模块静默失败。
 3. New API without `@since` → not shown in earlier doc versions. 新 API 缺 @since 不会出现在旧版本文档。
 4. Iterate with `python ./docs/build.py` locally, faster than CI. 本地迭代更快。
+5. A `.dox`/`.cxx` created under `include/` or `src/` — they are doc-only and belong in `docs/doxygen/dox/`. 文档专属后缀放错目录。
 
