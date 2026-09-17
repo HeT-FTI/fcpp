@@ -34,7 +34,13 @@ void test_c_generic() {
     const char *as_int = _Generic(1, int: "int", long: "long", double: "double", default: "other");
     const char *as_long = _Generic(1L, int: "int", long: "long", double: "double", default: "other");
     const char *as_double = _Generic(1.0, int: "int", long: "long", double: "double", default: "other");
-    printf("_Generic test: 1 -> %s, 1L -> %s, 1.0 -> %s\n", as_int, as_long, as_double);
+    fputs("_Generic test: 1 -> ", stdout);
+    fputs(as_int, stdout);
+    fputs(", 1L -> ", stdout);
+    fputs(as_long, stdout);
+    fputs(", 1.0 -> ", stdout);
+    fputs(as_double, stdout);
+    fputs("\n", stdout);
 }
 
 
