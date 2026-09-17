@@ -138,6 +138,7 @@ jobs:
     uses: ./.github/workflows/ci-build-test.yml
     with:
       pkg_name: ${{ needs.controller.outputs.pkg_name }}
+      build_type: ${{ needs.controller.outputs.build_type }}
 
   tests:
     name: Tests
@@ -148,6 +149,7 @@ jobs:
       pkg_name: ${{ needs.controller.outputs.pkg_name }}
       saving_tests_log: ${{ needs.controller.outputs.saving_tests_log }}
       activate_code_coverage: ${{ needs.controller.outputs.activate_code_coverage }}
+      build_type: ${{ needs.controller.outputs.build_type }}
 
   # Release is not called here: it is standalone so it can hold write permissions
 

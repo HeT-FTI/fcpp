@@ -1,6 +1,10 @@
 name: Tests
 
-# Called by ci-orchestrator.yml; also runs standalone on push/pull_request
+# Called by ci-orchestrator.yml.
+#
+# Scope: the whole test chain in one place -- unit + stress suites, coverage and artifact
+# archive -- because it is the expensive half. It runs on one platform, in the single build
+# type metadata.json declares; macOS/Windows legs here are deliberately deferred.
 
 on:
   workflow_call:
@@ -19,6 +23,11 @@ on:
         required: false
         type: string
         default: 'false'
+      build_type:
+        description: 'Build type from metadata.json: this chain has one config, not a matrix'
+        required: false
+        type: string
+        default: 'Debug'
 
 env:
   CONAN_HOME: ~/.conan2
@@ -69,7 +78,7 @@ jobs:
 
       - name: Build and test with Conan
         run: |
-          conan create . -pr:b=default -pr:h=default -s build_type=Debug --build=missing \
+          conan create . -pr:b=default -pr:h=default -s build_type=${{ inputs.build_type }} --build=missing \
           -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=True
         timeout-minutes: 55
 
@@ -97,6 +106,39 @@ jobs:
           name: Coverage-report-${{ env.timestamp }}
           path: test_package/test/export/coverage/
           if-no-files-found: warn
+
+      - name: Assert the coverage report
+        if: ${{ inputs.activate_code_coverage == 'true' }}
+        # Assert on the artifact, after the upload, so a red gate still archives its evidence.
+        run: |
+          summary=test_package/test/export/coverage/coverage_summary.json
+          report=test_package/test/export/coverage/coverage_report/index.html
+          for f in "$summary" "$report"; do
+            if [ ! -f "$f" ]; then
+              echo "::error::coverage artifact missing: $f"
+              exit 1
+            fi
+          done
+          # read the recipe's summary, not genhtml's HTML: the tracefile is the upstream format,
+          # the HTML is a template genhtml is free to restyle at any release
+          pct=$(python3 -c "import json;print(json.load(open('$summary'))['lines']['percent'])")
+          hit=$(python3 -c "import json;print(json.load(open('$summary'))['lines']['hit'])")
+          found=$(python3 -c "import json;print(json.load(open('$summary'))['lines']['found'])")
+          if ! python3 -c 'import sys; sys.exit(0 if float(sys.argv[1]) > 0 else 1)' "$pct"; then
+            echo "::error::line coverage is ${pct}% (${hit} of ${found} lines) -- expected greater than zero"
+            exit 1
+          fi
+          {
+            echo "### Coverage (${{ inputs.build_type }})"
+            echo
+            echo "| metric | value |"
+            echo "| --- | --- |"
+            echo "| line coverage | ${pct}% (${hit}/${found}) |"
+            echo "| artifact | test_package/test/export/coverage/coverage_report/index.html |"
+            echo
+            echo "lcov:    $(lcov --version)"
+            echo "genhtml: $(genhtml --version)"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Clean up test_package builds
         run: |
