@@ -33,7 +33,7 @@ test_package/
 | `activate_code_coverage` | coverage cases + lcov/genhtml report |
 | `saving_tests_log` | save LastTest.log to `test/export/TestResult.log` |
 
-A **run** may narrow this set with the conf `-c user.fcpp:run_tests=False`: no CTest, no
+A **run** may narrow this set with the conf `-c user.het:run_tests=False`: no CTest, no
 coverage, and the library stays uninstrumented. The build-only CI leg uses exactly that.
 运行期可用 conf 收窄成“只构建”。
 

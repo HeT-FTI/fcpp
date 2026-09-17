@@ -441,8 +441,9 @@ SECTION 6 — OTHER FILES FOR PROJECT COMPLETENESS
        (e.g., model weights, large data files).
 
 6.4  build  (one-liner build script)
-     • Update the `conan remove` line's package name from "fcpp" to the new
-       project name (Section 1).
+     • Two literals to update: the `conan remove` package name and the
+       `-s build_type=` value (Section 1). Keep it plain command lines -- README
+       also feeds this file to PowerShell, so no shell-specific syntax.
 
 6.5  Doxyfile
      • No manual edits needed — it uses %PLACEHOLDER% tokens filled by

@@ -77,9 +77,11 @@ jobs:
         shell: bash
         # HET_CMAKE_BUILD_REQUIRE is the escape hatch for this leg alone if a runner's toolchain
         # ever outgrows the cmake metadata.json pins: a version pins another, `none` uses PATH.
+        # The conf namespace is the template's, not the package's: renaming the project in
+        # metadata.json must never mean editing this line.
         run: |
           conan create . -pr:b=default -pr:h=default -s build_type=${{ inputs.build_type }} --build=missing \
-          -c user.fcpp:run_tests=False \
+          -c user.het:run_tests=False \
           -c tools.system.package_manager:mode=install ${{ matrix.pkg_conf }}
         timeout-minutes: 55
 

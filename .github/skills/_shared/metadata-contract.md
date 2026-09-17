@@ -10,7 +10,7 @@
 | `name` | all | package name → target prefix, package ref |
 | `version` | all | rewritten by semantic-release |
 | `target` | CMake/package | `auto` = `${name}::${name}` |
-| `build_cppstd` | CMake + recipe | Injected by **two** routes: `conanfile.py` sets `settings.compiler.cppstd` (so it joins `package_id` and dependency compatibility) **and** CMake sets `CXX_STANDARD` per target. Falls back to 17 |
+| `build_cppstd` | CMake + recipe + profile generators | Injected by **two** routes: `conanfile.py` sets `settings.compiler.cppstd` (so it joins `package_id` and dependency compatibility) **and** CMake sets `CXX_STANDARD` per target. Both recipes silently fall back to 17 for anything outside 17/20/23, so `metadata.schema.json` restricts the field to that enum — an unsupported value must fail the Metadata Schema job, not quietly become C++17 |
 | `build_cstd` | CMake only | `C_STANDARD` + `C_STANDARD_REQUIRED ON` per C target. Conan has **no** `compiler.cstd` setting, so it cannot reach `package_id` — enforced, but by one route only |
 | `cmake_version` | both recipes (`build_requirements()`) | Pins `cmake/<version>`, overridable by `HET_CMAKE_BUILD_REQUIRE`. **Floor 4.2**: below it CMake cannot name the `Visual Studio 18 2026` generator Conan derives for msvc 195, so the recipe refuses that pair up front instead of letting CMake fail on an unknown generator name |
 | `build_type` | The **one** build type every CI leg builds: the orchestrator hands it to both chains. **Does NOT gate any pipeline** — a switch is permission, a state must not be a predicate. To exercise Release, change this value and push a `:beer:` commit; the build chain then compiles Release on all three platforms |
@@ -47,7 +47,7 @@
 ### Run-time Knobs（运行期旋钮，不进 metadata）
 | Knob（旋钮） | Form（形式） | Purpose（作用） |
 |------|------|------|
-| `user.fcpp:run_tests` | conan conf: `-c user.fcpp:run_tests=False` | Narrows `trigger_tests` for **one run** and leaves the library uninstrumented. This is how the build-only CI leg reuses the same recipes — an `--coverage` library cannot be linked by a plain consumer, so the two sides must never disagree |
+| `user.het:run_tests` | conan conf: `-c user.het:run_tests=False` | Narrows `trigger_tests` for **one run** and leaves the library uninstrumented. This is how the build-only CI leg reuses the same recipes — an `--coverage` library cannot be linked by a plain consumer, so the two sides must never disagree. The namespace is the **template's**, not the package's: a derived project renames itself, and nothing about this knob should have to follow |
 | `HET_CMAKE_BUILD_REQUIRE` | env var: `none` or a version | Escape hatch for `cmake_version` (read by both recipes) |
 
 ### Docs（文档）

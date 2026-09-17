@@ -73,12 +73,13 @@ class PackageTestConan(ConanFile):
     def _tests_enabled(self):
         """Whether this run builds and runs the test suite.
 
-        metadata.trigger_tests states the project's intent; `-c user.fcpp:run_tests=False`
-        narrows it for one run, which is how the build-only CI leg reuses this very
-        recipe instead of a second one that could drift away from it.
+        metadata.trigger_tests states the project's intent; `-c user.het:run_tests=False`
+        narrows it for one run, which is how the build-only CI leg reuses this very recipe
+        instead of a second one that could drift away from it. The conf namespace is the
+        template's rather than the package's, so a rename in metadata.json cannot desync it.
         """
         return bool(self.metadata.get('trigger_tests')) and \
-            self.conf.get('user.fcpp:run_tests', default=True, check_type=bool)
+            self.conf.get('user.het:run_tests', default=True, check_type=bool)
 
     def generate(self):
         self._add_entries()

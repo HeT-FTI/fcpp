@@ -30,7 +30,7 @@ user-invocable: true
 **Scenario C: verify locally first (recommended)（本地先验证，推荐）**
 ```bash
 conan create . -s build_type=Debug --build=missing                              # full test chain
-conan create . -s build_type=Debug --build=missing -c user.fcpp:run_tests=False # build chain only
+conan create . -s build_type=Debug --build=missing -c user.het:run_tests=False # build chain only
 ```
 
 ## Related Metadata Switches（相关开关）

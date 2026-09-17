@@ -245,11 +245,13 @@ class PackageRecipe(ConanFile):
     def _coverage_enabled(self):
         """Whether this run instruments the library.
 
-        metadata declares the project default; `-c user.fcpp:run_tests=False` narrows it
-        for one run. A build-only run must leave the library uninstrumented, otherwise the
-        cached package carries gcov symbols and every consumer has to link them too.
+        metadata declares the project default; `-c user.het:run_tests=False` narrows it for
+        one run. The namespace is deliberately the template's, not the package's: a derived
+        project renames itself in metadata.json and nothing here has to follow. A build-only
+        run must leave the library uninstrumented, otherwise the cached package carries gcov
+        symbols and every consumer has to link them too.
         """
-        if not self.conf.get('user.fcpp:run_tests', default=True, check_type=bool):
+        if not self.conf.get('user.het:run_tests', default=True, check_type=bool):
             return False
         return bool(self.meta.get("activate_code_coverage"))
 
