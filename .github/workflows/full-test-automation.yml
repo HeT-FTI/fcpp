@@ -152,8 +152,10 @@ jobs:
             echo "| lines | ${lhit} | ${lfound} | ${lpct}% |"
             echo "| functions | ${fhit} | ${ffound} | ${fpct}% |"
             echo
-            echo "| artifact | test_package/test/export/coverage/coverage_report/index.html |"
-            echo "| raw summary | test_package/test/export/coverage/coverage_summary.json |"
+            echo "| output | path |"
+            echo "| --- | --- |"
+            echo "| report | test_package/test/export/coverage/coverage_report/index.html |"
+            echo "| summary | test_package/test/export/coverage/coverage_summary.json |"
             echo
             echo "$(lcov --version) | $(genhtml --version)"
           } >> "$GITHUB_STEP_SUMMARY"
