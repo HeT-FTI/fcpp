@@ -36,7 +36,7 @@ conan create . -s build_type=Debug --build=missing
 
 | Switch（开关） | Purpose（作用） | Default（模板默认） |
 |------|------|------|
-| `build_type` | Debug runs tests | Debug |
+| `build_type` | Project default build type — gates nothing | Debug |
 | `trigger_tests` | Run GTest | false |
 | `activate_code_coverage` | Coverage report | false |
 | `saving_tests_log` | Save test log | false |

@@ -7,8 +7,8 @@
 | I want CI to...（我想让 CI 做什么） | Put in commit message（提交信息里写） | Trigger condition（触发条件） | metadata switch（开关） |
 |------|------|------|------|
 | Build（构建） | `:building_construction:` | push + `workflow_triggers.build=true` | `workflow_triggers.build` |
-| Tests GTest+coverage（测试） | `:beer:` | push + `build_type=Debug` + `trigger_tests=true` + `workflow_triggers.tests=true` | `trigger_tests` / `activate_code_coverage` |
-| Release（发布） | `(:package:):` | push + `build_type=Release` + `workflow_triggers.release=true` | `workflow_triggers.release` |
+| Tests GTest+coverage（测试） | `:beer:` | push + `trigger_tests=true` + `workflow_triggers.tests=true` | `trigger_tests` / `activate_code_coverage` |
+| Release（发布） | `(:package:):` | push + `workflow_triggers.release=true` | `workflow_triggers.release` |
 | Docs（文档） | `:book:` | push + `workflow_triggers.docs=true` | `workflow_triggers.docs` |
 | Quality/security（质量/安全） | `:shield:` | push with emoji, or **any PR** (shift-left) + `workflow_triggers.security_scan=true` | `workflow_triggers.security_scan` |
 | Online cross-compile（在线交叉编译验证） | `:hammer_and_wrench:` | push + `workflow_triggers.cross_compile=true` | `workflow_triggers.cross_compile` |
@@ -17,6 +17,7 @@
 ## General Rules（通用规则）
 
 - **Soft rule（软性规则）**: an emoji anywhere in the message is grep-matched (`grep -q`) — even in the description it triggers. 换句话说：提交正文里**写出**某个 emoji 也会触发对应流水线。emoji 出现在任意位置即可触发。
+- **Permission + intent（许可 + 意图）**: a `workflow_triggers.*` switch only grants *permission*; the gitmoji states *intent*. Switches are independent of each other and of `build_type` — `build_type` is a declared project state and gates nothing. 开关给许可、emoji 给意图；开关互不影响，`build_type` 不参与门控。
 - `:hammer_and_wrench:` is **decoupled**: it starts only the cross-compile pipeline, no other emoji
   starts it, and it is deliberately excluded from the PR shift-left set. `:fire:` remains the
   self-hosted on-board route. 在线与上板两条路线互不触发。

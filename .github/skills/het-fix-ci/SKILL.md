@@ -29,7 +29,7 @@ user-invocable: true
 | Symptom | Cause | Fix |
 |------|------|------|
 | version not bumped | no conventional prefix | use `feat/fix/perf` |
-| not triggered | build_type != Release or switch off | fix metadata |
+| not triggered | `workflow_triggers.release` off, or this push carries no release gitmoji | read the two gate notices |
 
 ### Docs（文档）
 | Symptom | Cause | Fix |

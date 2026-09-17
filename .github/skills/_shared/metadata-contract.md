@@ -11,7 +11,7 @@
 | `version` | all | rewritten by semantic-release |
 | `target` | CMake/package | `auto` = `${name}::${name}` |
 | `build_cppstd` / `build_cstd` | CMake/recipe | C++17/20/23, C11; `configure()` falls back to 17 |
-| `build_type` | CI controller | Debug/Release affects test/release triggers |
+| `build_type` | Project default build type (local build / packaging). **Does NOT gate any pipeline** — a switch is permission, a state must not be a predicate; CI builds both Debug and Release from its own matrix |
 | `is_shared` / `is_header` | CMake | shared forced to static on Windows |
 | `generate_modules_inplace` | recipe | auto-generate .ixx/.cppm modules |
 | `std_modules` / `user_modules` | recipe | import conversion |

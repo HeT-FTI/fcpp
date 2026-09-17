@@ -124,12 +124,18 @@ generate/modify each one according to the project design above.
      • Populate "dependencies" → common/c/cpp/infra from Section 3.
      • Set "cmake_version" to "4.0.1" (or newer).
      • Set "trigger_tests" to true, "saving_tests_log" to true.
-     • Set "workflow_triggers" to the team default:
-         {"build": true, "tests": true, "release": false,
+     • Set "workflow_triggers" to the team default (all six true):
+         {"build": true, "tests": true, "release": true,
           "docs": true, "security_scan": true, "cross_compile": true}
-       build/test/docs/security gates are on by default (PR shift-left);
-       cross_compile is on but decoupled (only :hammer_and_wrench: starts it,
-       and it never runs on a PR); release is opt-in via gitmoji.
+       A switch grants PERMISSION, the gitmoji states INTENT. Handing every
+       permission out up front is what keeps one skill document literally true
+       in every derived project. build/test/docs/security gates are on by
+       default (PR shift-left); cross_compile is decoupled (only
+       :hammer_and_wrench: starts it, and it never runs on a PR); release needs
+       BOTH the switch and the release gitmoji in the pushed commits.
+     • Leave "build_type" at the project default ("Debug"). It is a declared
+       project state, NOT a gate: no pipeline reads it, so never flip it in
+       order to release.
      • Configure "doc_languages", "doc_versions", "doc_doxygen_folders",
        "doc_doxygen_suffix" as appropriate. Keep .dox/.cxx as documentation-only
        suffixes: every .dox/.cxx file must live under docs/doxygen/dox/, never

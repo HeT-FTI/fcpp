@@ -101,8 +101,8 @@ as a **soft rule** the emoji also triggers from anywhere in the message:
 | Pipeline | gitmoji in commit message | Gate (`metadata.json`) |
 |----------|---------------------------|------------------------|
 | Build | `:building_construction:` | `workflow_triggers.build` |
-| Tests + coverage | `:beer:` | `trigger_tests` / `activate_code_coverage` (needs `build_type=Debug`) |
-| Release | `(:package:):` | `workflow_triggers.release` (needs `build_type=Release`) |
+| Tests + coverage | `:beer:` | `trigger_tests` / `activate_code_coverage` |
+| Release | `(:package:):` | `workflow_triggers.release` + the gitmoji in the pushed commits |
 | Docs | `:book:` | `workflow_triggers.docs` |
 | Security / lint | `:shield:` | `workflow_triggers.security_scan` (also runs on every PR) |
 | Online cross-compile | `:hammer_and_wrench:` | `workflow_triggers.cross_compile` (Conan cross-build from a generated profile; decoupled: the emoji starts only this one) |
@@ -111,7 +111,8 @@ as a **soft rule** the emoji also triggers from anywhere in the message:
 > **Note**: `workflow_triggers.build` / `.tests` / `.docs` / `.security_scan` / `.cross_compile` are
 > enabled by default (commit-lint & schema gates always run on push/PR; build/tests/security
 > shift-left on PRs).
-> `release` requires both the gitmoji and the switch (`build_type` must match too).
+> `release` needs both halves: the switch is the standing permission, the gitmoji is this push's
+> intent. `build_type` is the project's default build type and gates nothing.
 
 ## Crash Course of Build
 

@@ -134,7 +134,6 @@ jobs:
         env:
           EVENT_NAME: ${{ inputs.event_name }}
           COMMIT_MESSAGES: ${{ inputs.commit_messages }}
-          BUILD_TYPE: ${{ steps.read_metadata.outputs.build_type }}
           TRIGGER_TESTS_FLAG: ${{ steps.read_metadata.outputs.trigger_tests }}
           WF_BUILD: ${{ steps.read_metadata.outputs.wf_build }}
           WF_TESTS: ${{ steps.read_metadata.outputs.wf_tests }}
@@ -188,13 +187,14 @@ jobs:
             trigger_build="true"
           fi
           
-          # tests: :beer: on push + Debug + trigger_tests + workflow_triggers.tests
-          if [[ "$EVENT_NAME" == "push" && "$has_test_emoji" == "true" && "$BUILD_TYPE" == "Debug" && "$TRIGGER_TESTS_FLAG" == "true" && "$WF_TESTS" == "true" ]]; then
+          # tests: :beer: on push + trigger_tests + workflow_triggers.tests
+          # (deliberately NOT gated on build_type: a switch grants permission, a state must not)
+          if [[ "$EVENT_NAME" == "push" && "$has_test_emoji" == "true" && "$TRIGGER_TESTS_FLAG" == "true" && "$WF_TESTS" == "true" ]]; then
             trigger_tests="true"
           fi
           
-          # release: (:package:): on push + Release + workflow_triggers.release
-          if [[ "$EVENT_NAME" == "push" && "$has_release_emoji" == "true" && "$BUILD_TYPE" == "Release" && "$WF_RELEASE" == "true" ]]; then
+          # release: (:package:): on push + workflow_triggers.release
+          if [[ "$EVENT_NAME" == "push" && "$has_release_emoji" == "true" && "$WF_RELEASE" == "true" ]]; then
             trigger_release="true"
           fi
           
@@ -225,7 +225,7 @@ jobs:
             if [[ "$WF_BUILD" == "true" ]]; then
               trigger_build="true"
             fi
-            if [[ "$WF_TESTS" == "true" && "$BUILD_TYPE" == "Debug" && "$TRIGGER_TESTS_FLAG" == "true" ]]; then
+            if [[ "$WF_TESTS" == "true" && "$TRIGGER_TESTS_FLAG" == "true" ]]; then
               trigger_tests="true"
             fi
           fi

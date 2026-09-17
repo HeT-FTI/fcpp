@@ -22,13 +22,23 @@ jobs:
 
       - name: Check metadata release trigger
         id: gate
+        env:
+          # Same predicate the controller uses: any commit in a push may carry the release gitmoji.
+          # Non-push events (workflow_call) have no commits, so the release stays off for them.
+          COMMIT_MESSAGES: ${{ github.event_name == 'push' && join(github.event.commits.*.message, '\n') || '' }}
         run: |
           python3 - <<'PY'
-          import json
+          import json, os
           meta = json.load(open('metadata.json'))
           enabled = bool(meta.get('workflow_triggers', {}).get('release', False))
+          requested = '(:package:): ' in os.environ.get('COMMIT_MESSAGES', '')
+          should = enabled and requested
           print(f'::notice::workflow_triggers.release = {enabled}')
-          print(f'should_release={str(enabled).lower()}')
+          print(f'::notice::release gitmoji present = {requested}')
+          print(f'::notice::should_release = {should}')
+          # a switch grants permission, the gitmoji states intent: both are required
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as out:
+              out.write(f'should_release={str(should).lower()}\n')
           PY
 
   auto-release:
