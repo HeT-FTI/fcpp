@@ -119,25 +119,30 @@ jobs:
               exit 1
             fi
           done
-          # read the recipe's summary, not genhtml's HTML: the tracefile is the upstream format,
-          # the HTML is a template genhtml is free to restyle at any release
-          pct=$(python3 -c "import json;print(json.load(open('$summary'))['lines']['percent'])")
-          hit=$(python3 -c "import json;print(json.load(open('$summary'))['lines']['hit'])")
-          found=$(python3 -c "import json;print(json.load(open('$summary'))['lines']['found'])")
-          if ! python3 -c 'import sys; sys.exit(0 if float(sys.argv[1]) > 0 else 1)' "$pct"; then
-            echo "::error::line coverage is ${pct}% (${hit} of ${found} lines) -- expected greater than zero"
+          # read the recipe's summary, not genhtml's HTML: the tracefile is upstream, the HTML is a template
+          lpct=$(python3 -c "import json;print(json.load(open('$summary'))['lines']['percent'])")
+          lhit=$(python3 -c "import json;print(json.load(open('$summary'))['lines']['hit'])")
+          lfound=$(python3 -c "import json;print(json.load(open('$summary'))['lines']['found'])")
+          fpct=$(python3 -c "import json;print(json.load(open('$summary'))['functions']['percent'])")
+          fhit=$(python3 -c "import json;print(json.load(open('$summary'))['functions']['hit'])")
+          ffound=$(python3 -c "import json;print(json.load(open('$summary'))['functions']['found'])")
+          # the gate stays on lines; functions are reported so a drop is visible, not yet a threshold
+          if ! python3 -c 'import sys; sys.exit(0 if float(sys.argv[1]) > 0 else 1)' "$lpct"; then
+            echo "::error::line coverage is ${lpct}% (${lhit} of ${lfound} lines) -- expected greater than zero"
             exit 1
           fi
           {
             echo "### Coverage (${{ inputs.build_type }})"
             echo
-            echo "| metric | value |"
-            echo "| --- | --- |"
-            echo "| line coverage | ${pct}% (${hit}/${found}) |"
-            echo "| artifact | test_package/test/export/coverage/coverage_report/index.html |"
+            echo "| metric | hit | found | rate |"
+            echo "| --- | --- | --- | --- |"
+            echo "| lines | ${lhit} | ${lfound} | ${lpct}% |"
+            echo "| functions | ${fhit} | ${ffound} | ${fpct}% |"
             echo
-            echo "lcov:    $(lcov --version)"
-            echo "genhtml: $(genhtml --version)"
+            echo "| artifact | test_package/test/export/coverage/coverage_report/index.html |"
+            echo "| raw summary | test_package/test/export/coverage/coverage_summary.json |"
+            echo
+            echo "$(lcov --version) | $(genhtml --version)"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Clean up test_package builds
