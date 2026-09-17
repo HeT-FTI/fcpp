@@ -46,6 +46,13 @@ Triggers are grep-matched across **every** commit message in the push, so one pu
 
 This is the only sanctioned use of emojis inside a body. 主 emoji 放括号、其余写正文，是正文里唯一允许出现 emoji 的场合。
 
+若括号里放的是**无触发** emoji（如 `:wrench:`），正文列表必须补上 `:building_construction:` —— 全量集合恰好是这五个：
+
+    :building_construction: :beer: :book: :shield: :hammer_and_wrench:
+
+If the parenthesised emoji triggers nothing, the body list must carry `:building_construction:` too; those
+five emojis *are* the sweep set. 括号里是触发 emoji 时它顶替 `:building_construction:`；否则正文要补齐。
+
 ## Conventional Type → Emoji Map（类型 → emoji 映射，`het-commit` N5 使用）
 
 | Type（类型） | Purpose（用途） | Suggested emoji（建议 emoji） |

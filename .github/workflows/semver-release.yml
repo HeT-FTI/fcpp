@@ -102,5 +102,11 @@ jobs:
         if: always()
         run: |
           echo "::notice::visible tags: $(git tag -l | tr '\n' ' ')"
-          echo "::notice::commits since v1.0.0: $(git rev-list v1.0.0..HEAD --count 2>/dev/null || echo N/A)"
+          # the tag preceding this release, whatever it happens to be: HEAD is the release commit
+          prev_tag="$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)"
+          if [ -n "${prev_tag}" ]; then
+            echo "::notice::commits since ${prev_tag}: $(git rev-list "${prev_tag}..HEAD" --count)"
+          else
+            echo "::notice::no earlier release tag (first release, or nothing to release)"
+          fi
           tail -n 40 /tmp/semantic-release.log | sed 's/^/::notice::/'
