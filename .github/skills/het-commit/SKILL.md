@@ -24,6 +24,22 @@ user-invocable: true
 5. **Preview**: list every commit (type + files + message), **wait for confirmation**. 预览待确认。
 6. **Execute**: `git commit` after confirmation (no push by default). 确认后提交，默认不 push。
 
+## Message Budget（篇幅预算 —— 硬性）
+
+**The body is published verbatim into `CHANGELOG.md`.** `.github/misc/.releaserc.json` runs
+`release-notes-generator` without `writerOpts.body: false`, so every line under the subject becomes a
+permanent line of the changelog. 正文会原样进 CHANGELOG，长度是永久成本。
+
+| Part | Limit |
+|------|------|
+| Subject | ≤ 72 chars, imperative, no trailing period |
+| Body | **optional**; ≤ 3 lines and ≤ 200 chars in total |
+| Blank line between subject and body | required once a body exists |
+
+One sentence of *why* is enough. No bullet lists, no "files changed", no test/verification narrative, no
+restating the diff — those belong in a code comment or the PR description. History is never rewritten to
+apply this rule, so older long commits stay as they are.
+
 ## Type → Emoji Map（触发对应 CI）
 
 | Change（改动内容） | Type | Emoji（trigger） |
@@ -59,6 +75,7 @@ user-invocable: true
 ## Checklist（自检清单）
 
 - [ ] Each commit has conventional prefix + correct emoji. 前缀 + emoji 正确。
+- [ ] Subject ≤ 72 chars; body absent, or ≤ 3 lines / 200 chars. 篇幅达标。
 - [ ] Different types split. 已拆分。
 - [ ] Breaking annotated. breaking 已标注。
 - [ ] Preview confirmed. 预览已确认。
