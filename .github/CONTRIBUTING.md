@@ -1,4 +1,4 @@
-# Contributing to fcpp（贡献指南）
+# Contributing to this project（贡献指南）
 
 ## 提交规范（Commit Conventions — canonical form）
 

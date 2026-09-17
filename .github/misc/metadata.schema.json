@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://schemas.fcpp.dev/metadata.json",
+  "$id": "https://example.com/schemas/metadata.json",
   "title": "Template metadata contract",
-  "description": "Single source of truth for fcpp build & CI. Consumers: CMake, conanfile.py, test_package, ci-orchestrator. See .github/skills/_shared/metadata-contract.md.",
+  "description": "Single source of truth for this project's build & CI. Consumers: CMake, conanfile.py, test_package, ci-orchestrator. See .github/skills/_shared/metadata-contract.md.",
   "type": "object",
   "required": ["name", "version", "build_type", "dependencies", "workflow_triggers"],
   "additionalProperties": false,
