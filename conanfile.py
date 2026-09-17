@@ -27,8 +27,7 @@ conan_targets = {
     'Catch2::Catch2': 'catch2::catch2'
 }
 
-# CMake only learned to name the newest Visual Studio generator in 4.2; an older one
-# makes an MSVC host die at configure with "Could not create named generator".
+# CMake below 4.2 cannot name the newest Visual Studio generator, so an MSVC host dies at configure.
 CMAKE_MSVC_FLOOR = '4.2'
 
 # Module annotation / include-guard literals (extracted to avoid drift).
@@ -243,14 +242,7 @@ class PackageRecipe(ConanFile):
                 f.write(''.join(_new_text))
 
     def _coverage_enabled(self):
-        """Whether this run instruments the library.
-
-        metadata declares the project default; `-c user.het:run_tests=False` narrows it for
-        one run. The namespace is deliberately the template's, not the package's: a derived
-        project renames itself in metadata.json and nothing here has to follow. A build-only
-        run must leave the library uninstrumented, otherwise the cached package carries gcov
-        symbols and every consumer has to link them too.
-        """
+        """Whether this run instruments the library; `-c user.het:run_tests=False` narrows metadata for one run."""
         if not self.conf.get('user.het:run_tests', default=True, check_type=bool):
             return False
         return bool(self.meta.get("activate_code_coverage"))

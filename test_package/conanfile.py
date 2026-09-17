@@ -71,13 +71,7 @@ class PackageTestConan(ConanFile):
             self.requires(req)
 
     def _tests_enabled(self):
-        """Whether this run builds and runs the test suite.
-
-        metadata.trigger_tests states the project's intent; `-c user.het:run_tests=False`
-        narrows it for one run, which is how the build-only CI leg reuses this very recipe
-        instead of a second one that could drift away from it. The conf namespace is the
-        template's rather than the package's, so a rename in metadata.json cannot desync it.
-        """
+        """Whether this run builds and runs the suite; `-c user.het:run_tests=False` is the build-only leg."""
         return bool(self.metadata.get('trigger_tests')) and \
             self.conf.get('user.het:run_tests', default=True, check_type=bool)
 
@@ -332,11 +326,7 @@ class PackageTestConan(ConanFile):
         return _tools['llvm-profdata'], _tools['llvm-cov']
 
     def _coverage_totals(self, info_file):
-        """Sum the tracefile's own records into the coverage contract.
-
-        LF/LH are lines found/hit, FNF/FNH functions, BRF/BRH branches. Every file
-        record carries its own totals, so a plain sum is the report's total.
-        """
+        """Sum the tracefile's own LF/LH/FNF/FNH/BRF/BRH records; each file record carries its totals, so a plain sum is the report's."""
         _sums = {}
         with open(info_file, 'r', encoding='utf-8') as f:
             for _line in f:
@@ -373,8 +363,7 @@ class PackageTestConan(ConanFile):
             if not os.path.isdir(_full_name):
                 os.remove(_full_name)
 
-        # the CI gate reads this, not genhtml's HTML: the tracefile is the upstream format
-        # and summing it is exact, while the HTML is a template genhtml may change at will
+        # the CI gate reads this, not genhtml's HTML: the tracefile is upstream, the HTML is a template
         with open(os.path.join(coverage_folder, 'coverage_summary.json'), 'w', encoding='utf-8') as f:
             json.dump(_totals, f, indent=2, sort_keys=True)
             f.write('\n')

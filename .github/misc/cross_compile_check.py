@@ -1,21 +1,5 @@
 #!/usr/bin/env python3
-"""Online cross-compile check: build the library through Conan with a cross profile.
-
-Mirrors the template's own conventions:
-  * the flow is README's `conan create . -pr:b=default -pr:h=<profile> -tf=""`;
-  * the profile fields and the CPU -> conan `arch` mapping follow
-    `benchmark/script/run_bench.py` (os/arch/-mcpu/-mthumb/-mfloat-abi/-mfpu,
-    `system_name=Generic` for baremetal, `-fno-exceptions -fno-rtti` for C++);
-  * `compiler.cppstd` and `build_type` deliberately do NOT follow run_bench.py: this
-    check must mirror the project's declared configuration, while the board benchmark
-    pins Release because optimised code is the thing it measures;
-  * the artifact is located the same way the test package does it.
-
-No board and no test package: this only answers "does the target toolchain turn
-the real sources into archives of the expected architecture".
-
-Usage: cross_compile_check.py --target {arm-linux-a53,mcu-m4} [--out DIR]
-"""
+"""Online cross-compile check: does the target toolchain turn the real sources into archives of the expected architecture?"""
 import argparse
 import json
 import os
@@ -33,12 +17,7 @@ _METADATA = None
 
 
 def _meta(key):
-    """Read one field from metadata.json, the single source of truth for the build config.
-
-    A profile value still decides what the *dependencies* resolve against even though the
-    recipe forces its own node to metadata's cppstd, so a literal here would put two
-    standards inside one build. Resolved from this file's location, not the caller's cwd.
-    """
+    """Read one field from metadata.json: a profile value still decides what the dependencies resolve against."""
     global _METADATA
     if _METADATA is None:
         _root = Path(__file__).resolve().parents[2]
@@ -99,8 +78,7 @@ def _compiler_major(exe):
 
 
 def generate_profile(cfg, path):
-    # -mthumb/-mfloat-abi/-mfpu are AArch32/M-profile flags: valid for the
-    # Cortex-M leg, rejected by the A-core one, so only the MCU leg gets them.
+    # -mthumb/-mfloat-abi/-mfpu only apply to the M-profile leg; the A-core one rejects them
     if cfg['baremetal']:
         cpu_flags = [f"-mcpu={cfg['mcpu']}", '-mthumb', f"-mfloat-abi={cfg['float_abi']}"]
         if cfg['fpu'] != 'none':
@@ -111,8 +89,7 @@ def generate_profile(cfg, path):
     cflags = list(cpu_flags)
     cxxflags = list(cpu_flags)
     if cfg['baremetal']:
-        # Per run_bench.py: must be set at profile level, otherwise the static
-        # library keeps its .ARM.exidx tables.
+        # profile level, per run_bench.py: otherwise the static library keeps its .ARM.exidx tables
         cxxflags += ['-fno-exceptions', '-fno-rtti']
 
     lines = [
