@@ -30,11 +30,11 @@ user-invocable: true
 `release-notes-generator` without `writerOpts.body: false`, so every line under the subject becomes a
 permanent line of the changelog. 正文会原样进 CHANGELOG，长度是永久成本。
 
-| Part | Limit |
-|------|------|
-| Subject | ≤ 72 chars, imperative, no trailing period |
-| Body | **optional**; ≤ 3 lines and ≤ 200 chars in total |
-| Blank line between subject and body | required once a body exists |
+| Part | House limit | Enforced by commitlint |
+|------|------|------|
+| Subject | ≤ 72 chars, imperative, no trailing period | `subject-max-length` 100, `header-max-length` 120 |
+| Body | **optional**; ≤ 3 lines and ≤ 200 chars in total | nothing — the changelog is the only cost |
+| Blank line between subject and body | required once a body exists | — |
 
 One sentence of *why* is enough. No bullet lists, no "files changed", no test/verification narrative, no
 restating the diff — those belong in a code comment or the PR description. History is never rewritten to
