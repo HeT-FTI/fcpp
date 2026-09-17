@@ -26,9 +26,10 @@ user-invocable: true
 
 ## Message Budget（篇幅预算 —— 硬性）
 
-**The body is published verbatim into `CHANGELOG.md`.** `.github/misc/.releaserc.json` runs
-`release-notes-generator` without `writerOpts.body: false`, so every line under the subject becomes a
-permanent line of the changelog. 正文会原样进 CHANGELOG，长度是永久成本。
+**Why:** the changelog keeps the *subject* only — the `conventionalcommits` preset's `commitPartial`
+has no `{{body}}`, so a body never reaches a release reader. It only costs reviewers and anyone reading
+`git log`. 正文不进 changelog，长正文只增加阅读成本。A `BREAKING CHANGE:` footer is a *note*, not a
+body, so it still shows up under ⚠ BREAKING CHANGES — one-line bodies never hide a breaking change.
 
 | Part | House limit | Enforced by commitlint |
 |------|------|------|
