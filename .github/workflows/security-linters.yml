@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install toolchain
         run: |
@@ -92,7 +92,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
@@ -147,7 +147,7 @@ jobs:
       # Always upload artifacts as a safety net (works for both paths)
       - name: Archive production artifacts
         if: success() || failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: MegaLinter reports
           include-hidden-files: "true"
