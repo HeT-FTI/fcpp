@@ -19,7 +19,11 @@
     "url": { "type": "string" },
     "homepage": { "type": "string" },
     "cmake_version": { "type": "string" },
-    "build_cppstd": { "type": "string" },
+    "build_cppstd": {
+      "description": "C++ standard. Both recipes silently fall back to 17 for anything outside this set, so the enum is what stops that fallback from quietly hiding a typo.",
+      "type": "string",
+      "enum": ["17", "20", "23"]
+    },
     "build_cstd": { "type": "string" },
     "build_type": { "type": "string", "enum": ["Debug", "Release"] },
     "activate_code_coverage": { "type": "boolean" },
