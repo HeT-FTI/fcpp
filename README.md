@@ -245,7 +245,9 @@ project-root/
 > **Suffix rule**: `.dox` and `.cxx` are **documentation-only**. They live exclusively under
 > `docs/doxygen/dox/` as hand-written standalone files (`mainpage.dox`, `demos/*.dox`,
 > `demos/*.cxx`) and are never written as a docstring inside `include/` or `src/`, which carry
-> `.h/.c/.hpp/.cpp` only.
+> `.h/.c/.hpp/.cpp` only. A complete doc set is a landing page plus a tutorial; example code is
+> optional (0..N `.cxx` per `.dox`, no pairing) and `docs/build.py` fails the build when any of
+> those properties breaks.
 
 ## Module Generation (experimental)
 

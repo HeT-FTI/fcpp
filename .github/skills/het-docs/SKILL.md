@@ -24,6 +24,7 @@ user-invocable: true
 - Both are built by `python ./docs/build.py` in one flow. 两条都由 build.py 一条流水线产出。
 - Newbies only need this entry; the model loads the right reference when the task involves annotations (Doxygen) or RST / translation (Sphinx). 新手只用本入口；涉及注解加载 doxygen.md，涉及 RST/翻译加载 sphinx.md。
 - **Doc-only files（文档专属文件）**: `.dox` and `.cxx` are documentation-only and live **only** under `docs/doxygen/dox/` — `mainpage.dox` plus `demos/*.dox` + `demos/*.cxx`, all hand-written standalone files. They are never docstrings inside `include/` or `src/`. 文档专属后缀只放 `docs/doxygen/dox/`。
+- **Complete = landing page + tutorial（完备 = 主页 + 教程）**: `mainpage.dox` and `demos/tutorial.dox` are **hard requirements**; example code in the tutorial is **soft** (0..N `.cxx`, no pairing). `docs/build.py` fails the build when a property breaks — details in [doxygen.md](./references/doxygen.md). 主页与教程为硬约束，示例代码为软约束。
 
 ## 3-Step Checklist（三步操作清单）
 

@@ -261,6 +261,8 @@ via `python ./docs/build.py`. The agent must generate:
 
 5.2  docs/doxygen/dox/mainpage.dox  (Doxygen landing page)
      ─────────────────────────────
+     • HARD REQUIREMENT: exactly one @mainpage must exist, or the docs cannot
+       be built at all (docs/build.py fails the build otherwise).
      • Rewrite the mainpage to reflect the new project: name, purpose, quick
        usage snippet, feature list.
      • Support [en]/[zh] @section tags if multi-language.
@@ -268,8 +270,12 @@ via `python ./docs/build.py`. The agent must generate:
 
 5.3  docs/doxygen/dox/demos/*.dox + *.cxx  (Doxygen example pages)
      ────────────────────────────────────
-     • For each major feature, create a .dox file with explanatory docstring
-       and a paired .cxx file with runnable example code.
+     • HARD REQUIREMENT: demos/ must exist and hold at least one tutorial .dox
+       with @example -- that tutorial plus the mainpage is what makes the doc
+       set "complete".
+     • SOFT: the example code. For each major feature create a .dox with the
+       explanatory docstring and 0..N .cxx files it pulls in via @include.
+       Several .cxx per .dox is normal; no 1:1 pairing is required.
      • Use @example, @code{.cpp} / @endcode, @ingroup as in the template.
      • IMPORTANT: .dox and .cxx are documentation-only. They live exclusively
        under docs/doxygen/dox/ and must never be created under include/ or
@@ -477,6 +483,8 @@ Before finishing, the agent MUST verify:
   [ ] At least one unit test file exists per header in test_package/test/unit/.
   [ ] Stress test files exist for performance-critical paths in test/stress/.
   [ ] docs/doxygen/dox/mainpage.dox is rewritten for the new project.
+  [ ] docs/doxygen/dox/demos/ holds a tutorial .dox with @example, and every
+      file it @include-s exists.
   [ ] index.rst is concise (mini-paper style: background → method → quick
       start → results → license), readable in under 2 minutes.
   [ ] Long content is split into separate .rst files, not crammed in index.rst.
