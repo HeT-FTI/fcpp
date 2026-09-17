@@ -136,18 +136,16 @@ conan create . -pr:b=default -pr:h=arm_profile -s build_type=Debug --build=missi
 python ./docs/build.py
 ```
 
-### 3. One-lined build automation 
+### 3. Full local pass
 
-Unix-like platforms (Linux, MacOS):
+Steps 1-2 end to end, then drop the local package. `build_type` is the one `metadata.json` declares,
+and the package name is yours — there is nothing to edit here:
 
 ```bash
-bash ./build
-```
-
-Windows:
-
-```powershell
-Get-Content "build" | Invoke-Expression
+conan create . -pr:b=default -pr:h=default -s build_type=Debug --build=missing
+python ./docs/build.py
+python ./test_package/conanfile.py
+conan remove "<your-package>/*" --confirm
 ```
 
 ### 4. Add requirements
