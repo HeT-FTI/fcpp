@@ -31,6 +31,7 @@
       Requests :building_construction: for this push.
 
   长 emoji 吃掉标题预算；需要篇幅时括号里放短的无触发 emoji，把要触发的 emoji 搬到正文。
+- **The parenthesis emoji never reaches the changelog（括号里的 emoji 不进 changelog）**: `.releaserc.json` names that capture group `emoji` instead of `scope`, so release notes render `* <subject>` with no emoji prefix. Naming it `scope` made every entry print `**:beer::**`. Triggering is grep-based, not parser-based — this changes nothing about which pipelines run.
 - Versioning is driven by `commit-analyzer` (semantic-release) reading the **conventional prefix** (feat/fix/...), orthogonal to the emoji. 版本由 conventional 前缀决定，与 emoji 正交。
 
 ## Full Sweep（全量 / 全量测试）
