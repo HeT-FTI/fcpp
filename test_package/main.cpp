@@ -37,6 +37,7 @@ int main() {
     test_c_compiler();
     test_c_zlib();
     test_c_pcre();
+    test_c_generic();
 
     // CPP test
     test_hello();
