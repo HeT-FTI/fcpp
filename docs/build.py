@@ -147,7 +147,9 @@ def _file_collector(folders: list[str], obj: list[str]) -> list[tuple[str, str]]
         entry = Path(folder)
         for _obj in obj:
             for file in entry.rglob(f"*.{_obj}"):
-                res.append((folder, str(file.relative_to(entry))))
+                # relative paths stay POSIX internally: downstream compares them as strings
+                # (tutorial location, Doxyfile injection, messages) and pathlib yields '\' here
+                res.append((folder, str(file.relative_to(entry)).replace(sep, '/')))
     return res
 
 
@@ -156,7 +158,8 @@ def _walk_files(root: str) -> list[str]:
     res = []
     for _dir, _, _names in os.walk(root):
         for _name in _names:
-            res.append(os.path.relpath(_dir + sep + _name, root))
+            # same POSIX normalization as _file_collector: consumers compare these strings
+            res.append(os.path.relpath(_dir + sep + _name, root).replace(sep, '/'))
     return res
 
 
