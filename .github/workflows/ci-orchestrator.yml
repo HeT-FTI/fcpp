@@ -1,6 +1,7 @@
 name: CI Orchestrator
 
 # Entry point: reads metadata.json once, then calls the downstream workflows
+# ubuntu-latest rolls 24.04 -> 26.04 (Oct-Nov 2026); a probe branch proved these workflows green on both.
 
 on:
   push:

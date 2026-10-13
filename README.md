@@ -5,12 +5,11 @@ capabilities.
 
 ## Badges
 
-![License](https://img.shields.io/github/license/CubicZebra/fcpp?color=blue&label=license)
-![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/CubicZebra/fcpp?label=code%20quality&logo=codefactor)
+![License](https://img.shields.io/github/license/HeT-FTI/fcpp?color=blue&label=license)
 ![C++](https://img.shields.io/badge/C%2B%2B-17%2F20%2F23-blue?logo=c%2B%2B&logoColor=white)
 ![Modules](https://img.shields.io/badge/modules-C%2B%2B23%20experimental-purple?logo=c%2B%2B&logoColor=white)
-![CI](https://github.com/CubicZebra/fcpp/actions/workflows/ci-build-test.yml/badge.svg)
-![CI](https://github.com/CubicZebra/fcpp/actions/workflows/docs-build.yml/badge.svg)
+![CI](https://github.com/HeT-FTI/fcpp/actions/workflows/ci-orchestrator.yml/badge.svg)
+![Release](https://github.com/HeT-FTI/fcpp/actions/workflows/semver-release.yml/badge.svg)
 ![CMake](https://img.shields.io/badge/cmake-3.28%2B-orange?logo=cmake)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue?logo=python)
 ![Doxygen](https://img.shields.io/badge/docs-Doxygen-green?logo=doxygen&logoColor=white)
@@ -263,16 +262,25 @@ migration to fit the future C++ standard.
 
 ## Compiler Support Matrix
 
-| Feature          | MSVC | Clang | GCC | Apple-Clang |
-|------------------|------|-------|-----|-------------|
-| C++ Modules      | ✓    | ✓     | ✓   | ✓           |
-| C Compatibility  | ✓    | ✓     | ✓   | ✓           |
-| Automatic Export | ✓    | ✓     | ✓   | ✓           |
+This states what CI **actually builds and runs**, not what the language permits. The runner labels live
+in `.github/workflows/`; `build_type` / `build_cppstd` / `build_cstd` live in `metadata.json`.
+
+| Feature          | MSVC (`windows-latest`) | Apple-Clang (`macos-latest`) | GCC (`ubuntu-latest`) |
+|------------------|-------------------------|------------------------------|-----------------------|
+| Build, link, run | ✓                       | ✓                            | ✓                     |
+| C Compatibility  | ✓                       | ✓                            | ✓                     |
+| Automatic Export | ✓                       | ✓                            | ✓                     |
+
+**C++ Modules are experimental and are not exercised by CI**: `generate_modules_inplace` is `false`, so
+no leg compiles a module interface. Treat the feature as unverified until a leg covers it.
 
 ## Platforms Support
 
-- **Desktop**: Windows, Linux, MacOS
-- **Mobile**: arm-linux, risc-v
+- **Desktop**: Windows, Linux, macOS — each is a build-and-run CI leg
+- **Embedded / cross-compiled**: `arm-linux-a53` (Cortex-A, aarch64 Linux) and `mcu-m4` (Cortex-M
+  baremetal, `arm-none-eabi`) — see `.github/workflows/cross-compile.yml`
+- Any other target works through a generated Conan profile, but is **not covered by CI** until a leg is
+  added for it.
 
 ## Downstream Contract (HeT DevTools)
 
@@ -328,7 +336,9 @@ commit-base-versioning mechanism has been removed.)
 
 ## To Do Things
 
-Possible frame design/validation on Apple Clang compiler (raised from dlib requirement).
+- MSVC has no coverage backend configured, so the test + coverage chain runs on `ubuntu-latest` and
+  `macos-latest` only (`.github/workflows/full-test-automation.yml`). A Windows leg needs MSVC
+  instrumentation first.
 
 ## License
 
