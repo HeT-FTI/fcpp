@@ -22,7 +22,8 @@ capabilities.
 - **File Build System**: Doxygen, Graphviz, Sphinx
 - **Module Support**: Optionally activated, when C++ standard ≥ 23
 - **Metadata-Driven**: `metadata.json` is the single source of truth (build, deps, docs, CI)
-- **Skills & Agent**: library-level `het-*` skills + routing agent (`.github/skills/`)
+- **Skills & Agent**: harness-agnostic Agent Skills + one routing agent (canonical `.github/skills/`,
+  default `.agents/skills` view; optional `.claude`/`.codex` views)
 - **Component Structure**:
     - pairwise header and source assumption
     - suffix distinguishment, (.h, .c) for C part, and (.hpp, .cpp) for C++ part
@@ -40,7 +41,8 @@ capabilities.
 - Automation documenting system via Doxygen and Sphinx
 - Importation, derivation and call relationship illustration through Graphviz
 - `metadata.json` as the single source of truth (build / deps / docs / CI)
-- Library-level VS Code skills + routing agent (`.github/skills/`, `/het-*` slash commands)
+- Harness-agnostic Agent Skills (`.github/skills/`, 15 task skills + one routing agent) with a default
+  `.agents/skills` view and optional `.claude`/`.codex` views
 - Metadata + gitmoji driven CI/CD orchestration (GitHub Actions)
 - Cross-compilation & on-board benchmark framework (`benchmark/`)
 - Agentic Coding workspace (`/workspace/`, git-ignored)
@@ -52,20 +54,36 @@ during Agentic Coding sessions — e.g., implementation plans, test contracts, a
 intermediate artifacts. Keep such working files under `/workspace/` so they never pollute the tracked
 source tree.
 
-## Skills & Agent (VS Code)
+## Skills & Agent (any harness)
 
-The template ships a library-level skills system under `.github/skills/` — **15 `het-*` skills plus one
-routing agent**, all invocable from Copilot Chat by typing `/`:
+The template ships a library-level Agent Skills system — **15 task skills plus one routing agent**
+(`het-agent`), canonical under `.github/skills/`. The same bodies are exposed to each harness through
+generated views, never copies. Default `sync` creates **one root directory** (`.agents/`); Claude Code
+and Codex views are optional:
 
-| Family | Skills | Audience |
-|--------|--------|----------|
-| IaC usage (S0–S6) | `het-guide`, `het-build`, `het-release`, `het-docs`, `het-quality`, `het-board`, `het-fix-ci` | CI/CD novices |
-| Dev automation (N1–N8) | `het-deps`, `het-module`, `het-setup`, `het-testgen`, `het-commit`, `het-audit`, `het-preflight`, `het-patent` | Developers |
-| Routing agent (A1) | `het-agent` | Everyone |
+| Harness | Native view | How to invoke | Default? |
+|---|---|---|---|
+| DSH | `.agents/skills` | `skill` tool with the exact name, or `/het-build` | yes |
+| Cursor | `.agents/skills` | `/het-build` or `@het-build` | yes |
+| Gemini CLI | `.agents/skills` alias | automatic `activate_skill` | yes |
+| GitHub Copilot | `.github/skills` (VS 2026 also `.agents`) | `/het-build` in chat | canonical |
+| Claude Code | `.claude/skills` | `/het-build` | optional (`sync --harness claude`) |
+| Codex | `.codex/skills` | `/use het-build` | optional (`sync --harness codex`) |
+| Any other harness | direct read | read `.github/skills/<name>/SKILL.md` | — |
 
-Examples: `/het-guide` for onboarding, `/het-testgen` to generate tests, `/het-agent` for natural-language
-composite tasks (e.g. *"add a module, test it, and commit"*). See `.github/skills/README.md` and
-`PLAN-skills.md` for the full execution plan.
+After cloning, materialize the default view and validate the contract:
+
+```bash
+python .github/skills/_shared/skillkit/cli.py sync
+python .github/skills/_shared/skillkit/cli.py validate --strict
+```
+
+`skillkit` refuses to treat a real directory as a view, so the canonical tree stays the single body.
+There are **no root-level `AGENTS.md`/`CLAUDE.md`/`GEMINI.md` files**: the only default root addition is
+the git-ignored `.agents/` directory.
+Examples: `het-guide` for onboarding, `het-testgen` to generate tests, `het-agent` for composite tasks
+(e.g. *"add a module, test it, and commit"*). See `.github/skills/README.md`,
+`.github/skills/_shared/routing.md`, and `.github/skills/_shared/harness-adapters.md`.
 
 ## Build Requirements
 
@@ -193,10 +211,14 @@ project-root/
 ├── LICENSE                   # Apache v2 Project license
 ├── NOTICE                    # Notice file of Apache v2
 ├── .vscode/                  # Recommended editor config (extensions / settings / tasks)
+├── .agents/skills            # Default generated view (git-ignored) → .github/skills
+├── .claude/skills            # Optional generated view (git-ignored) → .github/skills
+├── .codex/skills             # Optional generated view (git-ignored) → .github/skills
 ├── .devcontainer/            # Reproducible dev environment (Dockerfile)
-├── .github/                  # CI/CD + library-level skills
+├── .github/                  # CI/CD + canonical agent skills
 │   ├── workflows/            # ci-orchestrator / metadata-controller / build / test / docs / release / security
-│   ├── skills/               # 16 het-* skills + het-agent + _shared + manifest.json
+│   ├── skills/               # canonical: 15 task skills + het-agent + _shared + manifest.json
+│   │   └── _shared/skillkit/ # validate / sync / catalog tool
 │   ├── misc/                 # clang-format(-c/cpp) / clang-tidy / gitleaks / releaserc / commitlint /
 │   │                         # metadata.schema / mega-linter / pre-commit / labels / Codegen-Starter.txt
 │   ├── CODEOWNERS            # Required reviewers

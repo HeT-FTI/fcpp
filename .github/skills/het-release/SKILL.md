@@ -1,6 +1,7 @@
 ---
 name: het-release
 description: 'Release & versioning for the fcpp template (semantic-release + Conventional Commits). Use when: users ask to release / publish / bump version / changelog. 发布/发版：semantic-release 自动发版，版本号由提交前缀驱动。'
+license: Apache-2.0
 argument-hint: "Target version / notes (optional) / 目标版本/说明（可选）"
 user-invocable: true
 ---

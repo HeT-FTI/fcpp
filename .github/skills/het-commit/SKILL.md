@@ -1,6 +1,7 @@
 ---
 name: het-commit
 description: 'Auto Conventional Commit for the fcpp template (conventional + emoji superset, canonical form type(:emoji):). Use when: commit / conventional commit / split commits / auto commit. 自动规范提交：拆分改动并生成带正确 emoji 的规范提交。'
+license: Apache-2.0
 argument-hint: "Scope or note (optional) / 提交范围或说明"
 user-invocable: true
 ---

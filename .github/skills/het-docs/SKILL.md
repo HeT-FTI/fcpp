@@ -1,6 +1,7 @@
 ---
 name: het-docs
 description: 'Documentation generation for the fcpp template (Doxygen + Sphinx, bilingual en/zh). Use when: users ask how docs are generated, bilingual docs, doxygen/sphinx. 文档生成：多语言多版本文档流水线。'
+license: Apache-2.0
 argument-hint: "Docs scope (optional) / 文档范围（可选）"
 user-invocable: true
 ---

@@ -1,6 +1,7 @@
 ---
 name: het-module
 description: 'Add a new module/API to the fcpp library (paired naming, module annotations, ImportStart/End markers, bilingual docs). Use when: add a module / new API / new feature / header+source. 新增模块/API：按配对命名与注解规范创建 include/src 并衔接测试。'
+license: Apache-2.0
 argument-hint: "Module name & description (optional) / 模块名与功能描述（可选）"
 user-invocable: true
 ---

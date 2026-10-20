@@ -1,6 +1,7 @@
 ---
 name: het-audit
 description: 'Repository audit for the fcpp template (engineering standards + functional review vs plan/tests). Use when: audit / review / check template conformance / compare plan vs implementation. 仓库审计：按模板工程标准与功能标准输出差距报告。可用 /project-audit。'
+license: Apache-2.0
 argument-hint: "Audit scope (optional) / 审计范围（可选）"
 user-invocable: true
 ---
@@ -49,7 +50,9 @@ Additional findings（附加发现）: public APIs without test coverage (→ su
 2. Read fact sources: `.github/skills/_shared/*.md`. 读取事实源。
 3. Collect evidence: `include/`, `src/`, `test_package/`, `metadata.json`, git log. 收集证据。
 4. Judge per axis. 逐轴判定。
-5. Output report: check for `workspace/` at repo root — create it if missing (`mkdir -p workspace/`), then write `AUDIT-<date>.md` inside it (source code untouched; only the report file is created). 输出报告：检查根目录 `workspace/`，不存在则先创建，再将 `AUDIT-<date>.md` 写入其中（不改动源码，仅生成报告文件）。
+5. Output report: check for `workspace/` at repo root — create it if missing (`mkdir -p workspace/` on POSIX,
+   `New-Item -ItemType Directory -Force workspace` in PowerShell, or the editor's new-folder action), then write
+   `AUDIT-<date>.md` inside it (source code untouched; only the report file is created). 输出报告：检查根目录 `workspace/`，不存在则先创建，再将 `AUDIT-<date>.md` 写入其中（不改动源码，仅生成报告文件）。
 6. If user wants fixes/tests → then invoke `het-testgen` / other skills (write ops need confirmation). 需要补测/修复时再进入写操作。
 
 ## Checklist（自检清单）

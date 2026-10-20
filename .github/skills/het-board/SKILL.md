@@ -1,6 +1,7 @@
 ---
 name: het-board
 description: 'Cross-compilation & on-board verification (Cortex-M baremetal / Cortex-A Linux) for the fcpp template. Use when: board / cross-compile / baremetal / cortex-m / flash / benchmark on target. 上板/交叉编译/裸机：编译到目标板并跑基准验证。'
+license: Apache-2.0
 argument-hint: "Board / target (optional) / 板卡/目标（可选）"
 user-invocable: true
 ---

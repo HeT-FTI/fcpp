@@ -1,6 +1,7 @@
 ---
 name: het-testgen
 description: 'Test case generation for the fcpp template. Use when: generate/add tests, TDD, test-first from a PRD or PlantUML blueprint, HPO/model tuning. 测试生成：从代码或蓝图自动生成 GTest，支持测试先行与模型调参。'
+license: Apache-2.0
 argument-hint: "Mode/target module: A=code, B=blueprint / 模式/目标模块（A:代码 B:蓝图）"
 user-invocable: true
 ---

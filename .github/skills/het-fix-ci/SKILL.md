@@ -1,6 +1,7 @@
 ---
 name: het-fix-ci
 description: 'CI/CD troubleshooting for the fcpp template. Use when: CI is red / workflow failed / build or test fails / unknown where the problem is. CI 排障：定位并修复模板流水线常见失败。'
+license: Apache-2.0
 argument-hint: "Failure link or symptom / 失败链接或症状"
 user-invocable: true
 ---

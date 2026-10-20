@@ -1,6 +1,7 @@
 ---
 name: het-setup
 description: 'Environment setup & first build for the fcpp template (conan/cmake/doxygen/sphinx/arm-toolchain). Use when: environment setup / install conan / first build / prerequisites / how to start. 环境搭建/首次构建：装工具链并完成首次构建与文档生成。'
+license: Apache-2.0
 argument-hint: "Target platform: desktop/cross (optional) / 目标平台（桌面/交叉）（可选）"
 user-invocable: true
 ---
@@ -32,6 +33,9 @@ pip install conan
 conan profile detect --force
 ```
 Docs tools (optional, Linux): `sudo apt install -y doxygen graphviz && pip install numpy sphinx sphinx-intl sphinx-rtd-theme`.
+
+> Windows: use `py -m pip install conan` (or a venv) and run the POSIX commands in WSL, Git Bash or the
+> `.devcontainer/`; `conan` / `python` commands are cross-platform. Windows 用 `py -m pip` 安装，POSIX 命令用 WSL/Git Bash/devcontainer。
 
 ## First Build（首次构建）
 

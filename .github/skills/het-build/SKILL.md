@@ -1,6 +1,7 @@
 ---
 name: het-build
 description: 'Build, test and coverage for the fcpp template. Use when: users ask to build / compile / run tests / check coverage, or CI build fails. 构建/测试/覆盖率：帮库能构建、能测、能看覆盖率。'
+license: Apache-2.0
 argument-hint: "Build/test/coverage target (optional) / 构建/测试/覆盖率目标（可选）"
 user-invocable: true
 ---

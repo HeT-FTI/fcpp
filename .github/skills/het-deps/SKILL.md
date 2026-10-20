@@ -1,6 +1,7 @@
 ---
 name: het-deps
 description: 'Dependency governance for the fcpp template (metadata 4-bucket spec, conan_targets mapping, switch gating, baremetal whitelist). Use when: add/remove a dependency, dependency config. 依赖治理：按四桶规范与开关门控正确增删依赖。'
+license: Apache-2.0
 argument-hint: "Dep to add/remove (optional) / 要增删的依赖（可选）"
 user-invocable: true
 ---

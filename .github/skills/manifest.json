@@ -1,10 +1,19 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "project": "fcpp",
+  "spec": "agentskills.io",
+  "canonical_root": ".github/skills",
+  "routing_table": ".github/skills/_shared/routing.md",
+  "generated_views": {
+    ".agents/skills": ["dsh", "cursor", "gemini", "copilot-vs"],
+    ".claude/skills": ["claude-code"],
+    ".codex/skills": ["codex"]
+  },
+  "default_view": ".agents/skills",
   "family": {
     "iac_usage": "一期·IaC 使用族（面向 CI/CD 新手）",
     "dev_automation": "二期·自动化开发族（面向开发者）",
-    "agent": "统一入口"
+    "agent": "唯一路由主体（组合任务入口）"
   },
   "skills": [
     {

@@ -1,6 +1,7 @@
 ---
 name: het-patent
 description: 'Patent mining & disclosure drafting for the fcpp template. Use when: mine patentable points, draft patent disclosures (专利交底书), analyze codebase for IP, create patent documents from code. 专利挖掘：从代码库挖掘可专利创新点并生成标准格式交底书（背景/方案/替代/保护点）。'
+license: Apache-2.0
 argument-hint: '[project scope, e.g., "src/" or "整个项目" / 分析范围]'
 user-invocable: true
 ---
@@ -279,12 +280,15 @@ After the quality-enhancement pass, run a **de-AI writing pass** on every draft 
 
 ---
 
-## Example Prompts
+## Example Prompts（示例）
+
+Load `het-patent`, then give it a scope. Where the harness supports slash invocation,
+`/het-patent <scope>` is an alias. 加载 `het-patent` 后给出范围；支持 `/` 的 harness 可用 `/het-patent <scope>`。
 
 ```
-/het-patent src/                      # Analyze src/ directory
-/het-patent 整个项目                    # Analyze entire workspace
-/het-patent include/ src/ api/        # Analyze specific modules
+het-patent src/                      # Analyze src/ directory
+het-patent 整个项目                    # Analyze entire workspace
+het-patent include/ src/ api/        # Analyze specific modules
 ```
 
 ## Notes
