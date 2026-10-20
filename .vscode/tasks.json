@@ -36,6 +36,18 @@
       "problemMatcher": []
     },
     {
+      "label": "skills:validate",
+      "type": "shell",
+      "command": "python .github/skills/_shared/skillkit/cli.py validate --strict",
+      "problemMatcher": []
+    },
+    {
+      "label": "skills:sync",
+      "type": "shell",
+      "command": "python .github/skills/_shared/skillkit/cli.py sync",
+      "problemMatcher": []
+    },
+    {
       "label": "test",
       "type": "shell",
       "command": "conan create . -s build_type=$(python3 .github/misc/meta.py build_type) --build=missing",

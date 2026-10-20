@@ -130,6 +130,36 @@ jobs:
       - name: Validate metadata.json
         run: ./node_modules/.bin/ajv validate -s .github/misc/metadata.schema.json -d metadata.json --spec=draft7
 
+  # Step 2d: Validate the canonical Agent Skills tree and materialize the harness views
+  skills-contract:
+    name: Skills Contract
+    # Skip on the template instantiation push (see controller job above).
+    if: ${{ github.event_name != 'push' || github.event.commits[0].message != 'Initial commit' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Validate skill bundles
+        run: python3 .github/skills/_shared/skillkit/cli.py validate --strict
+
+      - name: Materialize and verify every harness view
+        run: |
+          python3 .github/skills/_shared/skillkit/cli.py sync --harness all
+          python3 .github/skills/_shared/skillkit/cli.py sync --check --harness all
+          python3 .github/skills/_shared/skillkit/cli.py status
+
+      - name: Ensure generated views are git-ignored
+        run: |
+          changes="$(git status --porcelain --untracked-files=all)"
+          if [ -n "$changes" ]; then
+            printf '%s\n' "$changes"
+            echo '::error::Generated skill views must stay git-ignored and no duplicate SKILL.md may be committed.'
+            exit 1
+          fi
+
   # Step 3: Trigger downstream workflows based on controller outputs
   
   build:

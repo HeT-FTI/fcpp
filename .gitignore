@@ -9,6 +9,15 @@ __pycache__/
 # process artifacts (audit/plan docs live in the working copy only)
 /workspace/
 
+# agent-skill adapter views (generated symlinks/junctions; canonical source is .github/skills)
+# Default: .agents only. Optional: .claude / .codex via `sync --harness claude|codex`.
+# No trailing slash: a POSIX view is a symlink, which a "dir/" pattern does not match.
+# Regenerate with: python .github/skills/_shared/skillkit/cli.py sync
+/.agents/skills
+/.claude/skills
+/.codex/skills
+/.github/skills/_shared/.skillkit/
+
 # .vscode/: the shared files ARE committed (extensions.json / settings.json / tasks.json);
 # machine-local editor state stays out
 .vscode/launch.json

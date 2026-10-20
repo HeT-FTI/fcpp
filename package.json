@@ -6,7 +6,11 @@
   "license": "Apache-2.0",
   "scripts": {
     "lint:megalinter": "bash .github/misc/run-megalinter.sh",
-    "lint:megalinter:fix": "bash .github/misc/run-megalinter.sh --fix"
+    "lint:megalinter:fix": "bash .github/misc/run-megalinter.sh --fix",
+    "skills:validate": "python .github/skills/_shared/skillkit/cli.py validate --strict",
+    "skills:sync": "python .github/skills/_shared/skillkit/cli.py sync",
+    "skills:sync:all": "python .github/skills/_shared/skillkit/cli.py sync --harness all",
+    "skills:check": "python .github/skills/_shared/skillkit/cli.py sync --check"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.0",
