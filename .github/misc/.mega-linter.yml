@@ -60,5 +60,9 @@ REPOSITORY_DEVSKIM_ARGUMENTS:
 C_CLANG_FORMAT_CONFIG_FILE: ".github/misc/.clang-format-c"
 CPP_CLANG_FORMAT_CONFIG_FILE: ".github/misc/.clang-format-cpp"
 
+# .h belongs to the C family (see code-conventions.md): the C++ linter must not claim it,
+# or a C header gets the left-aligned C++ style and fails a header-only package
+CPP_CLANG_FORMAT_FILTER_REGEX_EXCLUDE: "(^|/)[^/]+\\.h$"
+
 SARIF_REPORTER: true
 MARKDOWN_SUMMARY_REPORTER: true

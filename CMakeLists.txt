@@ -135,6 +135,29 @@ if(IS_HEADER)  # header-only package
   # the only thing a header-only package can enforce on its consumers is the standard
   target_compile_features(${LIB_NAME} INTERFACE cxx_std_${BUILD_CPPSTD})
 
+  # a header-only package ships no TU, so nothing would prove these headers compile for
+  # this toolchain: one probe TU per public header, built but never installed
+  set(HEADER_PROBE_DIR "${CMAKE_CURRENT_BINARY_DIR}/header_probe")
+  file(MAKE_DIRECTORY "${HEADER_PROBE_DIR}")
+  set(HEADER_PROBES "")
+  foreach(HEADER IN LISTS CPP_HEADERS C_HEADERS)
+    file(RELATIVE_PATH HEADER_REL "${CMAKE_CURRENT_SOURCE_DIR}/include" "${HEADER}")
+    if(HEADER MATCHES "\\.hpp$")
+      set(HEADER_SUFFIX ".cpp")
+    else()
+      set(HEADER_SUFFIX ".c")
+    endif()
+    string(REPLACE "/" "_" HEADER_FLAT "${HEADER_REL}")
+    set(HEADER_PROBE "${HEADER_PROBE_DIR}/probe_${HEADER_FLAT}${HEADER_SUFFIX}")
+    file(WRITE "${HEADER_PROBE}" "#include \"${HEADER_REL}\"\n")
+    list(APPEND HEADER_PROBES "${HEADER_PROBE}")
+  endforeach()
+
+  if(HEADER_PROBES)
+    add_library(${LIB_NAME}_header_probe OBJECT ${HEADER_PROBES})
+    target_link_libraries(${LIB_NAME}_header_probe PRIVATE ${LIB_NAME})
+  endif()
+
   if(NOT CPP_DEPS STREQUAL "[]")
       parse_conan_deps(CPP_DEPS PARSED_CPP_DEPS)
       foreach (CPP_ITEM IN LISTS PARSED_CPP_DEPS)

@@ -445,8 +445,10 @@ class PackageTestConan(ConanFile):
         # collect code coverage files to export/coverage/
         _gcda = [str(_) for _ in Path(_main_pkg_build_fd).rglob('*.gcda')]
         if self.metadata.get('is_header'):
-            # header-only: the package compiles nothing, its code is instrumented inside the consumer
-            _gcda += [str(_) for _ in Path(self.build_folder).rglob('*.gcda')]
+            # header-only: the package compiles nothing, its code is instrumented inside the consumer.
+            # skip the generated ucov_* TUs: lcov 2.x aborts on gcov's line range for gtest macros
+            _gcda += [str(_) for _ in Path(self.build_folder).rglob('*.gcda')
+                      if not _.name.startswith('ucov_')]
         _gcno = [_[:-4] + 'gcno' for _ in _gcda]
 
         coverage_folder = self._coverage_folder()

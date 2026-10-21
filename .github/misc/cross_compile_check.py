@@ -165,6 +165,22 @@ def main():
 
     archives = sorted(Path(pkg_folder, 'lib').glob('*.a'))
     if not archives:
+        if meta.get('is_header'):
+            headers = sorted(Path(pkg_folder, 'include').rglob('*.h')) + \
+                      sorted(Path(pkg_folder, 'include').rglob('*.hpp'))
+            if not headers:
+                raise RuntimeError(f'header-only package ships no header under {pkg_folder}/include')
+            # Nothing to disassemble: the CMake header probes compiled every public header
+            # with this toolchain during `conan create`, so a bad target build is already fatal
+            print(f'--- {args.target}: header-only, no archive by design ---')
+            print('  headers: ' + ', '.join(_.name for _ in headers))
+            summary = os.environ.get('GITHUB_STEP_SUMMARY')
+            if summary:
+                with open(summary, 'a', encoding='utf-8') as fh:
+                    fh.write(f'### Cross compile ({args.target})\n\n')
+                    fh.write(f'header-only package ({len(headers)} headers): no archive is produced; '
+                             f'the in-build header probes compiled them for `{cfg["os"]}`.\n\n')
+            return 0
         raise RuntimeError(f'no static archive produced under {pkg_folder}/lib')
 
     status = 0
