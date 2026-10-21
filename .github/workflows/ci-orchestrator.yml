@@ -94,12 +94,13 @@ jobs:
           EVENT_BEFORE: ${{ github.event.before }}
         run: |
           FROM="$EVENT_BEFORE"
-          if [[ "$FROM" == "0000000000000000000000000000000000000000" ]]; then
-            # First push of a branch: only the last commit exists locally
-            ./node_modules/.bin/commitlint --config .github/misc/commitlint.config.js --from HEAD~1 --to HEAD --verbose
-          else
-            ./node_modules/.bin/commitlint --config .github/misc/commitlint.config.js --from "$FROM" --to HEAD --verbose
+          # A force push that rewinds history leaves `before` unreachable: the object may
+          # not exist in the clone at all ("Invalid revision range"). Fall back to the tip.
+          if [[ "$FROM" =~ ^0+$ ]] || ! git cat-file -e "${FROM}^{commit}" 2>/dev/null \
+             || ! git merge-base --is-ancestor "$FROM" HEAD; then
+            FROM="HEAD~1"
           fi
+          ./node_modules/.bin/commitlint --config .github/misc/commitlint.config.js --from "$FROM" --to HEAD --verbose
 
       - name: Lint PR title
         if: github.event_name == 'pull_request'

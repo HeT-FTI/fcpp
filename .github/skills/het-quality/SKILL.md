@@ -25,8 +25,8 @@ user-invocable: true
    # version pinned to v8.8.0 (same as the pinned CI action) so results match CI
    bash .github/misc/run-megalinter.sh   # or: npm run lint:megalinter  (--fix to auto-fix)
    ```
-   > Shell note: the commands above are POSIX. On Windows use WSL, Git Bash or the `.devcontainer/`;
-   > `conan` / `python` commands are cross-platform. 命令为 POSIX；Windows 用 WSL/Git Bash/devcontainer。
+   > Shell note: only the `bash` line is POSIX; `python3 .github/misc/gates.py` is cross-platform. On Windows
+   > run the MegaLinter step in WSL, Git Bash or the `.devcontainer/`. 仅 megalinter 那行是 POSIX；门禁脚本跨平台。
 2. Commit with `ci(:shield:): ...` (or open a PR — quality gates run on every PR).
 3. Actions → `Security Scan / Quality Gates` and `Security Scan / MegaLinter` jobs — **both** must be green; the SAST detail is in the `MegaLinter reports` artifact.
 

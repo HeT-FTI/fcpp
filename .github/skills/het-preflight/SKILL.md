@@ -38,8 +38,8 @@ python ./docs/build.py
 # 4) audit → het-audit (N6)
 ```
 
-> Shell note: the commands above are POSIX. On Windows use WSL, Git Bash or the `.devcontainer/`;
-> `conan` / `python` commands are cross-platform. 命令为 POSIX；Windows 用 WSL/Git Bash/devcontainer。
+> Shell note: `gates.py` and `conan` are cross-platform (`python` is `python3` on Linux); the docs chain needs
+> Doxygen/Sphinx. On Windows run it in WSL, Git Bash or the `.devcontainer/`. 门禁与 conan 跨平台；文档链需要工具链。
 
 ## Failure Handling（失败处理）
 
