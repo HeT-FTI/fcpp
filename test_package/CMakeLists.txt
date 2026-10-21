@@ -124,6 +124,12 @@ if(TRIGGER_TESTS)
     find_package(GTest REQUIRED)
     include(GoogleTest)
     enable_testing()
+
+    # an imported target's include dirs are -isystem, and LLVM coverage silently drops
+    # system headers: a header-only library would then report no code at all
+    if(TARGET ${MAIN_LIB_TARGET})
+        set_target_properties(${MAIN_LIB_TARGET} PROPERTIES IMPORTED_NO_SYSTEM TRUE)
+    endif()
     
     if(NOT ENABLE_COVERAGE)
       file(GLOB_RECURSE TEST_SOURCES_S "test/stress/*.cpp")

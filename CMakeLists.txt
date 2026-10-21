@@ -156,6 +156,15 @@ if(IS_HEADER)  # header-only package
   if(HEADER_PROBES)
     add_library(${LIB_NAME}_header_probe OBJECT ${HEADER_PROBES})
     target_link_libraries(${LIB_NAME}_header_probe PRIVATE ${LIB_NAME})
+    # MSVC needs the explicit standard: _Generic is invisible in its default C mode
+    set_target_properties(${LIB_NAME}_header_probe PROPERTIES
+            C_STANDARD ${BUILD_CSTD}
+            C_STANDARD_REQUIRED ON
+            C_EXTENSIONS OFF
+            CXX_STANDARD ${BUILD_CPPSTD}
+            CXX_STANDARD_REQUIRED ON
+            CXX_EXTENSIONS OFF
+    )
   endif()
 
   if(NOT CPP_DEPS STREQUAL "[]")
