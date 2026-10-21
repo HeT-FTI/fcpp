@@ -10,8 +10,7 @@
 | Path | Kind | Read by |
 |---|---|---|
 | `.github/skills/` | **canonical, committed** | Copilot, and everyone via direct read |
-| `.agents/skills` | link → `.github/skills` (git-ignored) | DSH, Cursor, Gemini CLI, Copilot (VS 2026) |
-| `.claude/skills` | optional link → `.github/skills` (git-ignored) | Claude Code |
+| `.agents/skills` | link → `.github/skills` (git-ignored) | DSH, Cursor, Gemini CLI, Copilot (VS 2026) || `.claude/skills` | optional link → `.github/skills` (git-ignored) | Claude Code |
 | `.codex/skills` | optional link → `.github/skills` (git-ignored) | Codex |
 
 > **One body, many views.** Never copy a `SKILL.md` into a view and never edit a view. Edit

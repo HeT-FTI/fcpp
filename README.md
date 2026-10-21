@@ -71,14 +71,20 @@ and Codex views are optional:
 | Codex | `.codex/skills` | `/use het-build` | optional (`sync --harness codex`) |
 | Any other harness | direct read | read `.github/skills/<name>/SKILL.md` | — |
 
-After cloning, materialize the default view and validate the contract:
+In this template repository the canonical tree is `.github/skills/` and the view is a
+symlink, so materialize it once after cloning:
 
 ```bash
 python .github/skills/_shared/skillkit/cli.py sync
 python .github/skills/_shared/skillkit/cli.py validate --strict
 ```
 
-`skillkit` refuses to treat a real directory as a view, so the canonical tree stays the single body.
+A repository **created from this template** needs none of that: the `Template Bootstrap`
+workflow commits a byte-identical `.agents/skills` view right after instantiation, so
+`git clone` → open in DSH/Cursor/Gemini works immediately.
+
+`skillkit` refuses to let a view drift: a link must point at the canonical tree and a
+copy must be byte-identical, so `.github/skills/` stays the only body you edit.
 There are **no root-level `AGENTS.md`/`CLAUDE.md`/`GEMINI.md` files**: the only default root addition is
 the git-ignored `.agents/` directory.
 Examples: `het-guide` for onboarding, `het-testgen` to generate tests, `het-agent` for composite tasks

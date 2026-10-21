@@ -51,6 +51,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--check", action="store_true", help="verify views without creating them"
     )
     sync_parser.add_argument(
+        "--view-mode",
+        choices=("link", "copy"),
+        default="link",
+        help="link = symlink/junction (default); copy = byte-identical mirror (for committed views)",
+    )
+    sync_parser.add_argument(
         "--force",
         action="store_true",
         help="replace an unrecorded real directory or link (destructive; use with care)",
@@ -125,6 +131,7 @@ def _run_sync(repo_root: Path, args: argparse.Namespace) -> int:
         harness=args.harness,
         check=args.check,
         force=args.force,
+        view_mode=args.view_mode,
     )
     for message in messages:
         print(message)

@@ -13,6 +13,8 @@ __pycache__/
 # Default: .agents only. Optional: .claude / .codex via `sync --harness claude|codex`.
 # No trailing slash: a POSIX view is a symlink, which a "dir/" pattern does not match.
 # Regenerate with: python .github/skills/_shared/skillkit/cli.py sync
+# This template keeps views as links. A repository created from it commits a
+# byte-identical .agents/skills copy instead (see .github/workflows/sync-template.yml).
 /.agents/skills
 /.claude/skills
 /.codex/skills

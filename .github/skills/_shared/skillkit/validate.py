@@ -1,8 +1,8 @@
 """Contract validation for the canonical Agent Skills tree.
 
-The checks are deliberately opinionated: this repository wants *one* physical skill
-body, a manifest that agrees with the tree, and harness views that are links rather
-than copies.
+The checks are deliberately opinionated: this repository wants *one* editable skill
+body.  A harness view may be a link to it, or a copy that is byte-identical to it;
+anything else is a second body and fails.
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ from .model import (
     load_skills,
 )
 from .paths import is_link_like, points_to
+from .sync import tree_diff
 
 NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
@@ -348,16 +349,13 @@ def _validate_no_duplicate_bodies(repo_root: Path, result: ValidationResult) -> 
         if not entries:
             result.warning(f"{relative}: empty view; run `skillkit sync`")
             continue
-        copies = list(path.rglob("SKILL.md"))
-        copies += [
-            item
-            for item in path.glob("*.md")
-            if item.is_file() and _looks_like_skill(item)
-        ]
-        for copy in copies[:10]:
+        diffs = tree_diff(canonical, path)
+        if diffs:
+            preview = ", ".join(diffs[:5]) + (" ..." if len(diffs) > 5 else "")
             result.error(
-                f"{relative}/{copy.name}: duplicated skill body; views must be links to "
-                f"{CANONICAL_REL.as_posix()} (run `skillkit sync`)"
+                f"{relative}: copy view differs from {CANONICAL_REL.as_posix()} in "
+                f"{len(diffs)} path(s): {preview}; edit the canonical tree and run "
+                "`skillkit sync --view-mode copy`"
             )
 
     for base in (".agent", ".agents", ".dsh", ".claude", ".codex", ".cursor", ".gemini"):
@@ -366,17 +364,35 @@ def _validate_no_duplicate_bodies(repo_root: Path, result: ValidationResult) -> 
             repo_root / base / "skills" / "het-agent" / "SKILL.md",
             repo_root / base / "agents" / "het-agent" / "SKILL.md",
         ):
-            if candidate.is_file() and not points_to(candidate, canonical / "het-agent" / "SKILL.md"):
-                result.error(
-                    f"{candidate.relative_to(repo_root).as_posix()}: second agent body; "
-                    "het-agent must exist only under .github/skills"
-                )
+            if not candidate.is_file() or points_to(candidate, canonical / "het-agent" / "SKILL.md"):
+                continue
+            # Inside a declared view root, a byte-identical mirror is a view, not a second body.
+            if _in_view_root(repo_root, candidate) and _same_bytes(
+                candidate, canonical / "het-agent" / "SKILL.md"
+            ):
+                continue
+            result.error(
+                f"{candidate.relative_to(repo_root).as_posix()}: second agent body; "
+                "het-agent must exist only under .github/skills"
+            )
 
 
-def _looks_like_skill(path: Path) -> bool:
+def _in_view_root(repo_root: Path, path: Path) -> bool:
+    """True when ``path`` sits under a path declared in HARNESS_ROOTS."""
+
+    view_parts = {Path(relative).parts for relative, _ in HARNESS_ROOTS}
     try:
-        with path.open("r", encoding="utf-8", errors="replace") as handle:
-            head = handle.read(800)
+        relative = path.relative_to(repo_root)
+    except ValueError:
+        return False
+    for depth in range(1, len(relative.parts) + 1):
+        if relative.parts[:depth] in view_parts:
+            return True
+    return False
+
+
+def _same_bytes(left: Path, right: Path) -> bool:
+    try:
+        return left.read_bytes() == right.read_bytes()
     except OSError:
         return False
-    return head.startswith("---") and re.search(r"^\s*name:\s*het-", head, re.MULTILINE) is not None

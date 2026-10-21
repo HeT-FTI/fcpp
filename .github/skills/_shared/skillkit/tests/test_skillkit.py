@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from skillkit.frontmatter import FrontmatterError, parse_skill_file  # noqa: E402
 from skillkit.model import find_repo_root  # noqa: E402
 from skillkit.paths import is_link_like, points_to  # noqa: E402
-from skillkit.sync import remove_views, sync_views  # noqa: E402
+from skillkit.sync import SyncError, remove_views, sync_views  # noqa: E402
 from skillkit.validate import (  # noqa: E402
     ValidationResult,
     _validate_no_duplicate_bodies,
@@ -71,7 +71,7 @@ class DuplicateBodyTests(unittest.TestCase):
         base.mkdir(parents=True)
         return base
 
-    def test_real_copy_in_a_view_is_rejected(self) -> None:
+    def test_diverging_copy_in_a_view_is_rejected(self) -> None:
         base = self._base("_skillkit_dup_view")
         try:
             canonical = base / ".github" / "skills" / "demo" / "SKILL.md"
@@ -82,12 +82,33 @@ class DuplicateBodyTests(unittest.TestCase):
             )
             copy = base / ".claude" / "skills" / "demo" / "SKILL.md"
             copy.parent.mkdir(parents=True)
-            copy.write_text(canonical.read_text(encoding="utf-8"), encoding="utf-8")
+            copy.write_text(
+                canonical.read_text(encoding="utf-8") + "\nlocal edit\n", encoding="utf-8"
+            )
 
             result = ValidationResult()
             _validate_no_duplicate_bodies(base, result)
             self.assertTrue(result.errors)
-            self.assertIn("duplicated skill body", " ".join(result.errors))
+            self.assertIn("differs from", " ".join(result.errors))
+        finally:
+            shutil.rmtree(base, ignore_errors=True)
+
+    def test_identical_copy_in_a_view_is_accepted(self) -> None:
+        base = self._base("_skillkit_mirror_view")
+        try:
+            canonical = base / ".github" / "skills" / "demo" / "SKILL.md"
+            canonical.parent.mkdir(parents=True)
+            canonical.write_text(
+                "---\nname: demo\ndescription: 'Use when testing mirrors.'\n---\n\n# Demo\n",
+                encoding="utf-8",
+            )
+            copy = base / ".agents" / "skills" / "demo" / "SKILL.md"
+            copy.parent.mkdir(parents=True)
+            copy.write_text(canonical.read_text(encoding="utf-8"), encoding="utf-8")
+
+            result = ValidationResult()
+            _validate_no_duplicate_bodies(base, result)
+            self.assertEqual(result.errors, [])
         finally:
             shutil.rmtree(base, ignore_errors=True)
 
@@ -155,6 +176,50 @@ class SyncTests(unittest.TestCase):
                 remove_views(root, harness="all")
             except Exception:  # noqa: BLE001 - cleanup best effort
                 pass
+            shutil.rmtree(base, ignore_errors=True)
+
+    def test_copy_view_is_materialized_and_survives_check(self) -> None:
+        repository = find_repo_root(Path(__file__).resolve())
+        base = repository / "workspace" / "_skillkit_copy_test"
+        if base.exists():
+            shutil.rmtree(base, ignore_errors=True)
+        root = base / "repo"
+        root.mkdir(parents=True)
+        try:
+            (root / "metadata.json").write_text('{"name": "demo"}\n', encoding="utf-8")
+            skill = root / ".github" / "skills" / "demo" / "SKILL.md"
+            skill.parent.mkdir(parents=True)
+            skill.write_text(
+                "---\nname: demo\ndescription: 'Use when testing copies.'\n---\n\n# Demo\n",
+                encoding="utf-8",
+            )
+            cached = root / ".github" / "skills" / "demo" / "__pycache__" / "x.pyc"
+            cached.parent.mkdir(parents=True)
+            cached.write_text("binary", encoding="utf-8")
+
+            messages = sync_views(root, view_mode="copy")
+            self.assertEqual(len(messages), 1)
+            view = root / ".agents/skills"
+            self.assertTrue(view.is_dir())
+            self.assertFalse(is_link_like(view))
+            self.assertEqual(
+                (view / "demo" / "SKILL.md").read_text(encoding="utf-8"),
+                skill.read_text(encoding="utf-8"),
+            )
+            self.assertFalse((view / "demo" / "__pycache__").exists())
+
+            # Idempotent, and a fresh clone passes --check.
+            self.assertIn("ok:", sync_views(root, view_mode="copy")[0])
+            self.assertIn("ok:", sync_views(root, check=True, view_mode="copy")[0])
+
+            # Any local edit is drift, not a second body.
+            (view / "demo" / "SKILL.md").write_text("tampered\n", encoding="utf-8")
+            with self.assertRaises(SyncError):
+                sync_views(root, check=True, view_mode="copy")
+
+            sync_views(root, view_mode="copy")
+            self.assertIn("ok:", sync_views(root, check=True, view_mode="copy")[0])
+        finally:
             shutil.rmtree(base, ignore_errors=True)
 
 

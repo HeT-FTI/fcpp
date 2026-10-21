@@ -12,9 +12,18 @@
 | Path | Kind | Read by | Committed? |
 |---|---|---|---|
 | `.github/skills/` | **canonical** | Copilot (native), everyone via direct read | yes |
-| `.agents/skills` | link → `.github/skills` | DSH, Cursor, Gemini CLI, Copilot (VS 2026) | no (git-ignored) |
+| `.agents/skills` | link → `.github/skills` (template) / identical copy (instance) | DSH, Cursor, Gemini CLI, Copilot (VS 2026) | template: no (git-ignored); instance: yes |
 | `.claude/skills` | optional link → `.github/skills` | Claude Code | no (git-ignored) |
 | `.codex/skills` | optional link → `.github/skills` | Codex | no (git-ignored) |
+
+Two view modes exist. `link` is the default and always preferred; `copy` exists
+only so that a repository created from this template works with **zero setup**.
+两种模式：`link` 默认；`copy` 只用于"模板派生仓库开箱即用"。
+
+| Mode | Command | Why |
+|---|---|---|
+| link | `sync` | no duplication, cannot drift |
+| copy | `sync --view-mode copy` | survives a plain `git clone` on Windows, where a committed symlink checks out as a text file |
 
 Default (one new directory):
 
@@ -80,11 +89,16 @@ python .github/skills/_shared/skillkit/cli.py catalog --format markdown
 
 ## Single-Body Rule（唯一正文规则）
 
-- A view must be a **link** (symlink or Windows junction), never a copied tree.
+- `.github/skills/` is the only editable body. 只有它可以改。
+- A view is either a **link** (symlink or Windows junction) or a **byte-identical copy**.
+  Anything else is a second body. 视图要么是链接，要么逐字节相同。
+- A copy view exists only so that an instance created from this template works on clone; it
+  is produced by `sync --view-mode copy` and is rejected the moment it drifts.
+  副本视图只为派生仓库开箱即用，漂移即报错。
 - `het-agent` exists only at `.github/skills/het-agent/SKILL.md`; a second real `het-agent/SKILL.md`
   anywhere else is a contract violation.
 - Edit the canonical file, not the view. 改 canonical，不改视图。
-- `skillkit validate` fails on a real directory or duplicated `SKILL.md` under a harness root.
+- `skillkit validate` fails on a copy view that differs from the canonical tree.
 
 ## Shell Portability（命令可移植性）
 
