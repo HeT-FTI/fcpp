@@ -1,6 +1,5 @@
 // Conan::ImportStart
 #pragma once
-#include <iostream>
 // Conan::ImportEnd
 
 
@@ -133,7 +132,7 @@ template <typename T, typename F> T& inplace_transform(T& a, F f) {
  * @since 2.0
  * @deprecated this function will be deprecated in v3.0
  */
-inline auto version_test_func() { std::cout << "the version_test_func function" << '\n'; };
+auto version_test_func();
 
 
 
@@ -155,31 +154,3 @@ class SubBase2 : public Base {};
  * @ingroup demo
  */
 class SubSubBase : public SubBase2 {};
-
-
-inline void stage_a() {
-    // Intentionally empty: staged demo placeholder, see the call graph in stage_d.
-}
-
-
-
-inline void stage_b() {
-    // Intentionally empty: staged demo placeholder, see the call graph in stage_d.
-}
-
-
-
-inline void stage_c() { stage_b(); }
-
-
-
-/**
- * @brief call relation demo
- * @note the call relationship can also be automatically calculated.
- * @ingroup demo
- */
-inline void stage_d() {
-    stage_a();
-    stage_b();
-    stage_c();
-}
