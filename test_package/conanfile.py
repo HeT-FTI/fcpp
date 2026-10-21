@@ -444,6 +444,9 @@ class PackageTestConan(ConanFile):
 
         # collect code coverage files to export/coverage/
         _gcda = [str(_) for _ in Path(_main_pkg_build_fd).rglob('*.gcda')]
+        if self.metadata.get('is_header'):
+            # header-only: the package compiles nothing, its code is instrumented inside the consumer
+            _gcda += [str(_) for _ in Path(self.build_folder).rglob('*.gcda')]
         _gcno = [_[:-4] + 'gcno' for _ in _gcda]
 
         coverage_folder = self._coverage_folder()
@@ -471,7 +474,8 @@ class PackageTestConan(ConanFile):
 
             _f_unit = self.recipe_folder + sep + 'test' + sep + 'unit'
             if self.metadata.get('activate_code_coverage'):
-                _files = [str(_) for _ in Path(_f_unit).rglob('*.cpp')]
+                # never re-wrap a leftover ucov_ file: a failed run leaves them behind
+                _files = [str(_) for _ in Path(_f_unit).rglob('*.cpp') if not _.name.startswith('ucov_')]
                 _cache = [[_a := _.split(sep), (sep.join(_a[:-1]), _a[-1])][-1] for _ in _files]
                 for _test_src, _test_ucov in zip(_files, _cache):
                     with open(_test_src, 'r') as f:

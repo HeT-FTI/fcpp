@@ -119,6 +119,10 @@ file(GLOB_RECURSE MODULE_FILES
 )
 
 
+if(IS_HEADER AND ENABLE_PYBIND)
+  message(FATAL_ERROR "enable_python_bindings needs compiled sources; header-only (is_header=true) has none")
+endif()
+
 if(IS_HEADER)  # header-only package
 
   add_library(${LIB_NAME} INTERFACE)
@@ -128,12 +132,16 @@ if(IS_HEADER)  # header-only package
           $<INSTALL_INTERFACE:include>
   )
 
+  # the only thing a header-only package can enforce on its consumers is the standard
+  target_compile_features(${LIB_NAME} INTERFACE cxx_std_${BUILD_CPPSTD})
+
   if(NOT CPP_DEPS STREQUAL "[]")
       parse_conan_deps(CPP_DEPS PARSED_CPP_DEPS)
       foreach (CPP_ITEM IN LISTS PARSED_CPP_DEPS)
           split_conan_dependency(CPP_ITEM CPP_PKG_NAME CPP_PKG_TARGETS)
           find_package(${CPP_PKG_NAME} REQUIRED)
-          target_link_libraries(${LIB_NAME} PUBLIC ${CPP_PKG_TARGETS})
+          # an INTERFACE library only accepts the INTERFACE keyword here
+          target_link_libraries(${LIB_NAME} INTERFACE ${CPP_PKG_TARGETS})
       endforeach ()
   endif()
 

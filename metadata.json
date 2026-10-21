@@ -16,13 +16,13 @@
   "build_type": "Debug",
   "activate_code_coverage": true,
   "is_shared": false,
-  "is_header": false,
+  "is_header": true,
   "generate_modules_inplace": false,
   "std_modules": "iostream",
   "user_modules": "",
   "dependencies": {
-    "common": {"ZLIB": ["ZLIB::ZLIB"]},
-    "c": {"PCRE2": ["pcre2::pcre2"]},
+    "common": {"ZLIB": ["ZLIB::ZLIB"], "PCRE2": ["pcre2::pcre2"]},
+    "c": {},
     "cpp": {
       "Eigen3": ["Eigen3::Eigen"],
       "etl": ["etl::etl"]

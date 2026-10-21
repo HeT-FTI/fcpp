@@ -102,7 +102,8 @@ def _pragma_in_import(x: list[str]) -> tuple[bool, int]:
 
 class PackageRecipe(ConanFile):
 
-    package_type = "library"
+    # header-only packages must not advertise a compiled-library identity
+    package_type = "header-library" if _metadata.get('is_header') else "library"
 
     # Binary configuration
     settings = "os", "compiler", "build_type", "arch"
