@@ -18,9 +18,8 @@ user-invocable: true
 
 1. Lint locally（本地自查）:
    ```bash
-   find include src -type f \( -name '*.c' -o -name '*.h' \) -exec clang-format --dry-run --Werror --style=file:.github/misc/.clang-format-c {} +
-   find include src -type f \( -name '*.cpp' -o -name '*.hpp' \) -exec clang-format --dry-run --Werror --style=file:.github/misc/.clang-format-cpp {} +
-   clang-tidy --config-file=.github/misc/.clang-tidy src/*.cpp -- -std=c++17 -Iinclude
+   python3 .github/misc/gates.py format   # clang-format --dry-run --Werror (dual C/C++ configs)
+   python3 .github/misc/gates.py tidy     # clang-tidy (WarningsAsErrors, standards from metadata.json)
    # SAST — mirrors CI `megalinter` job (also blocking); requires Docker/Podman + Node
    # version pinned to v8.8.0 (same as the pinned CI action) so results match CI
    bash .github/misc/run-megalinter.sh   # or: npm run lint:megalinter  (--fix to auto-fix)
@@ -33,7 +32,7 @@ user-invocable: true
 | Check（检查） | Tool（工具） | Scope（范围） |
 |------|------|------|
 | Format | clang-format (C right-aligned / C++ left-aligned, 120 cols) | include/ + src/ |
-| Static analysis | clang-tidy (bugprone/performance, WarningsAsErrors) | .h/.c/.hpp/.cpp |
+| Static analysis | clang-tidy (bugprone/performance, WarningsAsErrors) | `src/` 的 TU；header-only 时每个公开头合成一个 TU（同时验证头自包含） |
 | Secrets | gitleaks (allowlist `.github/misc/.gitleaks.toml`) | repo (infra exempt) |
 | SAST (blocking) | semgrep / checkov / devskim (MegaLinter) | include/ + src/ + infra |
 | Banned C functions | devskim — the printf family and friends | **include/ + src/ only**; `test_package/` is ignored |

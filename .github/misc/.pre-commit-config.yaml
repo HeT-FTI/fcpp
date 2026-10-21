@@ -11,17 +11,13 @@ repos:
 
   - repo: local
     hooks:
-      - id: clang-format-c
-        name: clang-format-c
-        entry: clang-format --dry-run --Werror --style=file:.github/misc/.clang-format-c
+      # one implementation for CI + pre-commit + the editor: .github/misc/gates.py
+      # (no `python3` alias on Windows: change the entry to `python .github/misc/gates.py format`)
+      - id: clang-format
+        name: clang-format (C/C++ dual configs)
+        entry: python3 .github/misc/gates.py format
         language: system
-        files: '\.(c|h)$'
-
-      - id: clang-format-cpp
-        name: clang-format-cpp
-        entry: clang-format --dry-run --Werror --style=file:.github/misc/.clang-format-cpp
-        language: system
-        files: '\.(cpp|hpp)$'
+        files: '^(include|src)/.*\.(c|h|cpp|hpp)$'
 
       - id: commitlint
         name: commitlint

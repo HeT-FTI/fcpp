@@ -6,8 +6,8 @@
 
 - [ ] 提交遵循 canonical form：`<type>(<emoji|scope>)?!?: <description>`（见 `.github/CONTRIBUTING.md`）
 - [ ] `metadata.json` 通过 schema 校验：`npx ajv validate -s .github/misc/metadata.schema.json -d metadata.json --spec=draft7`
-- [ ] 格式检查通过：C 家族（`.c/.h`）用 `.github/misc/.clang-format-c`，C++ 家族（`.hpp/.cpp`）用 `.github/misc/.clang-format-cpp`（命令见 `CONTRIBUTING.md`）
-- [ ] 静态检查通过：`clang-tidy --config-file=.github/misc/.clang-tidy src/*.cpp -- -std=c++17`
+- [ ] 格式检查通过：C 家族（`.c/.h`）用 `.github/misc/.clang-format-c`，C++ 家族（`.hpp/.cpp`）用 `.github/misc/.clang-format-cpp`：`python3 .github/misc/gates.py format`
+- [ ] 静态检查通过：`python3 .github/misc/gates.py tidy`
 - [ ] 构建与测试通过：`source ~/venv/build/bin/activate && conan create . -s build_type=Debug --build=missing`
 - [ ] 新公共 API 已有对应 GTest 用例（`test_package/test/unit/`）
 - [ ] 若修改依赖，已核对 4-bucket 语义与 `baremetal_white_list`（见 `metadata-contract.md`）

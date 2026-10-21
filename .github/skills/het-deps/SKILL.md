@@ -51,6 +51,7 @@ requirements:
 **④ Sync the clang-tidy quality gate（同步质量门禁）**
 - `.github/workflows/security-linters.yml` 从 `conandata.yml` 推导系统头依赖：apt 映射 zlib→zlib1g-dev / pcre2→libpcre2-dev / eigen→libeigen3-dev；ETL 版本从 conandata 解析下载。
 - 新依赖的头文件被 `src/` 引用时：有 apt 包 → 在 workflow 的 `mapping` 加一行；header-only 无 apt 包 → 参照 ETL 用固定版本源码包下载。
+- 头文件搜索路径由 `.github/misc/gates.py tidy` 统一提供：`-Iinclude` + eigen（`EIGEN_INC` 可覆盖）+ `GATES_INCLUDE`（`os.pathsep` 分隔）+ `-isystem $ETL_INC`。装到标准前缀（`/usr/include`）的 apt 包无需额外配置；非标准前缀 → 在 workflow 里导出 `GATES_INCLUDE`。
 - 不补映射 → clang-tidy 门禁报 file-not-found（fail-loud 是有意设计）。
 
 ## Switch Map（开关对照）

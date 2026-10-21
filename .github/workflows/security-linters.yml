@@ -57,23 +57,14 @@ jobs:
           echo "ETL_INC=/tmp/etl-src/etl-${ETL_VER}/include" >> "$GITHUB_ENV"
 
       # required: formatting clean; .h routes to C, .hpp to C++ (see code-conventions.md)
+      # the command body lives in .github/misc/gates.py, shared with pre-commit and the editor
       - name: clang-format gate
-        run: |
-          find include src -type f \( -name '*.c' -o -name '*.h' \) \
-            -exec clang-format --dry-run --Werror --style=file:.github/misc/.clang-format-c {} +
-          find include src -type f \( -name '*.cpp' -o -name '*.hpp' \) \
-            -exec clang-format --dry-run --Werror --style=file:.github/misc/.clang-format-cpp {} +
+        run: python3 .github/misc/gates.py format
 
       # required: clang-tidy warnings are failures; only include|src diagnostics count
+      # standards come from metadata.json; ETL_INC comes from the step above, eigen is auto-detected
       - name: clang-tidy gate
-        run: |
-          shopt -s nullglob
-          for f in src/*.c; do
-            clang-tidy --config-file=.github/misc/.clang-tidy "$f" -- -std=c11 -Iinclude -I/usr/include/eigen3 -isystem "$ETL_INC"
-          done
-          for f in src/*.cpp; do
-            clang-tidy --config-file=.github/misc/.clang-tidy "$f" -- -std=c++17 -Iinclude -I/usr/include/eigen3 -isystem "$ETL_INC"
-          done
+        run: python3 .github/misc/gates.py tidy
 
       # Required gate: secrets scan with pinned binary version
       - name: gitleaks gate

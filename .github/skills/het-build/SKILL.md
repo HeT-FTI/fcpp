@@ -29,6 +29,8 @@ user-invocable: true
 
 **Scenario C: verify locally first (recommended)（本地先验证，推荐）**
 ```bash
+# 本地固定 Debug 只是复现基线（覆盖率在 Debug 下测量）；CI 的构建类型来自 metadata.build_type
+# 要按项目声明的类型构建：-s build_type=$(python3 .github/misc/meta.py build_type)
 conan create . -s build_type=Debug --build=missing                              # full test chain
 conan create . -s build_type=Debug --build=missing -c user.het:run_tests=False # build chain only
 ```

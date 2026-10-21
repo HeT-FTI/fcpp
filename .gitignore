@@ -9,8 +9,11 @@ __pycache__/
 # process artifacts (audit/plan docs live in the working copy only)
 /workspace/
 
-# .vscode/ recommended files ARE committed (extensions/settings/tasks)
-# personal machine settings go into .vscode/ and must not be committed
+# .vscode/: the shared files ARE committed (extensions.json / settings.json / tasks.json);
+# machine-local editor state stays out
+.vscode/launch.json
+.vscode/*.code-workspace
+.vscode/ipch/
 
 # doc system related
 /docs/_cache/

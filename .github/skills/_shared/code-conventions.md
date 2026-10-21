@@ -50,12 +50,12 @@ Wrap the `#include` area with `// Conan::ImportStart` / `// Conan::ImportEnd`; t
 - 空行分段：全局对象间 2 空行（`\n\n\n`），模块生成 `_get_export_objects` 按 `split('\n\n')` 切分（`conanfile.py`，含 TODO）；2~3 空行均兼容，超过 3 个是违规。
 - 宏命名规则由 clang-tidy `cppcoreguidelines-macro-usage` 强制（`^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$`），不在 `.clang-format` 中。
 - `.clang-tidy`: `bugprone-*` + `performance-*` + `cppcoreguidelines-avoid-magic-numbers`; **WarningsAsErrors: '*'**. warning 即失败；`HeaderFilterRegex: "^(include|src)/"` 锚定仓库路径。
-- Local check（本地自查）:
+- Local check（本地自查）: the gate body lives in `.github/misc/gates.py` (CI / pre-commit / editor share it). 门禁实现只有一份。
   ```bash
-  find include src -type f \( -name '*.c' -o -name '*.h' \) -exec clang-format --dry-run --Werror --style=file:.github/misc/.clang-format-c {} +
-  find include src -type f \( -name '*.cpp' -o -name '*.hpp' \) -exec clang-format --dry-run --Werror --style=file:.github/misc/.clang-format-cpp {} +
-  clang-tidy --config-file=.github/misc/.clang-tidy src/*.cpp -- -std=c++17 -Iinclude
+  python3 .github/misc/gates.py format   # clang-format --dry-run --Werror, dual C/C++ configs
+  python3 .github/misc/gates.py tidy     # clang-tidy, standards read from metadata.json
   ```
+- header-only（`metadata.is_header=true`，或 `src/` 无 TU 时）：`tidy` 为每个公开头合成一个 TU（`.h`→C、`.hpp`→C++），顺带验证头文件自包含；`format` 不变。
 
 ## Baremetal Constraints（裸机约束）
 

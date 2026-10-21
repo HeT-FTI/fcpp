@@ -4,13 +4,17 @@
     {
       "label": "format-check",
       "type": "shell",
-      "command": "find include src -type f \\( -name '*.c' -o -name '*.h' \\) -exec clang-format --dry-run --Werror --style=file:.github/misc/.clang-format-c {} + && find include src -type f \\( -name '*.cpp' -o -name '*.hpp' \\) -exec clang-format --dry-run --Werror --style=file:.github/misc/.clang-format-cpp {} +",
+      "command": "python3",
+      "args": [".github/misc/gates.py", "format"],
+      "windows": { "command": "python" },
       "problemMatcher": []
     },
     {
       "label": "tidy",
       "type": "shell",
-      "command": "clang-tidy --config-file=.github/misc/.clang-tidy src/*.cpp -- -std=c++17 -Iinclude",
+      "command": "python3",
+      "args": [".github/misc/gates.py", "tidy"],
+      "windows": { "command": "python" },
       "problemMatcher": []
     },
     {
@@ -34,7 +38,8 @@
     {
       "label": "test",
       "type": "shell",
-      "command": "conan create . -s build_type=Debug --build=missing",
+      "command": "conan create . -s build_type=$(python3 .github/misc/meta.py build_type) --build=missing",
+      "windows": { "command": "conan create . -s build_type=$(python .github/misc/meta.py build_type) --build=missing" },
       "problemMatcher": []
     }
   ]

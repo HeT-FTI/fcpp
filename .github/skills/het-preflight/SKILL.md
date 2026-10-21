@@ -28,10 +28,8 @@ user-invocable: true
 ## Quick Script（本地快速跑一遍）
 
 ```bash
-# 1) quality
-find include src -type f \( -name '*.c' -o -name '*.h' \) -exec clang-format --dry-run --Werror --style=file:.github/misc/.clang-format-c {} +
-find include src -type f \( -name '*.cpp' -o -name '*.hpp' \) -exec clang-format --dry-run --Werror --style=file:.github/misc/.clang-format-cpp {} +
-clang-tidy --config-file=.github/misc/.clang-tidy src/*.cpp -- -std=c++17 -Iinclude
+# 1) quality（门禁实现只有一份：.github/misc/gates.py）
+python3 .github/misc/gates.py all
 # 2) tests + coverage
 conan create . -s build_type=Debug --build=missing
 # 3) docs
