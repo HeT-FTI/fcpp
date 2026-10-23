@@ -81,7 +81,9 @@ python .github/skills/_shared/skillkit/cli.py validate --strict
 
 A repository **created from this template** needs none of that: the `Template Bootstrap`
 workflow commits a byte-identical `.agents/skills` view right after instantiation, so
-`git clone` → open in DSH/Cursor/Gemini works immediately.
+`git clone` → open in DSH/Cursor/Gemini works immediately. The same commit drops this
+repository's own `CHANGELOG.md`, because its entries link here; the instance rebuilds it
+on its first release.
 
 `skillkit` refuses to let a view drift: a link must point at the canonical tree and a
 copy must be byte-identical, so `.github/skills/` stays the only body you edit.
