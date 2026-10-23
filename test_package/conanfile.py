@@ -25,6 +25,16 @@ def _clear_test_build():
         os.remove(_presets)
 
 
+def _is_within(path: str, folder: str) -> bool:
+    """True when `path` lives inside `folder` (both resolved). Used to keep foreign executables
+    — interpreters, system tools — out of the coverage export."""
+    _p, _f = os.path.abspath(os.path.realpath(path)), os.path.abspath(os.path.realpath(folder))
+    try:
+        return os.path.commonpath([_p, _f]) == _f
+    except ValueError:  # different drives on Windows
+        return False
+
+
 def _recursive_find(root: str, obj_files: list[str]):
     for f in os.listdir(root):
         _f = root + sep + f
@@ -64,9 +74,10 @@ class PackageTestConan(ConanFile):
 
     def init(self):
         conandata_path = Path(self.recipe_folder).parent / "conandata.yml"
-        self.conandata = yaml.safe_load(conandata_path.read_text())
+        # explicit utf-8: read_text() defaults to the locale encoding (cp1252/cp936 on Windows)
+        self.conandata = yaml.safe_load(conandata_path.read_text(encoding='utf-8'))
         metadata_path = Path(self.recipe_folder).parent / "metadata.json"
-        self.metadata = yaml.safe_load(metadata_path.read_text())
+        self.metadata = yaml.safe_load(metadata_path.read_text(encoding='utf-8'))
 
     def build_requirements(self):
         # escape: HET_CMAKE_BUILD_REQUIRE=none also skips the test package's 45 MB cmake
@@ -290,7 +301,8 @@ class PackageTestConan(ConanFile):
                 _names.add(_m.group(1))
             for _m in re.finditer(_add_test, _text):
                 _bin = _m.group(1) or _m.group(2)
-                if _bin and os.path.isfile(_bin):
+                # Only binaries we built carry our profiles; foreign executables must never reach llvm-cov.
+                if _bin and os.path.isfile(_bin) and _is_within(_bin, build_folder):
                     _paths.append(_bin)
 
         for _name in sorted(_names):
@@ -337,15 +349,20 @@ class PackageTestConan(ConanFile):
 
     def _coverage_totals(self, info_file):
         """Sum the tracefile's own LF/LH/FNF/FNH/BRF/BRH records; each file record carries its totals, so a plain sum is the report's."""
-        _sums, _files = {}, set()
+        _sums, _files, _per_file = {}, set(), {}
+        _current = None
         with open(info_file, 'r', encoding='utf-8') as f:
             for _line in f:
                 if _line.startswith('SF:'):
-                    _files.add(_source_relpath(_line[3:].strip()))
+                    _current = _source_relpath(_line[3:].strip())
+                    _files.add(_current)
+                    _per_file.setdefault(_current, {})
                     continue
                 _key, _, _value = _line.strip().partition(':')
                 if _key in ('LF', 'LH', 'FNF', 'FNH', 'BRF', 'BRH') and _value.isdigit():
                     _sums[_key] = _sums.get(_key, 0) + int(_value)
+                    if _current is not None:
+                        _per_file[_current][_key] = int(_value)
         _rate = lambda hit, found: round(100.0 * hit / found, 2) if found else 0.0
         _totals = {_what: {'hit': _sums.get(_h, 0), 'found': _sums.get(_f, 0),
                            'percent': _rate(_sums.get(_h, 0), _sums.get(_f, 0))}
@@ -354,6 +371,9 @@ class PackageTestConan(ConanFile):
                                          ('branches', 'BRH', 'BRF')]}
         # the file set is what two platforms can compare; the rates cannot match (see _code_coverage_clang)
         _totals['files'] = sorted(_files)
+        # Per-file counts, not percentages: averaging would weight a 3-line header like a 300-line source.
+        _totals['per_file'] = {_p: {'lines_hit': _v.get('LH', 0), 'lines_found': _v.get('LF', 0)}
+                               for _p, _v in sorted(_per_file.items()) if _v}
         return _totals
 
     def _render_html_report(self, coverage_folder, info_file, pkg_root):
@@ -480,7 +500,7 @@ class PackageTestConan(ConanFile):
                 _files = [str(_) for _ in Path(_f_unit).rglob('*.cpp') if not _.name.startswith('ucov_')]
                 _cache = [[_a := _.split(sep), (sep.join(_a[:-1]), _a[-1])][-1] for _ in _files]
                 for _test_src, _test_ucov in zip(_files, _cache):
-                    with open(_test_src, 'r') as f:
+                    with open(_test_src, 'r', encoding='utf-8') as f:
                         _tmp = f.readlines()
                     _tmp.extend(_entry_lists()[1:])
                     with open(_test_ucov[0] + sep + 'ucov_' + _test_ucov[1], 'w', encoding='utf-8') as f:
