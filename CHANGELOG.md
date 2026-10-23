@@ -1,3 +1,14 @@
+## [0.3.0](https://github.com/HeT-FTI/fcpp/compare/v0.2.0...v0.3.0) (2026-10-23)
+
+### Features
+
+* release the upstreamed scaffold capabilities ([dcd8aa6](https://github.com/HeT-FTI/fcpp/commit/dcd8aa6f1d37ced70ae08afdf016d8d7f2b605be))
+
+### Bug Fixes
+
+* drop the template changelog when an instance is created ([9782fd2](https://github.com/HeT-FTI/fcpp/commit/9782fd280a4409fd8f0f67c60136c9e9fdbc2d8b))
+* scope the source globs and keep the installed header tree ([42ce72a](https://github.com/HeT-FTI/fcpp/commit/42ce72aefe38c2ef0591d21e6baac8dff79b1d74))
+
 ## [0.2.0](https://github.com/HeT-FTI/fcpp/compare/v0.1.2...v0.2.0) (2026-10-21)
 
 ### Features
