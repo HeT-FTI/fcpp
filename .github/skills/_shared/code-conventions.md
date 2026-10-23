@@ -54,6 +54,7 @@ Wrap the `#include` area with `// Conan::ImportStart` / `// Conan::ImportEnd`; t
   ```bash
   python3 .github/misc/gates.py format   # clang-format --dry-run --Werror, dual C/C++ configs
   python3 .github/misc/gates.py tidy     # clang-tidy, standards read from metadata.json
+  python3 .github/misc/gates.py guard    # forbidden #include directives, rules in .github/misc/.include-guard.txt
   ```
 - header-only（`metadata.is_header=true`，或 `src/` 无 TU 时）：`tidy` 为每个公开头合成一个 TU（`.h`→C、`.hpp`→C++），顺带验证头文件自包含；`format` 不变。
 

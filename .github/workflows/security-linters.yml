@@ -66,6 +66,10 @@ jobs:
       - name: clang-tidy gate
         run: python3 .github/misc/gates.py tidy
 
+      # required: layering guard -- a scope may not include what its rules forbid
+      - name: include-guard gate
+        run: python3 .github/misc/gates.py guard
+
       # Required gate: secrets scan with pinned binary version
       - name: gitleaks gate
         run: |

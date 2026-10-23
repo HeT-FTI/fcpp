@@ -1,6 +1,6 @@
 ---
 name: het-quality
-description: 'Quality & security gates for the fcpp template (native clang-format/clang-tidy/gitleaks gates + a blocking MegaLinter SAST layer). Use when: code fails format/tidy/security scan, or quality CI is red. 质量/安全门禁：原生 gate 必过（WarningsAsErrors），MegaLinter SAST 同样拦提交。'
+description: 'Quality & security gates for the fcpp template (native clang-format/clang-tidy/include-guard/gitleaks gates + a blocking MegaLinter SAST layer). Use when: code fails format/tidy/guard check/security scan, or quality CI is red. 质量/安全门禁：原生 gate 必过（WarningsAsErrors），MegaLinter SAST 同样拦提交。'
 license: Apache-2.0
 argument-hint: "Scope (optional) / 检查范围（可选）"
 user-invocable: true
@@ -13,7 +13,7 @@ user-invocable: true
 ## Mental Model（心智模型）
 
 > "On `:shield:` (or any PR) the native quality gates run: clang-format (dual C/C++ configs), clang-tidy (WarningsAsErrors), gitleaks (secrets). MegaLinter SAST (semgrep/checkov/devskim) **blocks as well** — a devskim or semgrep finding fails the job just like a warning. **Warning = failure**, so lint locally first."
-> `:shield:`（或任何 PR）触发原生质量门禁（format/tidy/gitleaks，warning 即失败）；MegaLinter SAST（semgrep/checkov/devskim）**同样会拦**。本地先自查。
+> `:shield:`（或任何 PR）触发原生质量门禁（format/tidy/guard/gitleaks，warning 即失败）；MegaLinter SAST（semgrep/checkov/devskim）**同样会拦**。本地先自查。
 
 ## 3-Step Checklist（三步操作清单）
 
@@ -21,6 +21,7 @@ user-invocable: true
    ```bash
    python3 .github/misc/gates.py format   # clang-format --dry-run --Werror (dual C/C++ configs)
    python3 .github/misc/gates.py tidy     # clang-tidy (WarningsAsErrors, standards from metadata.json)
+   python3 .github/misc/gates.py guard    # forbidden #include directives (rules: .github/misc/.include-guard.txt)
    # SAST — mirrors CI `megalinter` job (also blocking); requires Docker/Podman + Node
    # version pinned to v8.8.0 (same as the pinned CI action) so results match CI
    bash .github/misc/run-megalinter.sh   # or: npm run lint:megalinter  (--fix to auto-fix)
@@ -45,7 +46,7 @@ user-invocable: true
 1. Format: `clang-format -i <file>` auto-fix. 格式问题直接自动修。
 2. clang-tidy warning: fix per hints (cannot silence). 按提示改代码。
 3. gitleaks: check you did not commit a secret; infra files are exempt. 检查是否误提交密钥。
-4. Report location: Quality Gates fail at the failing step (format/tidy/gitleaks); MegaLinter also turns the job red (detail in the artifact). 两层任一红都会让 job 变红。
+4. Report location: Quality Gates fail at the failing step (format/tidy/guard/gitleaks); MegaLinter also turns the job red (detail in the artifact). 两层任一红都会让 job 变红。
 5. `Banned C function detected` (devskim): rewrite the call — `fputs` instead of the printf family — it only scans include/ + src/. 被点名的禁用函数换掉即可。
 6. Deep troubleshooting → `het-fix-ci` (S6).
 
