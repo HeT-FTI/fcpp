@@ -74,6 +74,35 @@ function(split_conan_dependency INPUT_STR PACKAGE_NAME TARGETS)
 endfunction()
 
 
+# GLOB_RECURSE has no PATHS keyword, so build "<root>/<pattern>" to recurse inside that directory only.
+function(collect_files out_var root)
+    set(_globs "")
+    foreach(_pattern IN LISTS ARGN)
+        list(APPEND _globs "${root}/${_pattern}")
+    endforeach()
+    file(GLOB_RECURSE _found
+            LIST_DIRECTORIES false
+            CONFIGURE_DEPENDS
+            ${_globs}
+    )
+    set(${out_var} "${_found}" PARENT_SCOPE)
+endfunction()
+
+
+# install(FILES) drops the relative directory, so a nested public header would be flattened.
+function(install_header_tree headers component)
+    foreach(_header IN LISTS headers)
+        file(RELATIVE_PATH _rel "${CMAKE_CURRENT_SOURCE_DIR}/include" "${_header}")
+        get_filename_component(_rel_dir "${_rel}" DIRECTORY)
+        if(_rel_dir)
+            install(FILES "${_header}" DESTINATION "include/${_rel_dir}" COMPONENT ${component})
+        else()
+            install(FILES "${_header}" DESTINATION include COMPONENT ${component})
+        endif()
+    endforeach()
+endfunction()
+
+
 # define file search mode (can be adjusted according to the project structure)
 set(C_HEADER_PATTERNS "*.h")
 set(CPP_HEADER_PATTERNS "*.hpp")
@@ -83,40 +112,11 @@ set(MODULE_PATTERNS "*.ixx" "*.cppm")
 
 
 # auto file collection
-file(GLOB_RECURSE C_HEADERS
-        LIST_DIRECTORIES false
-        CONFIGURE_DEPENDS
-        ${C_HEADER_PATTERNS}
-        PATHS "${CMAKE_CURRENT_SOURCE_DIR}/include"
-)
-
-file(GLOB_RECURSE CPP_HEADERS
-        LIST_DIRECTORIES false
-        CONFIGURE_DEPENDS
-        ${CPP_HEADER_PATTERNS}
-        PATHS "${CMAKE_CURRENT_SOURCE_DIR}/include"
-)
-
-file(GLOB_RECURSE C_SOURCES
-        LIST_DIRECTORIES false
-        CONFIGURE_DEPENDS
-        ${C_SOURCE_PATTERNS}
-        PATHS "${CMAKE_CURRENT_SOURCE_DIR}/src"
-)
-
-file(GLOB_RECURSE CPP_SOURCES
-        LIST_DIRECTORIES false
-        CONFIGURE_DEPENDS
-        ${CPP_SOURCE_PATTERNS}
-        PATHS "${CMAKE_CURRENT_SOURCE_DIR}/src"
-)
-
-file(GLOB_RECURSE MODULE_FILES
-        LIST_DIRECTORIES false
-        CONFIGURE_DEPENDS
-        ${MODULE_PATTERNS}
-        PATHS "${CMAKE_CURRENT_SOURCE_DIR}/src"
-)
+collect_files(C_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include" ${C_HEADER_PATTERNS})
+collect_files(CPP_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include" ${CPP_HEADER_PATTERNS})
+collect_files(C_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src" ${C_SOURCE_PATTERNS})
+collect_files(CPP_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src" ${CPP_SOURCE_PATTERNS})
+collect_files(MODULE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src" ${MODULE_PATTERNS})
 
 
 if(IS_HEADER AND ENABLE_PYBIND)
@@ -347,7 +347,10 @@ else()  # general package
       message(STATUS "C++ standard ${BUILD_CPPSTD} < 23, disabling module support")
   endif()
 
-  if(ENABLE_PYBIND)
+  if(ENABLE_PYBIND AND CMAKE_CROSSCOMPILING)
+    # A pybind11 module needs the host CPython to build and import, which a cross toolchain lacks.
+    message(STATUS "Python bindings skipped: cross-compiling for ${CMAKE_SYSTEM_NAME}/${CMAKE_SYSTEM_PROCESSOR}")
+  elseif(ENABLE_PYBIND)
     set(PYTHON_MODULE_NAME "${LIB_NAME}_python")
 
     find_package(pybind11 CONFIG REQUIRED)
@@ -361,6 +364,11 @@ else()  # general package
     pybind11_add_module(${PY_TARGET_INTERNAL} ${PYTHON_BINDINGS_SOURCE})
     target_link_libraries(${PY_TARGET_INTERNAL} PRIVATE ${LIB_NAME})
 
+    # Under coverage the module links instrumented archives and needs the coverage runtime too.
+    if(ENABLE_COVERAGE AND NOT CMAKE_CROSSCOMPILING AND LINK_FLAGS)
+      target_link_options(${PY_TARGET_INTERNAL} PRIVATE ${LINK_FLAGS})
+    endif()
+
     set_target_properties(${PY_TARGET_INTERNAL} PROPERTIES
       OUTPUT_NAME "${PYTHON_MODULE_NAME}"
       LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
@@ -370,10 +378,10 @@ else()  # general package
       LIBRARY DESTINATION lib
       COMPONENT python_bindings
     )
-    
+
     message(STATUS "Python module '${PYTHON_MODULE_NAME}' will be built")
   else()
-    message(STATUS "Python bindings disabledPython bindings disabled")
+    message(STATUS "Python bindings disabled")
   endif()
 
   if(SHARED_MSG)
@@ -397,15 +405,10 @@ install(TARGETS ${INSTALL_TARGETS}
         RUNTIME DESTINATION bin
 )
 
-install(FILES ${C_HEADERS}
-        DESTINATION include
-        COMPONENT c_headers
-)
+# Public headers keep their tree: a flat include/ installs as before, a nested one keeps its relative path.
+install_header_tree("${C_HEADERS}" c_headers)
 
-install(FILES ${CPP_HEADERS}
-        DESTINATION include
-        COMPONENT cpp_headers
-)
+install_header_tree("${CPP_HEADERS}" cpp_headers)
 
 install(EXPORT ${LIB_NAME}Targets
         FILE ${LIB_NAME}Config.cmake

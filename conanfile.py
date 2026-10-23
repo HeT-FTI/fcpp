@@ -110,8 +110,8 @@ class PackageRecipe(ConanFile):
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": _metadata.get('is_shared'), "fPIC": True}  # inherit from config
 
-    # Sources are located in the same place as this recipe, copy them to the recipe
-    exports_sources = ["CMakeLists.txt", "src/*", "include/*", METADATA_FILENAME, "LICENSE"]
+    # Sources live beside this recipe; api/* rides along so the pybind11 module is part of the package.
+    exports_sources = ["CMakeLists.txt", "src/*", "include/*", "api/*", METADATA_FILENAME, "LICENSE"]
     exports = ["conandata.yml", METADATA_FILENAME, "LICENSE"]
 
     generators = "VirtualBuildEnv", "VirtualRunEnv"
@@ -126,8 +126,9 @@ class PackageRecipe(ConanFile):
         metadata_path = Path(self.recipe_folder) / METADATA_FILENAME
         license_path = Path(self.recipe_folder) / "LICENSE"
 
-        self.conandata = yaml.safe_load(conandata_path.read_text())
-        self.meta = yaml.safe_load(metadata_path.read_text())
+        # Explicit utf-8: the locale default is cp1252/cp936 on Windows and cannot decode the Chinese comments here.
+        self.conandata = yaml.safe_load(conandata_path.read_text(encoding='utf-8'))
+        self.meta = yaml.safe_load(metadata_path.read_text(encoding='utf-8'))
 
         # Required attributes
         self.name, self.version = self.meta.get('name'), self.meta.get('version')
