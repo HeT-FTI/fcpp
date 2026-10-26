@@ -211,8 +211,7 @@ def _ensure_view(
             entries = list(path.iterdir())
             if entries and not force:
                 if not tree_diff(canonical, path):
-                    # A committed copy view (template instance) is already correct;
-                    # keep it instead of failing the CI step that runs `sync`.
+                    # A committed copy view is already correct: keep it instead of failing the CI step that runs sync.
                     state["views"][view.relative.as_posix()] = {
                         "target": canonical.as_posix(),
                         "method": MODE_COPY,

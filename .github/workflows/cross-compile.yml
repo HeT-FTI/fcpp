@@ -55,8 +55,7 @@ jobs:
 
       - name: Prepare the apt download cache
         shell: bash
-        # `/var/cache/apt/archives` is root-owned; the cache action runs as the
-        # runner user, so hand it the directory before restoring into it.
+        # /var/cache/apt/archives is root-owned: hand it to the runner user before the cache action restores into it.
         run: sudo chown -R "$USER:$USER" /var/cache/apt/archives
 
       - name: Restore the apt download cache
@@ -70,11 +69,7 @@ jobs:
 
       - name: Install the cross toolchain and the Conan default profile
         shell: bash
-        # apt is the flakiest part of a hosted runner.  Measured on 2026-10-26: the
-        # aarch64 toolchain is a 234 MB download that took 11-17 minutes on a
-        # degraded azure mirror (one 10.8 MB package took 2 minutes), while
-        # unpacking was seconds.  The download cache above removes that from the
-        # steady state; this bound only has to survive a cold cache.
+        # Cold-cache bound: 234 MB of aarch64 packages took 11-17 min on a degraded mirror, while unpacking took seconds.
         timeout-minutes: 30
         run: |
           printf '%s\n' \
@@ -84,11 +79,7 @@ jobs:
             'Acquire::Languages "none";' \
             | sudo tee /etc/apt/apt.conf.d/99-ci-retries >/dev/null
           sudo apt-get update
-          # noninteractive + confdef/confold: never let a conffile or needrestart
-          # prompt turn a slow download into an apparent hang.
-          # No --no-install-recommends: the arm-none-eabi toolchain ships its C and
-          # C++ runtime (newlib / libstdc++-arm-none-eabi-newlib) as Recommends, so
-          # dropping them breaks every MCU build with "stdio.h: No such file".
+          # noninteractive + confdef/confold avoid prompt-looking hangs; keep --no-install-recommends off (newlib for arm-none-eabi is a Recommends).
           sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a \
             apt-get install -y \
             -o Dpkg::Options::=--force-confdef \
@@ -99,9 +90,7 @@ jobs:
       - name: Normalize the apt archive cache
         if: always()
         shell: bash
-        # The post-job cache save runs as the runner user, but `partial/` is created
-        # 0700 by root: the save otherwise fails with "Cannot open: Permission denied"
-        # and the cache is silently never written.
+        # The post-job save runs as the runner user but apt creates partial/ as root 0700, which fails the save silently.
         run: |
           sudo chown -R "$USER:$USER" /var/cache/apt/archives 2>/dev/null || true
           du -sh /var/cache/apt/archives 2>/dev/null || true
