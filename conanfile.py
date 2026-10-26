@@ -305,6 +305,10 @@ class PackageRecipe(ConanFile):
         # Extra edges between the generated components, declared in metadata.json as {from: [to]}.
         _known = {f"{self.name}_c", f"{self.name}_cpp"}
         _edges = self.meta.get("component_requires") or {}
+        if _edges and self.meta.get("is_header"):
+            raise ConanInvalidConfiguration(
+                "component_requires must stay empty when is_header=true: "
+                "a header-only package has no component libraries")
         _normalized = {}
         for _from, _to in _edges.items():
             _targets = _to if isinstance(_to, list) else [_to]
@@ -312,6 +316,13 @@ class PackageRecipe(ConanFile):
                 raise ConanInvalidConfiguration(
                     f"component_requires: invalid edge '{_from}' -> {_to}; known components are {sorted(_known)}")
             _normalized[_from] = _targets
+        # Conan reports a component cycle much later and less clearly, so reject it while configuring.
+        for _from, _targets in _normalized.items():
+            for _to in _targets:
+                if _from in _normalized.get(_to, []):
+                    raise ConanInvalidConfiguration(
+                        f"component_requires: cycle between '{_from}' and '{_to}'; "
+                        "declare exactly one direction")
         return _normalized
 
     def package_id(self):

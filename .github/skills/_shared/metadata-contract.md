@@ -46,8 +46,10 @@
 
 **Rules（不可违背）**
 1. 只允许 `<name>_c` / `<name>_cpp`；未知名字、自依赖、空目标列表都会以 `ConanInvalidConfiguration` 失败（在 `configure()` 里就报，不等 package_info）。
+   两条反向边（成环）同样在这里失败，不用等 Conan 报组件环。
 2. C 接口压 C++ 核心 → `{"<name>_c": ["<name>_cpp"]}`；C++ 封装压 C 核心 → 反过来。两者不能同时声明。
 3. **不要**为这件事改 `conanfile.py`：组件图是项目声明，不是模板代码。
+4. `is_header=true` 时这个键必须为空：header-only 包没有组件库，写了会直接失败。
 
 ### Derived facts（派生事实，**禁止**写进 metadata）
 这些事实由目录结构推导，写进 metadata 只会制造互相矛盾的第二事实源：
