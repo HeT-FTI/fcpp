@@ -222,6 +222,36 @@ class SyncTests(unittest.TestCase):
         finally:
             shutil.rmtree(base, ignore_errors=True)
 
+    def test_link_mode_tolerates_a_committed_mirror(self) -> None:
+        """CI runs `sync` without a view mode; a committed copy must not fail it."""
+
+        repository = find_repo_root(Path(__file__).resolve())
+        base = repository / "workspace" / "_skillkit_mirror_tolerance"
+        if base.exists():
+            shutil.rmtree(base, ignore_errors=True)
+        root = base / "repo"
+        root.mkdir(parents=True)
+        try:
+            (root / "metadata.json").write_text('{"name": "demo"}\n', encoding="utf-8")
+            skill = root / ".github" / "skills" / "demo" / "SKILL.md"
+            skill.parent.mkdir(parents=True)
+            skill.write_text(
+                "---\nname: demo\ndescription: 'Use when testing mirrors.'\n---\n\n# Demo\n",
+                encoding="utf-8",
+            )
+            sync_views(root, view_mode="copy")
+
+            messages = sync_views(root)  # link mode, as the Skills Contract job runs it
+            self.assertEqual(len(messages), 1)
+            self.assertIn("copy", messages[0])
+            self.assertTrue((root / ".agents/skills/demo/SKILL.md").is_file())
+            self.assertIn("copy", sync_views(root, check=True)[0])
+
+            remove_views(root)
+            self.assertFalse((root / ".agents/skills").exists())
+        finally:
+            shutil.rmtree(base, ignore_errors=True)
+
 
 if __name__ == "__main__":
     unittest.main()

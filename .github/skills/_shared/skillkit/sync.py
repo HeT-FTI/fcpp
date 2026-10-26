@@ -211,14 +211,17 @@ def _ensure_view(
             entries = list(path.iterdir())
             if entries and not force:
                 if not tree_diff(canonical, path):
-                    raise SyncError(
-                        f"{view.relative.as_posix()} is a byte-identical copy view; "
-                        "re-run with `--view-mode copy` to keep it as a copy, or "
-                        "`--force` to replace it with a link"
-                    )
+                    # A committed copy view (template instance) is already correct;
+                    # keep it instead of failing the CI step that runs `sync`.
+                    state["views"][view.relative.as_posix()] = {
+                        "target": canonical.as_posix(),
+                        "method": MODE_COPY,
+                    }
+                    return f"ok: {view.relative.as_posix()} == {canonical} (copy, {view.label})"
                 raise SyncError(
-                    f"{view.relative.as_posix()} is a real directory with {len(entries)} entr(y/ies); "
-                    "move it away or pass --force (skillkit never deletes unrecorded content)"
+                    f"{view.relative.as_posix()} is a real directory with {len(entries)} entr(y/ies) "
+                    "that differs from the canonical tree; run `sync --view-mode copy` to "
+                    "overwrite it, or `--force` to replace it with a link"
                 )
             if entries:
                 _remove_tree(path)
@@ -267,9 +270,12 @@ def _check_view(path: Path, canonical: Path, view: View, view_mode: str) -> str:
             "`python .github/skills/_shared/skillkit/cli.py sync`"
         )
     if not is_link_like(path):
+        if path.is_dir() and not tree_diff(canonical, path):
+            # A committed mirror is a valid view: clone-and-go instances rely on it.
+            return f"ok: {view.relative.as_posix()} == {canonical} (copy, {view.label})"
         raise SyncError(
-            f"{view.relative.as_posix()} is a real directory, not a link; "
-            "skillkit refuses to treat it as a view"
+            f"{view.relative.as_posix()} is a real directory, not a link, and does not match "
+            f"{canonical}; run `python .github/skills/_shared/skillkit/cli.py sync --view-mode copy`"
         )
     if not points_to(path, canonical):
         raise SyncError(
@@ -290,6 +296,10 @@ def remove_views(repo_root: Path, *, harness: str = "agents") -> list[str]:
         if is_link_like(path) and points_to(path, canonical):
             remove_dir_link(path)
             messages.append(f"removed: {view.relative.as_posix()}")
+        elif path.is_dir() and not is_link_like(path) and not tree_diff(canonical, path):
+            # A committed mirror is a view too; removing it must be allowed.
+            _remove_tree(path)
+            messages.append(f"removed: {view.relative.as_posix()} (copy)")
         elif state["views"].get(view.relative.as_posix()):
             if is_link_like(path):
                 remove_dir_link(path)
