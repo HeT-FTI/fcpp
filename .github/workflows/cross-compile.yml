@@ -96,11 +96,14 @@ jobs:
             ${{ matrix.packages }}
           conan profile detect --force
 
-      - name: Report the toolchain install cost
+      - name: Normalize the apt archive cache
         if: always()
         shell: bash
+        # The post-job cache save runs as the runner user, but `partial/` is created
+        # 0700 by root: the save otherwise fails with "Cannot open: Permission denied"
+        # and the cache is silently never written.
         run: |
-          echo "### Toolchain (\`${{ matrix.target }}\`)"
+          sudo chown -R "$USER:$USER" /var/cache/apt/archives 2>/dev/null || true
           du -sh /var/cache/apt/archives 2>/dev/null || true
           ls -1 /var/cache/apt/archives/*.deb 2>/dev/null | wc -l | xargs echo "cached .deb files:"
 
