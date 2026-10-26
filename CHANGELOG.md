@@ -1,3 +1,11 @@
+## [0.3.1](https://github.com/HeT-FTI/fcpp/compare/v0.3.0...v0.3.1) (2026-10-26)
+
+### Bug Fixes
+
+* let sync accept a committed mirror view ([32c6f9a](https://github.com/HeT-FTI/fcpp/commit/32c6f9a405098b8952ea4d9ef4cb0947149fce2d))
+* reject component cycles and header-only graphs while configuring ([525e445](https://github.com/HeT-FTI/fcpp/commit/525e445ee7c73994f76a3d2f806f9f7e95c44519))
+* single-language components and a declarative component graph ([06b9349](https://github.com/HeT-FTI/fcpp/commit/06b9349d0c55fd3181a717a9cbdb339d4900805b)), closes [#0011](https://github.com/HeT-FTI/fcpp/issues/0011)
+
 ## [0.3.0](https://github.com/HeT-FTI/fcpp/compare/v0.2.0...v0.3.0) (2026-10-23)
 
 ### Features
