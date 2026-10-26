@@ -55,13 +55,26 @@ jobs:
 
       - name: Install the cross toolchain and the Conan default profile
         shell: bash
-        # apt is the flakiest part of a hosted runner: bound the step and let retries plus timeouts do the work.
-        timeout-minutes: 12
+        # apt is the flakiest part of a hosted runner.  Measured on 2026-10-26: the
+        # aarch64 toolchain is a 234 MB download that took 11 minutes on a degraded
+        # azure mirror (one 10.8 MB package took 2 minutes), while unpacking was
+        # seconds -- so the bound is the download, and 12 minutes left no headroom.
+        timeout-minutes: 25
         run: |
-          printf '%s\n' 'Acquire::Retries "3";' 'Acquire::http::Timeout "20";' 'Acquire::https::Timeout "20";' \
+          printf '%s\n' \
+            'Acquire::Retries "5";' \
+            'Acquire::http::Timeout "30";' \
+            'Acquire::https::Timeout "30";' \
+            'Acquire::Languages "none";' \
             | sudo tee /etc/apt/apt.conf.d/99-ci-retries >/dev/null
           sudo apt-get update
-          sudo apt-get install -y ${{ matrix.packages }}
+          # noninteractive + confdef/confold: never let a conffile or needrestart
+          # prompt turn a slow download into an apparent hang.
+          sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a \
+            apt-get install -y --no-install-recommends \
+            -o Dpkg::Options::=--force-confdef \
+            -o Dpkg::Options::=--force-confold \
+            ${{ matrix.packages }}
           conan profile detect --force
 
       - name: Cache Conan packages
