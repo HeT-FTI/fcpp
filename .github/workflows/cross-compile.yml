@@ -53,16 +53,32 @@ jobs:
         run: |
           pip install --only-binary :all: conan==2.31.2
 
+      - name: Prepare the apt download cache
+        shell: bash
+        # `/var/cache/apt/archives` is root-owned; the cache action runs as the
+        # runner user, so hand it the directory before restoring into it.
+        run: sudo chown -R "$USER:$USER" /var/cache/apt/archives
+
+      - name: Restore the apt download cache
+        uses: actions/cache@v6
+        with:
+          path: /var/cache/apt/archives
+          # Keyed by target: the two matrix legs install different packages.
+          key: apt-archives-${{ matrix.target }}-${{ hashFiles('.github/workflows/cross-compile.yml') }}
+          restore-keys: |
+            apt-archives-${{ matrix.target }}-
+
       - name: Install the cross toolchain and the Conan default profile
         shell: bash
         # apt is the flakiest part of a hosted runner.  Measured on 2026-10-26: the
-        # aarch64 toolchain is a 234 MB download that took 11 minutes on a degraded
-        # azure mirror (one 10.8 MB package took 2 minutes), while unpacking was
-        # seconds -- so the bound is the download, and 12 minutes left no headroom.
-        timeout-minutes: 25
+        # aarch64 toolchain is a 234 MB download that took 11-17 minutes on a
+        # degraded azure mirror (one 10.8 MB package took 2 minutes), while
+        # unpacking was seconds.  The download cache above removes that from the
+        # steady state; this bound only has to survive a cold cache.
+        timeout-minutes: 30
         run: |
           printf '%s\n' \
-            'Acquire::Retries "5";' \
+            'Acquire::Retries "3";' \
             'Acquire::http::Timeout "30";' \
             'Acquire::https::Timeout "30";' \
             'Acquire::Languages "none";' \
@@ -79,6 +95,14 @@ jobs:
             -o Dpkg::Options::=--force-confold \
             ${{ matrix.packages }}
           conan profile detect --force
+
+      - name: Report the toolchain install cost
+        if: always()
+        shell: bash
+        run: |
+          echo "### Toolchain (\`${{ matrix.target }}\`)"
+          du -sh /var/cache/apt/archives 2>/dev/null || true
+          ls -1 /var/cache/apt/archives/*.deb 2>/dev/null | wc -l | xargs echo "cached .deb files:"
 
       - name: Cache Conan packages
         uses: actions/cache@v6
