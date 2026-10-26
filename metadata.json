@@ -29,6 +29,7 @@
     },
     "infra": {"GTest": ["gtest::gtest"], "pybind11": ["pybind11::module"]}
   },
+  "component_requires": {},
   "baremetal_white_list": ["etl", "ArduinoJson"],
   "doc_languages": ["en", "zh"],
   "doc_versions": ["1.0", "2.0"],
