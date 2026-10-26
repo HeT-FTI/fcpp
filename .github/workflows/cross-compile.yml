@@ -70,8 +70,11 @@ jobs:
           sudo apt-get update
           # noninteractive + confdef/confold: never let a conffile or needrestart
           # prompt turn a slow download into an apparent hang.
+          # No --no-install-recommends: the arm-none-eabi toolchain ships its C and
+          # C++ runtime (newlib / libstdc++-arm-none-eabi-newlib) as Recommends, so
+          # dropping them breaks every MCU build with "stdio.h: No such file".
           sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a \
-            apt-get install -y --no-install-recommends \
+            apt-get install -y \
             -o Dpkg::Options::=--force-confdef \
             -o Dpkg::Options::=--force-confold \
             ${{ matrix.packages }}
