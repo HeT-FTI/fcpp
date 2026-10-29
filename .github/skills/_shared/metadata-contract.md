@@ -77,6 +77,15 @@ Floors are per runner because gcov and llvm-cov count differently (llvm attribut
 caller). Ratchet: raise only, and a lower floor needs its reason in the commit message. Read by the CI step that
 asserts coverage and by any local gate that reads the same fields.
 
+```json
+"coverage": {"core_scopes": ["src/core/"], "floors": {"Linux": {"all": 80}, "macOS": {"all": 80}}}
+```
+
+- **Meaning**: `all` is the line rate over every instrumented file; `core` is the same rate restricted to `core_scopes`. 语义：`all` 看全库，`core` 只在声明的作用域内统计。
+- **Reading the current value**: the Tests job prints `[coverage] ok all 85.51% (59/69) floor 80.00%` per scope; `per_file` in the JSON gives the same counts per file. 当前值看 CI 那一行或 `per_file`。
+- **Changing it**: raise the floor in the same commit that raises the rate; lower it only with the reason in the commit message — a floor that trails the code is a ratchet, not a target. 只能随覆盖率一起提；降必须写理由。
+- **When it fails**: `[coverage] FAIL all 78.10% (…) floor 80.00%` plus `::error::coverage floor missed on <os>`; the fix is more tests, not a smaller number. 红了就补测试，不要改小数字。
+
 ### Run-time Knobs（运行期旋钮，不进 metadata）
 | Knob（旋钮） | Form（形式） | Purpose（作用） |
 |------|------|------|

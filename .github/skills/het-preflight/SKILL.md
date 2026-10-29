@@ -15,7 +15,7 @@ user-invocable: true
 | # | Check（检查） | How（执行方式） | Pass（通过标准） |
 |---|------|------|------|
 | 1 | Code quality | local clang-tidy + clang-format (see `het-quality` S4) | no warning (WarningsAsErrors) |
-| 2 | Tests + coverage | `conan create . -s build_type=Debug` (with `activate_code_coverage`) | all pass, coverage met |
+| 2 | Tests + coverage | `conan create . -s build_type=Debug` (with `activate_code_coverage`) | all pass; every `[coverage] …` line is `ok` against `metadata.coverage.floors.<RUNNER_OS>` |
 | 3 | Docs | `python ./docs/build.py` | no error, en/zh pages |
 | 4 | Audit | `het-audit` (N6) | no blocking issues |
 | 5 | Version | confirm semantic-release will bump as expected (feat→minor/fix→patch/BREAKING→major) | matches plan |
