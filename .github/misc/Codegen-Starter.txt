@@ -121,6 +121,10 @@ generate/modify each one according to the project design above.
        C++23 module generation is experimental and not applicable under C++17.
      • Set "is_shared", "is_header", "enable_python_bindings",
        "activate_code_coverage" from Section 1.
+     • "coverage" is optional and must never be invented: run the test chain
+       once, read the rate from coverage_summary.json, then write
+       {"floors": {"Linux": {"all": <rate - 5>}, "macOS": {"all": <rate - 5>}}}
+       and raise it as the suite grows (metadata-contract.md → Coverage Policy).
      • Populate "dependencies" → common/c/cpp/infra from Section 3.
      • Leave "component_requires" empty unless one component calls into the
        other: {"<name>_c": ["<name>_cpp"]} means the C component uses the C++

@@ -30,6 +30,7 @@ user-invocable: true
 | `Reconcile coverage` red: expected a summary from every leg | an `Auto Testing` leg produced no `coverage_summary.json` | look at that leg first; reconcile only runs when both legs succeeded |
 | `Auto Testing (windows-latest)` fails at configure | the test chain has no MSVC coverage backend | Windows is intentionally not in this chain — do not add it until coverage is implemented for MSVC |
 | coverage gate red in `Tests` | the report was produced but the summary is absent or 0% | the gate reads `coverage_summary.json`; 0% means no test reached the library |
+| `[coverage] FAIL all … floor …` | the rate dropped below `metadata.coverage.floors.<RUNNER_OS>` | add tests for the new code; raise a floor only when the rate rose, and lower it only with the reason in the commit message |
 
 ### Release（发布）
 | Symptom | Cause | Fix |

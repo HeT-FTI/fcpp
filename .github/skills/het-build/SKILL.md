@@ -27,6 +27,7 @@ user-invocable: true
 2. `build_type` decides the config this chain builds — nothing else does
 3. Commit with `test(:beer:): ...`
 4. Actions → `Tests` → both `Auto Testing (<os>)` legs run in parallel; the canonical `Coverage-report` artifact carries `coverage_report/index.html` and `coverage_summary.json`, **rendered from the same merged tracefile** so the two always agree. Floors come from `metadata.coverage.floors.<RUNNER_OS>`; with no `coverage` block the gate only requires a non-empty report. lcov 1.x and 2.x both work. `Reconcile coverage` 只校验两腿插桩了同一批 TU
+   - Raising a floor: take the number from the `[coverage] ok all 85.51% (59/69) floor 80.00%` line of a green run, ship it with the commit that raised the rate, and never lower it without a reason in the commit message. 地板只随覆盖率上提；下降必须写理由。
 
 **Scenario C: verify locally first (recommended)（本地先验证，推荐）**
 ```bash
