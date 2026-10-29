@@ -66,6 +66,17 @@
 | `workflow_triggers.*` | CI master switches (build/tests/release/docs/security_scan/cross_compile); **all false = gitmoji triggers nothing**; on by default: build/tests/docs/security_scan/cross_compile (only `release` is off); `cross_compile` is not part of PR shift-left |
 | `baremetal_white_list` | baremetal cross-compile whitelist (default `["etl","ArduinoJson"]`); applied in both deps & requirements |
 
+### Coverage Policy（覆盖率策略，可选）
+| Field（字段） | Purpose（作用） |
+|------|------|
+| `coverage.core_scopes` | path prefixes counted as the core scope (array); empty = that scope is not judged |
+| `coverage.floors.<os>` | `{core, all}` line-rate floors per runner OS as GitHub reports it (`Linux`/`macOS`/`Windows`) |
+| `coverage.default_floor` | floor for runners not listed; **no `coverage` block at all asserts only that the report is not empty**, so a project that declares nothing never fails on it |
+
+Floors are per runner because gcov and llvm-cov count differently (llvm attributes header and inline lines to the
+caller). Ratchet: raise only, and a lower floor needs its reason in the commit message. Read by the CI step that
+asserts coverage and by any local gate that reads the same fields.
+
 ### Run-time Knobs（运行期旋钮，不进 metadata）
 | Knob（旋钮） | Form（形式） | Purpose（作用） |
 |------|------|------|
