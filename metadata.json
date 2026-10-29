@@ -15,6 +15,12 @@
   "build_cstd": "11",
   "build_type": "Debug",
   "activate_code_coverage": true,
+  "coverage": {
+    "floors": {
+      "Linux": {"all": 80},
+      "macOS": {"all": 80}
+    }
+  },
   "is_shared": false,
   "is_header": false,
   "generate_modules_inplace": false,
