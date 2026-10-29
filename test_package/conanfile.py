@@ -175,18 +175,33 @@ class PackageTestConan(ConanFile):
 
         # test cases in test_pacakge/test/*.cpp
         if self._tests_enabled():
-            self._run_ctest_suite()
+            # The report is written before a red suite is raised, never instead of raising it.
+            suite_error = None
+            try:
+                self._run_ctest_suite()
+            except Exception as err:  # noqa: BLE001 -- re-raised below, once the report exists
+                suite_error = err
 
+            coverage_error = None
             if self.metadata.get('activate_code_coverage'):
-                self._code_coverage_auto()
+                try:
+                    self._code_coverage_auto()
+                except Exception as err:  # noqa: BLE001 -- reported, but after the suite's own verdict
+                    coverage_error = err
+
+            # The suite's failure is the verdict; raising the coverage error instead would hide which case failed.
+            if suite_error is not None:
+                raise suite_error from coverage_error
+            if coverage_error is not None:
+                raise coverage_error
 
     def _run_ctest_suite(self):
+        # ctest prints a failed case only on request, and CMake.test has no `ctest_args`; Popen inherits os.environ.
+        os.environ['CTEST_OUTPUT_ON_FAILURE'] = '1'
         try:
             if can_run(self):
                 cmake = CMake(self)
                 cmake.test()
-        except (Exception, ) as err:
-            print('CTest Crashed:', err)
         finally:
             target_folder = self.recipe_folder + sep + 'test' + sep + 'export'
 
