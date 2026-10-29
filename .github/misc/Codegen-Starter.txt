@@ -251,6 +251,9 @@ generate/modify each one according to the project design above.
          `test_python_bindings.py`; the test package registers it as a CTest
          only when the built package ships `<name>_python*`, so a project without
          bindings needs nothing there.
+       - If that smoke test needs third-party packages (numpy, ...), list them in
+         `test_package/test/python/requirements.txt`; CI installs that file when
+         it exists (run `pip install -r` yourself for a local run).
        - If the library already exposes a C ABI (an `include/*/api/` header),
          bind THAT instead of the C++ templates: a stable ABI, no
          per-instantiation bindings, and no C++ ABI leaking through Python.

@@ -40,6 +40,7 @@ Steps（步骤）:
 - Naming: `<module>_test.cpp`; suite = module name; case describes behavior. 命名。
 - Coverage: each public API >= 1 positive + >= 1 boundary. 覆盖目标。
 - `main.cpp` entry auto-generated — do not hand-write. 入口自动生成。
+- Optional python consumer: `test_package/test/python/test_python_bindings.py` plus `requirements.txt` in the same folder, only when `enable_python_bindings` is true. 可选 Python 消费方。
 - Turn on `trigger_tests=true` (plus `activate_code_coverage` as needed). 开开关。
 
 ## Quality Checklist（质量自检清单）

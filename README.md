@@ -261,10 +261,10 @@ project-root/
 └── test_package/             # Test project
     ├── export/               # Log for testing results
     ├── resources/            # Test resources for test_package/ programs
-    ├── stress/
-    │   └── *.cpp             # Scripts for stress testing
-    ├── unit/
-    │   └── *.cpp             # Scripts for unit testing
+    ├── test/
+    │   ├── unit/             # Standing unit tests (coverage target)
+    │   ├── stress/           # GTest stress / performance tests
+    │   └── python/           # Optional python consumer (bindings enabled)
     ├── main.cpp              # Validation program for package
     ├── conanfile.py          # Conan recipe for test_package
     └── CMakeLists.txt        # CMake build workflow for test_package

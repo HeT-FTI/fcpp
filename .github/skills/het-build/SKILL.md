@@ -26,7 +26,7 @@ user-invocable: true
 1. `metadata.json`: `trigger_tests = true`、`activate_code_coverage = true`、`workflow_triggers.tests = true`
 2. `build_type` decides the config this chain builds — nothing else does
 3. Commit with `test(:beer:): ...`
-4. Actions → `Tests` → both `Auto Testing (<os>)` legs run in parallel; download the canonical `Coverage-report` artifact → `coverage_report/index.html`, but read rates from `coverage_summary.json`（不是 HTML）。`Coverage-report-<os>-<ts>` 是各腿原始证据，`Reconcile coverage` 才是一致性门禁
+4. Actions → `Tests` → both `Auto Testing (<os>)` legs run in parallel; the canonical `Coverage-report` artifact carries `coverage_report/index.html` and `coverage_summary.json`, **rendered from the same merged tracefile** so the two always agree. Floors come from `metadata.coverage.floors.<RUNNER_OS>`; with no `coverage` block the gate only requires a non-empty report. lcov 1.x and 2.x both work. `Reconcile coverage` 只校验两腿插桩了同一批 TU
 
 **Scenario C: verify locally first (recommended)（本地先验证，推荐）**
 ```bash
