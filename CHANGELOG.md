@@ -1,3 +1,13 @@
+## [0.3.2](https://github.com/HeT-FTI/fcpp/compare/v0.3.1...v0.3.2) (2026-10-29)
+
+### Bug Fixes
+
+* compare the baremetal whitelist case-insensitively ([90fe043](https://github.com/HeT-FTI/fcpp/commit/90fe0434bff6aa0f4d0798f28e9d63b1fb50f223))
+* fail the build when the gtest suite fails ([0bd9d78](https://github.com/HeT-FTI/fcpp/commit/0bd9d7890bb81fce623d489462cdf2c9849a1113))
+* merge the coverage tracefile so the report and the gate agree ([e57b7f7](https://github.com/HeT-FTI/fcpp/commit/e57b7f797d005903864220d306ba7360f20029dd))
+* read per-runner coverage floors from metadata ([d214745](https://github.com/HeT-FTI/fcpp/commit/d214745cb46d5e8163461ac088c85b59f6ec755c))
+* ship coverage floors in the template metadata ([ad57a22](https://github.com/HeT-FTI/fcpp/commit/ad57a22af07fcd86b819b12927e2008a3459642a))
+
 ## [0.3.1](https://github.com/HeT-FTI/fcpp/compare/v0.3.0...v0.3.1) (2026-10-26)
 
 ### Bug Fixes
