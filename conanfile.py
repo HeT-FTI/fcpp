@@ -256,11 +256,16 @@ class PackageRecipe(ConanFile):
     def _python_bindings_enabled(self):
         return bool(self.meta.get("enable_python_bindings"))
 
+    def _baremetal_whitelist(self):
+        """Lowercase set: ConanCenter only moved to lowercase names in 2026 H1, so `OpenCV/4.x.x` is legitimate."""
+        return {str(_name).lower() for _name in (self.meta.get('baremetal_white_list') or ())}
+
     def requirements(self):
+        _whitelist = self._baremetal_whitelist()
         for req in self.conandata.get('requirements'):
             _pkg = req.split('/')[0]
             if cross_building(self) and self.settings.os == "baremetal":
-                if _pkg not in self.meta.get('baremetal_white_list'):
+                if _pkg.lower() not in _whitelist:
                     continue
             if _pkg == 'gtest':
                 continue
@@ -289,7 +294,8 @@ class PackageRecipe(ConanFile):
         _cpp = {k: v if k not in _common.keys() else list(set(v).union(set(_common.get(k)))) for k, v in _cpp.items()}
 
         if cross_building(self) and self.settings.os == 'baremetal':
-            _c, _cpp, _common, _infra = [{k: v for k, v in z.items() if k in self.meta.get("baremetal_white_list")} 
+            _whitelist = self._baremetal_whitelist()
+            _c, _cpp, _common, _infra = [{k: v for k, v in z.items() if k.lower() in _whitelist}
                                          for z in [_c, _cpp, _common, _infra]]
         else:
             _infra.pop("GTest", None)
