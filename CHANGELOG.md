@@ -1,3 +1,10 @@
+## [0.3.3](https://github.com/HeT-FTI/fcpp/compare/v0.3.2...v0.3.3) (2026-10-29)
+
+### Bug Fixes
+
+* keep python bindings out of a cross build ([0c812c9](https://github.com/HeT-FTI/fcpp/commit/0c812c9dc6e0b1702d6d261cb40ba76cbddb2a06))
+* scope coverage to the package that was just built ([39b9093](https://github.com/HeT-FTI/fcpp/commit/39b90936e1c0b200e2cd75ab43a9354aa0503751))
+
 ## [0.3.2](https://github.com/HeT-FTI/fcpp/compare/v0.3.1...v0.3.2) (2026-10-29)
 
 ### Bug Fixes
