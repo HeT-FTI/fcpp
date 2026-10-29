@@ -276,28 +276,22 @@ class PackageTestConan(ConanFile):
         return coverage_folder
 
     def _package_root(self):
-        """Root of THIS package's entry inside the conan cache.
+        """Root of the tested package's cache entry, i.e. the parent of its `p/` folder.
 
-        `conan cache path <ref>` prints the PACKAGE folder of the cache entry:
-          <CONAN_HOME>/p/b/<pkgname-prefix><hash>/p
-        Its parent is the entry root that holds this package's b/ (build +
-        copied sources) and p/ trees -- the only reliable scope for our code.
+        Asking `conan list` used to return whichever package was printed first, so a cross build of
+        the same version (armv8 next to x86_64) pointed the coverage filter at the wrong tree and
+        every record was excluded. The dependency itself knows its own folder.
         """
-        _name, _ver = [self.metadata.get(_) for _ in ['name', 'version']]
-        _tmp = subprocess.run(["conan", "list", f"{_name}/{_ver}:*"], capture_output=True, text=True)
-        _tmp_ref = [str(_).strip() for _ in _tmp.stdout.split('\n')]
-        _marked = [i for i, _ in enumerate(_tmp_ref) if _ == 'packages']
-        if not _marked:
-            raise RuntimeError(f'conan list {_name}/{_ver}:* listed no package; '
-                               f'cannot scope the coverage report')
-        _pkg_uid = _tmp_ref[_marked[0] + 1]
-        _tmp = subprocess.run(["conan", "cache", "path", f"{_name}/{_ver}:{_pkg_uid}"],
-                              capture_output=True, text=True)
-        _pkg_folder = _tmp.stdout.strip()
-        _pkg_root = sep.join(_pkg_folder.split(sep)[:-1])
-        if not _pkg_root:
-            raise RuntimeError(f'conan cache path {_name}/{_ver}:{_pkg_uid} returned "{_pkg_folder}"')
-        return _pkg_root
+        _name = self.tested_reference_str.split('/')[0]
+        try:
+            _dep = self.dependencies[_name]
+        except KeyError:
+            _dep = None
+        _pkg_folder = str(_dep.package_folder) if _dep and _dep.package_folder else ''
+        if not _pkg_folder:
+            raise RuntimeError(f'coverage: cannot resolve the package folder of {_name}; '
+                               f'the coverage report cannot be scoped')
+        return str(Path(_pkg_folder).parent)
 
     def _instrumented_binaries(self, build_folder):
         """The instrumented executables of this test package.
