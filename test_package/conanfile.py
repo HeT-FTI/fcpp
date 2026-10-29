@@ -16,6 +16,19 @@ MAIN_CPP = 'main.cpp'
 _get_file_name = (lambda x: x.split(sep)[-1])
 
 
+def _lcov_ignore_errors() -> str:
+    """The error classes to continue past, named for the lcov in use: geninfo 2.x renamed the line-range ones from
+    `gcov` to `mismatch`/`inconsistent` and **validates the list**, while geninfo 1.x rejects a name it does not know
+    (measured: 1.16 exits 2 on `mismatch`), so one fixed list cannot serve both.
+    """
+    try:
+        _version = subprocess.run(['lcov', '--version'], check=True, capture_output=True, text=True).stdout
+        _major = int(re.search(r'(\d+)\.', _version).group(1))
+    except (OSError, AttributeError, ValueError, subprocess.CalledProcessError):
+        return 'mismatch,source,inconsistent'
+    return 'mismatch,source,inconsistent' if _major >= 2 else 'gcov,source'
+
+
 def _clear_test_build():
     _build = sep.join(__file__.split(sep)[:-1] + ['build'])
     _presets = sep.join(__file__.split(sep)[:-1] + ['CMakeUserPresets.json'])
@@ -363,50 +376,102 @@ class PackageTestConan(ConanFile):
         return _tools['llvm-profdata'], _tools['llvm-cov']
 
     def _coverage_totals(self, info_file):
-        """Sum the tracefile's own LF/LH/FNF/FNH/BRF/BRH records; each file record carries its totals, so a plain sum is the report's."""
-        _sums, _files, _per_file = {}, set(), {}
+        """Merge the tracefile per source file, then sum, so every total is the sum of its own breakdown.
+
+        ``_source_relpath`` is the identity of a file here: two records that normalise to the same path are the
+        same source seen from two build roots and are merged line by line. A project that genuinely ships two
+        different files at the same relative path under different roots would see them treated as one.
+        """
+        _lines, _meta, _files = {}, {}, set()
         _current = None
         with open(info_file, 'r', encoding='utf-8') as f:
             for _line in f:
                 if _line.startswith('SF:'):
                     _current = _source_relpath(_line[3:].strip())
                     _files.add(_current)
-                    _per_file.setdefault(_current, {})
+                    _lines.setdefault(_current, {})
+                    _meta.setdefault(_current, {})
+                    continue
+                if _current is None:
+                    continue
+                if _line.startswith('DA:'):
+                    _number, _, _rest = _line[3:].strip().partition(',')
+                    _count = _rest.partition(',')[0]
+                    if _number.isdigit() and _count.isdigit():
+                        _seen = _lines[_current]
+                        _seen[int(_number)] = max(_seen.get(int(_number), 0), int(_count))
                     continue
                 _key, _, _value = _line.strip().partition(':')
-                if _key in ('LF', 'LH', 'FNF', 'FNH', 'BRF', 'BRH') and _value.isdigit():
-                    _sums[_key] = _sums.get(_key, 0) + int(_value)
-                    if _current is not None:
-                        _per_file[_current][_key] = int(_value)
+                if _key in ('FNF', 'FNH', 'BRF', 'BRH') and _value.isdigit():
+                    # no line key to merge on: the larger record stands for the file, never the sum of two.
+                    _meta[_current][_key] = max(_meta[_current].get(_key, 0), int(_value))
+        _per_file = {_p: {'lines_hit': sum(1 for _c in _d.values() if _c > 0), 'lines_found': len(_d)}
+                     for _p, _d in _lines.items()}
+        _sum = lambda key: sum(_v.get(key, 0) for _v in _meta.values())
         _rate = lambda hit, found: round(100.0 * hit / found, 2) if found else 0.0
-        _totals = {_what: {'hit': _sums.get(_h, 0), 'found': _sums.get(_f, 0),
-                           'percent': _rate(_sums.get(_h, 0), _sums.get(_f, 0))}
-                   for _what, _h, _f in [('lines', 'LH', 'LF'),
-                                         ('functions', 'FNH', 'FNF'),
-                                         ('branches', 'BRH', 'BRF')]}
+        _counts = [('lines', sum(_v['lines_hit'] for _v in _per_file.values()),
+                    sum(_v['lines_found'] for _v in _per_file.values())),
+                   ('functions', _sum('FNH'), _sum('FNF')),
+                   ('branches', _sum('BRH'), _sum('BRF'))]
+        _totals = {_what: {'hit': _hit, 'found': _found, 'percent': _rate(_hit, _found)}
+                   for _what, _hit, _found in _counts}
         # the file set is what two platforms can compare; the rates cannot match (see _code_coverage_clang)
         _totals['files'] = sorted(_files)
         # Per-file counts, not percentages: averaging would weight a 3-line header like a 300-line source.
-        _totals['per_file'] = {_p: {'lines_hit': _v.get('LH', 0), 'lines_found': _v.get('LF', 0)}
-                               for _p, _v in sorted(_per_file.items()) if _v}
+        _totals['per_file'] = {_p: _v for _p, _v in sorted(_per_file.items()) if _v['lines_found']}
         return _totals
 
-    def _render_html_report(self, coverage_folder, info_file, pkg_root):
-        """Filter the tracefile down to OUR entry, render the HTML, clean up.
+    def _merge_tracefile(self, info_file, merged_file):
+        """Rewrite ``SF:`` to one existing path per normalised key, then let lcov add the records.
 
-        Shared verbatim by the gcc and clang paths so the two cannot drift: the
-        artifact path produced here is what downstream parses.
+        One header is compiled into the package's objects and again into the consumer's, so lcov reports it once
+        per directory: ``lines`` counts the same source twice and every rate is computed on an inflated
+        denominator. Two records of one file only merge once they carry the same path, and the path kept has to be
+        one that exists -- ``genhtml`` reads the source through it to draw the annotated view. Counts are summed by
+        lcov here; that does not affect the rate, which asks whether a line ran at all, not how often.
+        """
+        _raw, _candidates = [], {}
+        with open(info_file, 'r', encoding='utf-8') as f:
+            for _line in f:
+                _raw.append(_line)
+                if _line.startswith('SF:'):
+                    _path = _line[3:].strip()
+                    _candidates.setdefault(_source_relpath(_path), []).append(_path)
+
+        _chosen = {_key: next((_p for _p in _paths if os.path.exists(_p)), _paths[0])
+                   for _key, _paths in _candidates.items()}
+        _rewritten = merged_file + '.rewritten'
+        with open(_rewritten, 'w', encoding='utf-8') as f:
+            for _line in _raw:
+                if _line.startswith('SF:'):
+                    _line = 'SF:' + _chosen[_source_relpath(_line[3:].strip())] + '\n'
+                f.write(_line)
+
+        subprocess.run(['lcov', '--ignore-errors', _lcov_ignore_errors(),
+                        '-a', _rewritten, '--output-file', merged_file], check=True)
+        os.remove(_rewritten)
+        return merged_file
+
+    def _render_html_report(self, coverage_folder, info_file, pkg_root):
+        """Filter the tracefile down to OUR entry, merge duplicates, render the HTML, clean up.
+
+        Shared verbatim by the gcc and clang paths so the two cannot drift: the artifact path produced here is
+        what downstream parses.
         """
         # scope the report to this package's derived cache root; a non-matching filter makes lcov 2.x abort
         cmd2 = ['lcov', '--extract', info_file,
                 pkg_root.replace(sep, '/') + '/*', '--output-file',
                 os.path.join(coverage_folder, 'coverage_test.filtered.info')]
         subprocess.run(cmd2, check=True)
-        cmd3 = ['genhtml', os.path.join(coverage_folder, 'coverage_test.filtered.info'),
+
+        # one tracefile for the HTML and the numbers: two artefacts with two rates is worse than either being wrong.
+        _merged = self._merge_tracefile(os.path.join(coverage_folder, 'coverage_test.filtered.info'),
+                                        os.path.join(coverage_folder, 'coverage_test.merged.info'))
+        cmd3 = ['genhtml', _merged,
                 '--output-directory', os.path.join(coverage_folder, 'coverage_report')]
         subprocess.run(cmd3, check=True)
 
-        _totals = self._coverage_totals(os.path.join(coverage_folder, 'coverage_test.filtered.info'))
+        _totals = self._coverage_totals(_merged)
 
         # remove intermediate files
         for _f in os.listdir(coverage_folder):
@@ -477,13 +542,9 @@ class PackageTestConan(ConanFile):
         _pkg_root = self._package_root()
         _main_pkg_build_fd = _pkg_root + sep + 'b' + sep + 'build'
 
-        # collect code coverage files to export/coverage/
+        # collect from both halves: a header-only module is instantiated by whoever includes it, often only a test.
         _gcda = [str(_) for _ in Path(_main_pkg_build_fd).rglob('*.gcda')]
-        if self.metadata.get('is_header'):
-            # header-only: the package compiles nothing, its code is instrumented inside the consumer.
-            # skip the generated ucov_* TUs: lcov 2.x aborts on gcov's line range for gtest macros
-            _gcda += [str(_) for _ in Path(self.build_folder).rglob('*.gcda')
-                      if not _.name.startswith('ucov_')]
+        _gcda += [str(_) for _ in Path(self.build_folder).rglob('*.gcda')]
         _gcno = [_[:-4] + 'gcno' for _ in _gcda]
 
         coverage_folder = self._coverage_folder()
@@ -492,9 +553,10 @@ class PackageTestConan(ConanFile):
             shutil.copy2(v1, coverage_folder + sep + _get_file_name(v1))
             shutil.copy2(v2, coverage_folder + sep + _get_file_name(v2))
 
-        # auto html report generation
+        # `source` = deleted ucov_ copies; the line-range classes are named per lcov release (see _lcov_ignore_errors).
         cmd1 = ['lcov', '--directory', coverage_folder, '--capture', '--output-file',
-                os.path.join(coverage_folder, 'coverage_test.info'), '--rc', 'geninfo_auto_base=1']
+                os.path.join(coverage_folder, 'coverage_test.info'), '--rc', 'geninfo_auto_base=1',
+                '--ignore-errors', _lcov_ignore_errors()]
         subprocess.run(cmd1, check=True)
 
         self._render_html_report(coverage_folder,
