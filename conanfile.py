@@ -269,7 +269,7 @@ class PackageRecipe(ConanFile):
                     continue
             if _pkg == 'gtest':
                 continue
-            if _pkg == 'pybind11' and not self._python_bindings_enabled():
+            if _pkg == 'pybind11' and (not self._python_bindings_enabled() or cross_building(self)):
                 continue
             self.requires(req)
 
@@ -299,7 +299,7 @@ class PackageRecipe(ConanFile):
                                          for z in [_c, _cpp, _common, _infra]]
         else:
             _infra.pop("GTest", None)
-            if not self._python_bindings_enabled():
+            if not self._python_bindings_enabled() or cross_building(self):
                 _infra.pop("pybind11", None)
 
         _infra_deps = [f"{k}@{' '.join(v)}" for k, v in _infra.items()]
