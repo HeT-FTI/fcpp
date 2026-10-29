@@ -57,6 +57,12 @@ jobs:
         run: |
           pip install --only-binary :all: conan==2.31.2
 
+      # A file, not a package name: the consumer test's requirements are the project's business, and an absent file installs nothing.
+      - name: Optional consumer test requirements
+        if: ${{ hashFiles('test_package/test/python/requirements.txt') != '' }}
+        run: |
+          python3 -m pip install --only-binary :all: -r test_package/test/python/requirements.txt
+
       - name: Set metadata from inputs
         id: read_metadata
         run: |

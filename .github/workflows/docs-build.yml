@@ -31,7 +31,13 @@ jobs:
 
       - name: Build documentation
         run: |
-          python ./docs/build.py
+          set -o pipefail
+          python ./docs/build.py 2>&1 | tee /tmp/documentation.log
+          # Sphinx exits 0 on a parse failure and only prints `ERROR: `, so the marker decides, not the status; the wording is Sphinx's, so this line moves with the tool, not with a shared script.
+          if grep -nE '(^| )ERROR: ' /tmp/documentation.log; then
+            echo "::error::the documentation build reported an error (see the ERROR line above)"
+            exit 1
+          fi
 
       - name: Assert the documentation was produced
         shell: bash
