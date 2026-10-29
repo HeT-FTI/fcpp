@@ -31,7 +31,7 @@
 **Semantic rules（不可违背）**
 1. **One package in one bucket only**; `common` = shared by both targets. 一个包只放一个桶。
 2. **GTest belongs to test_package only** (host-side desktop verification), never in the main package's component requires. GTest 只归 test_package。
-3. **pybind11 enters the main package only when `enable_python_bindings=true`** (gated in both main recipe and test_package). pybind11 跟随开关。
+3. **pybind11 enters the main package only when `enable_python_bindings=true`, and never in a cross build** — a target-side python interpreter cannot be probed from the build machine (gated in both main recipe and test_package). pybind11 跟随开关，交叉构建时不进依赖图。
 4. Keys differ in case from conandata package names (`Eigen3` vs `eigen`) — always compare lowercase. 键名与 conandata 包名大小写不同，统一小写归一。
 
 ### Component Graph（组件图，可选）
