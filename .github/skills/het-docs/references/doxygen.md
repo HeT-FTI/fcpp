@@ -27,6 +27,8 @@ void test_c_compiler();
 ## Language / Version Filtering（语言与版本过滤）
 
 - `docs/build.py` filters comments by `[en]`/`[zh]` tags → one Doxygen build per active language（`doc_languages`）. 按语言标签过滤生成多语言。
+- A tag is **exclusive**, its absence is **shared**: a line carrying `[en]` alone disappears from the `zh` build, while an untagged line appears in every language. 有标签=专属该语言；无标签=所有语言版本共享。
+- Text outside a `@tag ... [en]` group is never dropped by regrouping: `_assert_no_loss()` compares the character counts and fails the build instead. 重组只搬字不删字，删了就构建失败。
 - `@since <version>` filters objects per doc version（`doc_versions`）; objects with `@since <= target` are kept. 按 @since 版本过滤。
 - Main page: `docs/doxygen/dox/mainpage.dox` uses `@section xxx [en] ... / [zh] ...`. 主页双语章节写法。
 

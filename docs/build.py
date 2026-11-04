@@ -34,7 +34,10 @@ def _inherit_root_metadata():
     return _meta
 
 
-# The filters must accept all three bilingual shapes: compact ///< lines, indented blocks, continuation lines.
+# The filters below must accept all three bilingual shapes or a language leaks into (or vanishes from)
+# the build: compact `///< [en] gain. [zh] 增益。`, an indented block whose `[zh]` sits on its own line,
+# and a wrapped sentence whose marker lands on the second line. `_normalize_bilingual()` moves markers
+# onto tag lines first; the matchers stay indentation-agnostic because doc blocks live at any depth.
 _hit_com_tag = re.compile(r"\s*\* @")
 _hit_lang_tag = re.compile(rf"(\s*\* @[a-z]+).*\[({'|'.join(_inherit_root_metadata().get('doc_languages'))})] ")
 _hit_free_tag = re.compile(r"\s*\* [^@]+")
@@ -524,7 +527,8 @@ class AutomationDoc:
                 subprocess.run(["make", "-C", _path, "-e", f"SPHINXOPTS=-D language={lang_tag_map[_]}", "html"])
         subprocess.run(["make", "-C", _path, "clean"])
         subprocess.run(["make", "-C", _path, "html"])
-        # `make html` only renders the language conf.py pins, so emit one `build/html_<code>` per remaining language.
+        # `make html` renders whatever `language` conf.py pins, so every other language -- the source
+        # language included -- would get no tree at all: emit one per language as `build/html_<code>`.
         _pinned = self._sphinx_pinned_language(_path)
         _sphinx = shutil.which('sphinx-build')
         if _sphinx is None:
