@@ -1,3 +1,11 @@
+## [0.3.4](https://github.com/HeT-FTI/fcpp/compare/v0.3.3...v0.3.4) (2026-11-04)
+
+### Bug Fixes
+
+* cover the C cppcheck axis too ([98ea19a](https://github.com/HeT-FTI/fcpp/commit/98ea19a17dfceeb1d19806bc523c313139b6f292))
+* let cppcheck finish its analysis instead of going red ([f251975](https://github.com/HeT-FTI/fcpp/commit/f25197538465492d53be31f1103d6afd945a0b29))
+* stop the bilingual filter from deleting whole doc paragraphs ([88f796b](https://github.com/HeT-FTI/fcpp/commit/88f796b33785e0d2993d4f1ebafe1b5b834b4fed))
+
 ## [0.3.3](https://github.com/HeT-FTI/fcpp/compare/v0.3.2...v0.3.3) (2026-10-29)
 
 ### Bug Fixes
