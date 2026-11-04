@@ -78,9 +78,15 @@ def _no_recursive_clean_img(x: str):
             os.remove(x + sep + f)
 
 
-def _idx_slicer(x: np.ndarray) -> list[list[int]]:
+def _idx_slicer(x: np.ndarray, _closes: list[bool]) -> list[list[int]]:
     res, _in_selection = [], False
     for i, v in enumerate(x):
+        if _closes[i]:
+            # A block comment ended here, so what follows is code -- and code has no language. It must not
+            # inherit the selection that happened to be open, or the declaration after a documented member
+            # is absorbed into the last language group and disappears from the other language's build.
+            _in_selection = False
+            continue
         if not (v[0] == True and v[1] == True and v[2] == False):
             if v[0] == True and v[1] == False and v[2] == False:
                 _in_selection = False
@@ -102,6 +108,10 @@ def _determine_sub_groups(x: list[list[int]], languages: list[str],
 
 
 _lang_marker_re = re.compile(r"\[(en|zh|jp)\]\s?")
+# Lines that only open or close a block comment. They carry no language; dropping the closer makes the file
+# end inside a comment, which Doxygen reports as "file ended in the middle of a comment block" and then
+# documents nothing at all.
+_comment_structure_re = re.compile(r"^\s*(?:/\*\*?<?|/\*!|\*/)\s*$")
 _tag_line_re = re.compile(r"^(\s*\*\s*)@([A-Za-z_][A-Za-z0-9_]*)(.*?)(\r?\n)?$")
 _inline_doc_re = re.compile(r"^(.*?(?:///<?|\*\*<)\s*)(.*?)(\r?\n)?$")
 _cjk_re = re.compile(r"[\u3000-\u303f\u4e00-\u9fff\uff01-\uff60]")
@@ -122,12 +132,41 @@ def _split_lang_segments(text: str):
     return text[:marks[0].start()], _segs
 
 
+def _chunk_characters(text: str) -> dict:
+    """The characters that carry meaning: no whitespace, no line-stars, no language markers."""
+    _clean = _lang_marker_re.sub("", text)
+    _counts: dict = {}
+    for _c in _clean:
+        if _c.isspace() or _c == '*':
+            continue
+        _counts[_c] = _counts.get(_c, 0) + 1
+    return _counts
+
+
+def _assert_no_loss(ch: dict, out: list[str]) -> list[str]:
+    """A regrouping may move text between lines. It may not delete any of it.
+
+    Runs on every chunk of every doc build, because the failure it guards against is silent: a block simply
+    renders shorter, and nobody notices until a paragraph is missing from a published page.
+    """
+    _before = _chunk_characters(ch['raw'] + ''.join(ch['lines']))
+    _after = _chunk_characters(''.join(out))
+    _lost = {_c: _n - _after.get(_c, 0) for _c, _n in _before.items() if _n > _after.get(_c, 0)}
+    if _lost:
+        raise RuntimeError(
+            f"docs/build.py: regrouping dropped text from {ch['raw'].strip()!r}: {_lost}")
+    return out
+
+
 def _rewrite_chunk(ch: dict) -> list[str]:
     """One tagged doc chunk -> one chunk per language, markers on the tag line."""
     _lead, _segs = _split_lang_segments(ch['rest'])
     _body_has_marker = any(_lang_marker_re.search(_l) for _l in ch['lines'])
     if not _segs or (len(_segs) == 1 and not _body_has_marker):
-        return [ch['raw']]
+        # Nothing to split, but the chunk's own body lines still belong to it. Returning the tag line alone
+        # deleted every untagged paragraph -- invisible while both languages shared a tag line, fatal once
+        # each language got its own, which is the shape the sources use.
+        return _assert_no_loss(ch, [ch['raw'], *ch['lines']])
 
     _primary = _segs[0][0]
     _order, _buckets = [], {}
@@ -149,15 +188,22 @@ def _rewrite_chunk(ch: dict) -> list[str]:
             continue
         _c_lead, _c_segs = _split_lang_segments(_content)
         if _c_segs:
+            # Text in front of the first marker on a *body* line continues the language already open: a
+            # wrapped sentence carries its `[zh]` at the end of the second line, so skipping the lead
+            # erases half of every such sentence.
+            if _c_lead.strip():
+                _push(_primary, _c_lead)
             for _lang, _text in _c_segs:
                 _push(_lang, _text)
             continue
-        # Body paragraphs carry no marker: CJK goes to the Chinese group, the rest to the opening language.
+        # Body paragraphs carry no marker: CJK belongs to the Chinese group, the rest to the language
+        # that opened the chunk.
         _push('zh' if _cjk_re.search(_content) else _primary, _content)
 
     _indent = ch['prefix']
     _eol = ch['eol'] or '\n'
-    # Text before the first marker is the documented name (@param/@tparam); dropping it renames the parameter.
+    # Whatever sits between the tag and the first marker belongs to every language: it is the documented
+    # name for @param/@tparam, and dropping it makes Doxygen read the first word of the description as it.
     _head = (ch['tag'] + _lead).rstrip() + ' '
     _out = []
     _written = [k for k in _order if _buckets[k]]
@@ -168,7 +214,7 @@ def _rewrite_chunk(ch: dict) -> list[str]:
             _out.append(f"{_indent}       {_extra}\n")
         if _i + 1 < len(_written):
             _out.append(f"{_indent.rstrip()}\n")
-    return _out
+    return _assert_no_loss(ch, _out)
 
 
 def _rewrite_block(block: list[str]) -> list[str]:
@@ -228,11 +274,14 @@ def _inline_lang_pick(line: str, lang_tag: Language) -> str:
     if _m is None:
         return line
     _lead, _segs = _split_lang_segments(_m.group(2))
-    if len(_segs) < 2:
+    if not _segs:
+        # No tag at all: such text belongs to every language, so it stays.
         return line
     for _lang, _text in _segs:
         if _lang == lang_tag:
             return f"{_m.group(1)}{_text.strip()}{_m.group(3) or ''}"
+    # Tagged, but not in this language: an `[zh]`-only field description in the English build is not a
+    # translation gap to paper over, it is text the source says the English reader must not see.
     return ''
 
 
@@ -244,7 +293,8 @@ def _language_filter(lines: list[str], langs: list[str], lang_tag: Language) -> 
     container = []
     _refs = [[_hit_com_tag.match(l), _hit_lang_tag.match(l), _hit_free_tag.match(l)] for l in lines]
     _refs_bool = np.array([[j is not None for j in i] for i in _refs])
-    _idx_sets = _idx_slicer(_refs_bool)
+    _closes = [bool(re.match(r"^\s*\*/\s*$", l)) for l in lines]
+    _idx_sets = _idx_slicer(_refs_bool, _closes)
     _lang_involved_lines, _lang_tag_hit_line = _determine_sub_groups(_idx_sets, langs, _refs)
     _all_lang_involved_lines = []
 
@@ -252,7 +302,8 @@ def _language_filter(lines: list[str], langs: list[str], lang_tag: Language) -> 
         _all_lang_involved_lines.extend(v)
 
     for i, l in enumerate(lines):
-        if i not in _all_lang_involved_lines:
+        # A comment's opening and closing lines are never language-specific.
+        if _comment_structure_re.match(l) or i not in _all_lang_involved_lines:
             container.append(l)
         else:
             if i in _lang_involved_lines[lang_tag]:
@@ -262,6 +313,19 @@ def _language_filter(lines: list[str], langs: list[str], lang_tag: Language) -> 
                     container.append(l[:(_sp-4)] + l[_sp + 1:])
                 else:
                     container.append(l)
+
+    # A build that ships an unclosed comment documents nothing from that file, and Doxygen only says so in a
+    # warning nobody reads. Count doc-block openers against closers and fail here instead.
+    _depth = 0
+    for _l in container:
+        _s = _l.strip()
+        if (_s.startswith('/**') or _s.startswith('/*!')) and '*/' not in _s[2:]:
+            _depth += 1
+        elif _depth > 0 and _s.startswith('*') and _s.endswith('*/'):
+            _depth -= 1
+    if _depth:
+        raise RuntimeError(
+            f"docs/build.py: filtering for {lang_tag!r} left {_depth} block comment(s) unclosed")
 
     return container
 
