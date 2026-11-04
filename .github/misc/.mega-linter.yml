@@ -59,6 +59,10 @@ REPOSITORY_DEVSKIM_ARGUMENTS:
 # use the FLAT <LINTER>_CONFIG_FILE key; the nested form is silently ignored
 C_CLANG_FORMAT_CONFIG_FILE: ".github/misc/.clang-format-c"
 CPP_CLANG_FORMAT_CONFIG_FILE: ".github/misc/.clang-format-cpp"
+# cppcheck answers "too many branches, analysis limited" with an `information:` diagnostic, and
+# `--error-exitcode=1` turns that into a failed job with no defect behind it. `exhaustive` removes the
+# message by finishing the analysis, not by suppressing a rule that would then check nothing anywhere.
+CPP_CPPCHECK_ARGUMENTS: "--check-level=exhaustive"
 
 # .h belongs to the C family (see code-conventions.md): the C++ linter must not claim it,
 # or a C header gets the left-aligned C++ style and fails a header-only package
