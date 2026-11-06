@@ -1,7 +1,7 @@
 {
   "name": "fcpp",
   "target": "auto",
-  "version": "1.0.0",
+  "version": "0.3.4",
   "team": "HeT-FTI",
   "license": "Apache-2.0",
   "description": "The simple description in meta",
@@ -10,11 +10,17 @@
   "topics": ["build", "library", "documentation", "test"],
   "url": "https://github.com/HeT-FTI/fcpp.git",
   "homepage": "https://github.com/HeT-FTI",
-  "cmake_version": "4.0.1",
+  "cmake_version": "4.2.3",
   "build_cppstd": "17",
   "build_cstd": "11",
   "build_type": "Debug",
-  "activate_code_coverage": false,
+  "activate_code_coverage": true,
+  "coverage": {
+    "floors": {
+      "Linux": {"all": 80},
+      "macOS": {"all": 80}
+    }
+  },
   "is_shared": false,
   "is_header": false,
   "generate_modules_inplace": false,
@@ -27,22 +33,23 @@
       "Eigen3": ["Eigen3::Eigen"],
       "etl": ["etl::etl"]
     },
-    "test": {"GTest": ["gtest::gtest"], "pybind11": ["pybind11::module"]}
+    "infra": {"GTest": ["gtest::gtest"], "pybind11": ["pybind11::module"]}
   },
-  "graphviz_bin": "/usr/bin",
+  "component_requires": {},
+  "baremetal_white_list": ["etl", "ArduinoJson"],
   "doc_languages": ["en", "zh"],
   "doc_versions": ["1.0", "2.0"],
   "doc_doxygen_folders": ["include", "src", "docs/doxygen/dox"],
   "doc_doxygen_suffix": ["h", "c", "hpp", "cpp", "dox", "cxx"],
-  "trigger_tests": false,
-  "saving_tests_log": false,
+  "trigger_tests": true,
+  "saving_tests_log": true,
   "enable_python_bindings": false,
   "workflow_triggers": {
-    "build": false,
-    "tests": false,
-    "release": false,
-    "docs": false,
-    "versioning": false,
-    "security_scan": false
+    "build": true,
+    "tests": true,
+    "release": true,
+    "docs": true,
+    "security_scan": true,
+    "cross_compile": true
   }
 }

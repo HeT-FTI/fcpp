@@ -1,5 +1,8 @@
 from conan import ConanFile
+from conan.errors import ConanInvalidConfiguration
 from conan.tools.cmake import CMakeToolchain, CMake, CMakeDeps, cmake_layout
+from conan.tools.build import cross_building
+from conan.tools.scm import Version
 from typing import Literal
 from pathlib import Path
 import yaml
@@ -24,13 +27,23 @@ conan_targets = {
     'Catch2::Catch2': 'catch2::catch2'
 }
 
+# CMake below 4.2 cannot name the newest Visual Studio generator, so an MSVC host dies at configure.
+CMAKE_MSVC_FLOOR = '4.2'
+
+# Module annotation / include-guard literals (extracted to avoid drift).
+METADATA_FILENAME = 'metadata.json'
+TAG_EXPORTER = '@exporter'
+TAG_ATTACHER = '@attacher'
+GUARD_IFDEF = '#ifdef __cplusplus\n'
+GUARD_ENDIF = '#endif\n'
+
 
 def _get_root_path() -> str:
     return sep.join(_get_root_path_list())
 
 
 def _inherit_root_metadata():
-    with open(_get_root_path() + sep + 'metadata.json', 'r', encoding='utf-8') as f:
+    with open(_get_root_path() + sep + METADATA_FILENAME, 'r', encoding='utf-8') as f:
         _meta = json.load(f)
     return _meta
 
@@ -38,14 +51,15 @@ def _inherit_root_metadata():
 _metadata = _inherit_root_metadata()
 
 
-def _get_export_objects(x: list[str], tag: Literal['@exporter', '@attacher'] = '@exporter') -> list[str]:
-    _cache = (''.join(x)).split('\n\n')  # TODO: maybe \n*3 is better (consider the namespace in CPP)?
+def _get_export_objects(x: list[str], tag: Literal['@exporter', '@attacher'] = TAG_EXPORTER) -> list[str]:
+    # Global objects are separated by two blank lines (repo convention)
+    _cache = (''.join(x)).split('\n\n')
     _export_objs = [_ for _ in _cache if tag in _]
 
     container = []
     for _obj in _export_objs:
         _obj = [_ for _ in _obj.split('\n') if _ != '']
-        _res, _ptr = [_ for _ in _obj], False
+        _res, _ptr = list(_obj), False
         for i, (_v1, _v2) in enumerate(zip(_obj, _res)):
             if _v1.startswith(f' * {tag}'):
                 _ptr = True
@@ -53,7 +67,7 @@ def _get_export_objects(x: list[str], tag: Literal['@exporter', '@attacher'] = '
                 _res[i] = _v2 + '\nexport '
                 _ptr = False
         _res = '\n'.join([_ for _ in _res if not _.startswith(f' * {tag}')])
-        if tag == '@exporter':
+        if tag == TAG_EXPORTER:
             _res = _res.replace('export \n','export ')
         else:  # @attacher
             _res = _res.replace('export \n', '')
@@ -88,16 +102,17 @@ def _pragma_in_import(x: list[str]) -> tuple[bool, int]:
 
 class PackageRecipe(ConanFile):
 
-    package_type = "library"
+    # header-only packages must not advertise a compiled-library identity
+    package_type = "header-library" if _metadata.get('is_header') else "library"
 
     # Binary configuration
     settings = "os", "compiler", "build_type", "arch"
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": _metadata.get('is_shared'), "fPIC": True}  # inherit from config
 
-    # Sources are located in the same place as this recipe, copy them to the recipe
-    exports_sources = ["CMakeLists.txt", "src/*", "include/*", "metadata.json", "LICENSE"]
-    exports = ["conandata.yml", "metadata.json", "LICENSE"]
+    # Sources live beside this recipe; api/* rides along so the pybind11 module is part of the package.
+    exports_sources = ["CMakeLists.txt", "src/*", "include/*", "api/*", METADATA_FILENAME, "LICENSE"]
+    exports = ["conandata.yml", METADATA_FILENAME, "LICENSE"]
 
     generators = "VirtualBuildEnv", "VirtualRunEnv"
     conandata, meta, headers, sources, license_full_text , importable_modules = [None for _ in range(6)]
@@ -108,11 +123,12 @@ class PackageRecipe(ConanFile):
         bash: bash ./build
         """
         conandata_path = Path(self.recipe_folder) / "conandata.yml"
-        metadata_path = Path(self.recipe_folder) / "metadata.json"
+        metadata_path = Path(self.recipe_folder) / METADATA_FILENAME
         license_path = Path(self.recipe_folder) / "LICENSE"
 
-        self.conandata = yaml.safe_load(conandata_path.read_text())
-        self.meta = yaml.safe_load(metadata_path.read_text())
+        # Explicit utf-8: the locale default is cp1252/cp936 on Windows and cannot decode the Chinese comments here.
+        self.conandata = yaml.safe_load(conandata_path.read_text(encoding='utf-8'))
+        self.meta = yaml.safe_load(metadata_path.read_text(encoding='utf-8'))
 
         # Required attributes
         self.name, self.version = self.meta.get('name'), self.meta.get('version')
@@ -168,7 +184,7 @@ class PackageRecipe(ConanFile):
                 _m_inc = [_ for _ in set(_hpp_inc).union(set(_cpp_inc)) if not _.startswith('// Conan::Escape')]
                 _m_inc = [_ for _ in _m_inc if not _.startswith('#pragma once')]
                 _m_inc = [_ for _ in _m_inc if f'{_mod_name}.hpp' not in _]  # escape self include
-                _m_extra = [_ for _ in set(_hpp_extra).union(set(_cpp_extra))]
+                _m_extra = list(set(_hpp_extra).union(set(_cpp_extra)))
                 _m_obj = ['\n'] + '@@'.join(_hpp_obj + _cpp_obj).replace('@@', '\n\n\n').split('\n')
 
                 _m_full = _m_intro + _m_inc + _m_split + _m_extra + _m_obj
@@ -180,7 +196,18 @@ class PackageRecipe(ConanFile):
         return _tmp + ['"' + _ + '.hpp";' for _ in self.meta.get("user_modules")]
 
     def build_requirements(self):
-        self.build_requires(f"cmake/{self.meta.get('cmake_version')}")
+        # escape: HET_CMAKE_BUILD_REQUIRE=none keeps the cmake on PATH, a version pins another
+        _override = (os.environ.get('HET_CMAKE_BUILD_REQUIRE') or '').strip()
+        if _override.lower() == 'none':
+            return
+        _cmake = _override or self.meta.get('cmake_version')
+        # fail here with the fix, rather than inside CMake with a generator name it never heard of
+        if str(self.settings.get_safe('compiler')) == 'msvc' and Version(_cmake) < Version(CMAKE_MSVC_FLOOR):
+            raise ConanInvalidConfiguration(
+                f"cmake/{_cmake} cannot name the Visual Studio generator Conan picks for "
+                f"msvc/{self.settings.get_safe('compiler.version')}: CMake {CMAKE_MSVC_FLOOR}+ is required. "
+                f"Raise metadata.json 'cmake_version', or set HET_CMAKE_BUILD_REQUIRE to a newer version.")
+        self.build_requires(f"cmake/{_cmake}")
 
     def config_options(self):
         if self.settings.os == "Windows":
@@ -197,6 +224,7 @@ class PackageRecipe(ConanFile):
             self.settings.compiler.cppstd = _build_std
 
         self._make_c_compatible()
+        self._component_requires()  # fail fast on a bad component graph instead of at package_info time
 
     def _make_c_compatible(self):
         _c_hs = self._file_detector('include', ['h', ], retarget=Path(self.recipe_folder).parent / 'es')
@@ -206,15 +234,21 @@ class PackageRecipe(ConanFile):
                 _org_text = f.readlines()
             _has_pragma, _idx = _pragma_in_import(_org_text)
             if _has_pragma:
-                _start = ['#pragma once\n', '#ifdef __cplusplus\n', 'extern "C" {\n', '#endif\n']
+                _start = ['#pragma once\n', GUARD_IFDEF, 'extern "C" {\n', GUARD_ENDIF]
             else:
-                _start = ['#ifdef __cplusplus\n', 'extern "C" {\n', '#endif\n']
+                _start = [GUARD_IFDEF, 'extern "C" {\n', GUARD_ENDIF]
             _inner_text = ['    ' + l for i, l in enumerate(_org_text) if i != _idx]
-            _end = ['#ifdef __cplusplus\n', '}\n', '#endif\n']
+            _end = [GUARD_IFDEF, '}\n', GUARD_ENDIF]
             _new_text = _start + _inner_text + _end
 
             with open(_f, 'w', encoding='utf-8') as f:
                 f.write(''.join(_new_text))
+
+    def _coverage_enabled(self):
+        """Whether this run instruments the library; `-c user.het:run_tests=False` narrows metadata for one run."""
+        if not self.conf.get('user.het:run_tests', default=True, check_type=bool):
+            return False
+        return bool(self.meta.get("activate_code_coverage"))
 
     def _test_dependencies_enabled(self):
         return bool(self.meta.get("trigger_tests"))
@@ -222,24 +256,20 @@ class PackageRecipe(ConanFile):
     def _python_bindings_enabled(self):
         return bool(self.meta.get("enable_python_bindings"))
 
+    def _baremetal_whitelist(self):
+        """Lowercase set: ConanCenter only moved to lowercase names in 2026 H1, so `OpenCV/4.x.x` is legitimate."""
+        return {str(_name).lower() for _name in (self.meta.get('baremetal_white_list') or ())}
+
     def requirements(self):
-        # 裸机环境下跳过不适用的依赖：
-        #   gtest/pybind11 — 测试框架，裸机无法运行；且 pybind11 不在 cpp_info.requires 中，
-        #                    若声明为直接依赖但未在 package_info() 中引用会触发 Conan 校验错误
-        #   pcre2/zlib     — 依赖 OS 系统调用，arm-none-eabi 无 syscall stubs，
-        #                    从源码编译会因 CMake 链接测试失败
-        BAREMETAL_SKIP = ("gtest", "pybind11", "zlib", "pcre2")
+        _whitelist = self._baremetal_whitelist()
         for req in self.conandata.get('requirements'):
-            if self.settings.os == "baremetal":
-                if any(req.lower().startswith(k) for k in BAREMETAL_SKIP):
+            _pkg = req.split('/')[0]
+            if cross_building(self) and self.settings.os == "baremetal":
+                if _pkg.lower() not in _whitelist:
                     continue
-            req_lower = req.lower()
-            # baremetal 环境下跳过测试框架
-            if self.settings.os == "baremetal" and "gtest" in req_lower:
+            if _pkg == 'gtest':
                 continue
-            if not self._test_dependencies_enabled() and "gtest" in req_lower:
-                continue
-            if not self._python_bindings_enabled() and "pybind11" in req_lower:
+            if _pkg == 'pybind11' and (not self._python_bindings_enabled() or cross_building(self)):
                 continue
             self.requires(req)
 
@@ -249,8 +279,9 @@ class PackageRecipe(ConanFile):
     def generate(self):
         tc = CMakeToolchain(self)
         tc.variables['C_DEPS'], tc.variables['CPP_DEPS'] = self._preparing_deps_links()
-        # 裸机交叉编译：跳过 CMake 的链接测试
-        if self.settings.os == "baremetal":
+        tc.variables['ENABLE_COVERAGE'] = self._coverage_enabled()
+
+        if cross_building(self) and self.settings.os == "baremetal":  # cross build to MCU
             tc.variables["CMAKE_TRY_COMPILE_TARGET_TYPE"] = "STATIC_LIBRARY"
         
         tc.generate()
@@ -258,39 +289,55 @@ class PackageRecipe(ConanFile):
         deps.generate()
 
     def _preparing_deps_links(self):
-        _common, _c, _cpp, _test = [self.meta.get('dependencies').get(_) for _ in ['common', 'c', 'cpp', 'test']]
+        _common, _c, _cpp, _infra = [self.meta.get('dependencies').get(_) for _ in ['common', 'c', 'cpp', 'infra']]
         _c = {k: v if k not in _common.keys() else list(set(v).union(set(_common.get(k)))) for k, v in _c.items()}
         _cpp = {k: v if k not in _common.keys() else list(set(v).union(set(_common.get(k)))) for k, v in _cpp.items()}
 
-        # baremetal 环境下跳过依赖 OS 系统调用的库（与 requirements() 中的过滤保持一致）
-        if self.settings.os == "baremetal":
-            _test = {}
-            _common = {}   # ZLIB 依赖 OS，裸机不可用
-            _c = {}        # PCRE2 依赖 OS，裸机不可用
-        # 包构建默认不链接测试依赖；Python 绑定关闭时也不引入 pybind11。
-        if self.settings.os == "baremetal" or not self._test_dependencies_enabled():
-            _test = {}
-        if not self._python_bindings_enabled():
-            _test.pop("pybind11", None)
+        if cross_building(self) and self.settings.os == 'baremetal':
+            _whitelist = self._baremetal_whitelist()
+            _c, _cpp, _common, _infra = [{k: v for k, v in z.items() if k.lower() in _whitelist}
+                                         for z in [_c, _cpp, _common, _infra]]
+        else:
+            _infra.pop("GTest", None)
+            if not self._python_bindings_enabled() or cross_building(self):
+                _infra.pop("pybind11", None)
 
-        _test_deps = [f"{k}@{' '.join(v)}" for k, v in _test.items()]
+        _infra_deps = [f"{k}@{' '.join(v)}" for k, v in _infra.items()]
         _c_deps = [f"{k}@{' '.join(v)}" for k, v in {**_common, **_c}.items()]
         _cpp_deps = [f"{k}@{' '.join(v)}" for k, v in {**_common, **_cpp}.items()]
-        return _c_deps, list(set(_cpp_deps).union(set(_test_deps)))
+        return _c_deps, list(set(_cpp_deps).union(set(_infra_deps)))
+
+    def _component_requires(self):
+        # Extra edges between the generated components, declared in metadata.json as {from: [to]}.
+        _known = {f"{self.name}_c", f"{self.name}_cpp"}
+        _edges = self.meta.get("component_requires") or {}
+        if _edges and self.meta.get("is_header"):
+            raise ConanInvalidConfiguration(
+                "component_requires must stay empty when is_header=true: "
+                "a header-only package has no component libraries")
+        _normalized = {}
+        for _from, _to in _edges.items():
+            _targets = _to if isinstance(_to, list) else [_to]
+            if _from not in _known or not _targets or any(_t not in _known or _t == _from for _t in _targets):
+                raise ConanInvalidConfiguration(
+                    f"component_requires: invalid edge '{_from}' -> {_to}; known components are {sorted(_known)}")
+            _normalized[_from] = _targets
+        # Conan reports a component cycle much later and less clearly, so reject it while configuring.
+        for _from, _targets in _normalized.items():
+            for _to in _targets:
+                if _from in _normalized.get(_to, []):
+                    raise ConanInvalidConfiguration(
+                        f"component_requires: cycle between '{_from}' and '{_to}'; "
+                        "declare exactly one direction")
+        return _normalized
 
     def package_id(self):
-        """Keep Cortex-M float ABI/FPU flags in the Conan binary identity.
-
-        M3 soft-float and STM32F767 M7 hard-float both compile for the Arm
-        M-profile family.  The flags are injected through profile ``[conf]``
-        and are not part of Conan's default package-id calculation, so omit
-        them only at the cost of reusing an ABI-incompatible archive.
-        """
-
+        # Fold tools.build:cflags/cxxflags into package_id so each MCU ABI gets its own binary
         for key in ("tools.build:cflags", "tools.build:cxxflags"):
             value = self.conf.get(key, default=None)
             if value:
                 self.info.conf.define(key, str(value))
+
 
     def build(self):
         cmake = CMake(self)
@@ -299,6 +346,15 @@ class PackageRecipe(ConanFile):
         self._validate_built_archives()
 
     def _validate_built_archives(self):
+        # escape Linux/baremetal, two cross-compilation cases (Mach-O/PE have neither readelf nor ELF attributes)
+        _non_elf_os = {"Macos", "iOS", "watchOS", "tvOS", "Windows"}
+        if str(self.settings.os) in _non_elf_os:
+            self.output.info(
+                f"[compat:SKIP] os={self.settings.os}: ELF attribute validation "
+                "is not applicable (Mach-O/PE target)"
+            )
+            return
+
         archive_names = [f"lib{self.name}_c.a", f"lib{self.name}_cpp.a"]
         build_dir = Path(self.build_folder)
 
@@ -428,14 +484,10 @@ class PackageRecipe(ConanFile):
         expected = {
             "armv6": {"v6-M", "v6S-M"},
             "armv7": {"v7-M", "v7E-M"},
-            "armv8_32": {"v8-M.base", "v8-M.baseline", "v8-M.mainline"},
+            "armv8_32": {"v8-M.baseline", "v8-M.mainline"},
         }.get(target_arch, set())
 
-        # GCC 11.3 can split the M-profile suffix into
-        # Tag_CPU_arch="v7" + Tag_CPU_arch_profile="Microcontroller", and
-        # encodes the Armv8-M baseline profile as "v8-M.baseline". Accept
-        # those canonical encodings alongside legacy "v7-M"/"v8-M.base"
-        # output.
+        # GCC 11+ may drop the -M suffix from Tag_CPU_arch; both spellings are valid
         expected_bases = {tag.split("-M")[0].split(".")[0] for tag in expected}
         arch_ok = (not expected) or (cpu_arch in expected) or (
             cpu_arch in expected_bases and cpu_arch_profile == "Microcontroller"
@@ -448,10 +500,8 @@ class PackageRecipe(ConanFile):
         if arm_isa.lower() in {"yes", "1", "true"}:
             problems.append("ARM ISA is enabled, but baremetal Cortex-M targets require Thumb code")
 
-        # readelf reports Thumb capability either as an ISA name (for example
-        # "Thumb-2") or as the canonical EABI boolean "Yes" for M-profile
-        # objects such as Cortex-M23.
-        if "Thumb" not in thumb_isa and thumb_isa.lower() not in {"yes", "1", "true"}:
+        # v6/v7 report "Thumb-1"/"Thumb-2"; v8-M (Cortex-M23/M33) reports a boolean "Yes"
+        if thumb_isa.lower() not in {"yes", "1", "true"} and "Thumb" not in thumb_isa:
             problems.append("Thumb ISA attribute is missing")
 
         ok = not problems
@@ -469,7 +519,7 @@ class PackageRecipe(ConanFile):
     def _remove_customized_doc_command(self, tags: list[str] = None):  # maybe no use anymore
 
         if tags is None:
-            tags = ['@exporter', '@attacher']
+            tags = [TAG_EXPORTER, TAG_ATTACHER]
 
         _cpp = self._file_detector('src', ['cpp', ], retarget=Path(self.recipe_folder).parent / 'es')
         _hpp = self._file_detector('include', ['hpp', ], retarget=Path(self.recipe_folder).parent / 'es')
@@ -479,13 +529,11 @@ class PackageRecipe(ConanFile):
             with open(_f, 'r', encoding='utf-8') as f:
                 _file = f.readlines()
             with open(_f, 'w', encoding='utf-8') as w:
-                w.write(''.join([_ for _ in _file if not any([_.startswith(f' * {tag}') for tag in tags])]))
+                w.write(''.join(_ for _ in _file if not any(_.startswith(f' * {tag}') for tag in tags)))
 
 
     def _module_elements(self, x: list[str], m_name: str):
-        # two transformations if matches:
-        # 1. #include <lib> => import <lib>;
-        # 2. #include "lib.hpp" => import "lib.hpp";
+        # transforms: <lib> -> import <lib>; "lib.hpp" -> import "lib.hpp"
 
         _flag, _is_import_lines, _splitter = 1, [], 0
         for i, _l in enumerate(x):
@@ -507,8 +555,8 @@ class PackageRecipe(ConanFile):
         _intro, _tmp, _split, _extra = ([_.strip() for _ in _intro], [_.strip() for _ in _tmp],
                                         [_.strip() for _ in _split], [_.strip() for _ in _extra])
 
-        return (_intro, _tmp, _split, _extra, _get_export_objects(_other_context, '@exporter') +
-                _get_export_objects(_other_context, '@attacher'))
+        return (_intro, _tmp, _split, _extra, _get_export_objects(_other_context, TAG_EXPORTER) +
+                _get_export_objects(_other_context, TAG_ATTACHER))
 
     def package(self):
         cmake = CMake(self)
@@ -526,12 +574,15 @@ class PackageRecipe(ConanFile):
 
         self.cpp_info.components[f"{self.name}_c"].libs = [f"{self.name}_c"]
         self.cpp_info.components[f"{self.name}_c"].requires = [[_t := _.split('@')[1],
-                                                                conan_targets[_t] if _t in conan_targets.keys()
+                                                                conan_targets[_t] if _t in conan_targets
                                                                 else _t][-1] for _ in _c]
         self.cpp_info.components[f"{self.name}_cpp"].libs = [f"{self.name}_cpp"]
         self.cpp_info.components[f"{self.name}_cpp"].requires = [[_t := _.split('@')[1],
-                                                                  conan_targets[_t] if _t in conan_targets.keys()
+                                                                  conan_targets[_t] if _t in conan_targets
                                                                   else _t][-1] for _ in _cpp]
+        # A component may need another component: the edge belongs to the project, not to the recipe.
+        for _from, _to in self._component_requires().items():
+            self.cpp_info.components[_from].requires += _to
 
     @staticmethod
     def _call_syntax_suggestion():

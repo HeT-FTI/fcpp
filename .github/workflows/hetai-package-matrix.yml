@@ -13,7 +13,7 @@ on:
           - all
           - selected
       selected_targets_json:
-        description: JSON array for selected mode, e.g. ["linux-armv7"] or [{"id":"linux-armv7"}]
+        description: JSON array for selected mode, e.g. ["linux-x86_64"] or [{"id":"linux-x86_64"}]
         required: false
         default: "[]"
         type: string
@@ -37,7 +37,6 @@ env:
   BUILD_REGISTRY_API_URL: ${{ vars.BUILD_REGISTRY_API_URL }}
   CONAN_REMOTE_URL: ${{ vars.CONAN_REMOTE_URL }}
   HETAI_RUN_KEY: ${{ format('{0}-attempt-{1}', github.run_id, github.run_attempt) }}
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
   prepare:
@@ -155,7 +154,11 @@ jobs:
             --toolchain-version '${{ matrix.toolchain_version }}'
 
       - name: Prepare board transfer password helper
-        if: ${{ success() }}
+        if: >-
+          success() &&
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/main' &&
+          vars.BOARD_TRANSFER_ENABLED == '1'
         env:
           BOARD_TRANSFER_SSH_PASSWORD: ${{ secrets.BOARD_TRANSFER_SSH_PASSWORD }}
         run: |
@@ -174,7 +177,11 @@ jobs:
           echo "${tmp_dir}/root/usr/bin" >> "$GITHUB_PATH"
 
       - name: Transfer build bundle to benchmark debug server
-        if: ${{ success() }}
+        if: >-
+          success() &&
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/main' &&
+          vars.BOARD_TRANSFER_ENABLED == '1'
         env:
           BOARD_CI_CONFIG: ${{ vars.BOARD_CI_CONFIG }}
           BOARD_TRANSFER_ENABLED: ${{ vars.BOARD_TRANSFER_ENABLED }}

@@ -1,11 +1,17 @@
-cmake_minimum_required(VERSION 3.28)
+# Downstream contract (HeT DevTools): the CI baseline stays 3.28. Hosts with an
+# older CMake may explicitly lower the floor — the default path is unchanged:
+#   cmake -DHET_CMAKE_MIN=3.15 ..
+if(DEFINED HET_CMAKE_MIN)
+  cmake_minimum_required(VERSION ${HET_CMAKE_MIN})
+else()
+  cmake_minimum_required(VERSION 3.28)
+endif()
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/metadata.json" METADATA_JSON)
 string(JSON PROJECT_NAME_VALUE ERROR_VARIABLE json_error GET "${METADATA_JSON}" "name")
 string(JSON TARGET_NAMESPACE_VALUE ERROR_VARIABLE json_error GET "${METADATA_JSON}" "target")
 string(JSON PROJECT_VERSION_VALUE ERROR_VARIABLE json_error GET "${METADATA_JSON}" "version")
 string(JSON BUILD_CPPSTD ERROR_VARIABLE json_error GET "${METADATA_JSON}" "build_cppstd")
 string(JSON BUILD_CSTD ERROR_VARIABLE json_error GET "${METADATA_JSON}" "build_cstd")
-string(JSON ENABLE_COVERAGE ERROR_VARIABLE json_error GET "${METADATA_JSON}" "activate_code_coverage")
 string(JSON IS_SHARED ERROR_VARIABLE json_error GET "${METADATA_JSON}" "is_shared")
 string(JSON IS_HEADER ERROR_VARIABLE json_error GET "${METADATA_JSON}" "is_header")
 string(JSON STD_MODULES ERROR_VARIABLE json_error GET "${METADATA_JSON}" "std_modules")
@@ -17,6 +23,14 @@ else()
     set(PROJECT_NAMESPACE "${LIB_NAME}")
 endif()
 project(${LIB_NAME} LANGUAGES C CXX)
+
+# Coverage is decided once per build and injected by the recipe; it must be read after
+# project(), which is when the Conan toolchain that carries it is processed. An instrumented
+# library cannot be linked by an uninstrumented consumer, so the two must never disagree.
+# A direct `cmake -S . -B build` has nobody to inject it, so metadata.json stays the default.
+if(NOT DEFINED ENABLE_COVERAGE)
+    string(JSON ENABLE_COVERAGE ERROR_VARIABLE json_error GET "${METADATA_JSON}" "activate_code_coverage")
+endif()
 
 
 function(parse_conan_deps INPUT_VAR OUTPUT_VAR)
@@ -60,6 +74,35 @@ function(split_conan_dependency INPUT_STR PACKAGE_NAME TARGETS)
 endfunction()
 
 
+# GLOB_RECURSE has no PATHS keyword, so build "<root>/<pattern>" to recurse inside that directory only.
+function(collect_files out_var root)
+    set(_globs "")
+    foreach(_pattern IN LISTS ARGN)
+        list(APPEND _globs "${root}/${_pattern}")
+    endforeach()
+    file(GLOB_RECURSE _found
+            LIST_DIRECTORIES false
+            CONFIGURE_DEPENDS
+            ${_globs}
+    )
+    set(${out_var} "${_found}" PARENT_SCOPE)
+endfunction()
+
+
+# install(FILES) drops the relative directory, so a nested public header would be flattened.
+function(install_header_tree headers component)
+    foreach(_header IN LISTS headers)
+        file(RELATIVE_PATH _rel "${CMAKE_CURRENT_SOURCE_DIR}/include" "${_header}")
+        get_filename_component(_rel_dir "${_rel}" DIRECTORY)
+        if(_rel_dir)
+            install(FILES "${_header}" DESTINATION "include/${_rel_dir}" COMPONENT ${component})
+        else()
+            install(FILES "${_header}" DESTINATION include COMPONENT ${component})
+        endif()
+    endforeach()
+endfunction()
+
+
 # define file search mode (can be adjusted according to the project structure)
 set(C_HEADER_PATTERNS "*.h")
 set(CPP_HEADER_PATTERNS "*.hpp")
@@ -69,41 +112,16 @@ set(MODULE_PATTERNS "*.ixx" "*.cppm")
 
 
 # auto file collection
-file(GLOB_RECURSE C_HEADERS
-        LIST_DIRECTORIES false
-        CONFIGURE_DEPENDS
-        ${C_HEADER_PATTERNS}
-        PATHS "${CMAKE_CURRENT_SOURCE_DIR}/include"
-)
+collect_files(C_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include" ${C_HEADER_PATTERNS})
+collect_files(CPP_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include" ${CPP_HEADER_PATTERNS})
+collect_files(C_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src" ${C_SOURCE_PATTERNS})
+collect_files(CPP_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src" ${CPP_SOURCE_PATTERNS})
+collect_files(MODULE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src" ${MODULE_PATTERNS})
 
-file(GLOB_RECURSE CPP_HEADERS
-        LIST_DIRECTORIES false
-        CONFIGURE_DEPENDS
-        ${CPP_HEADER_PATTERNS}
-        PATHS "${CMAKE_CURRENT_SOURCE_DIR}/include"
-)
 
-file(GLOB_RECURSE C_SOURCES
-        LIST_DIRECTORIES false
-        CONFIGURE_DEPENDS
-        ${C_SOURCE_PATTERNS}
-        PATHS "${CMAKE_CURRENT_SOURCE_DIR}/src"
-)
-
-file(GLOB_RECURSE CPP_SOURCES
-        LIST_DIRECTORIES false
-        CONFIGURE_DEPENDS
-        ${CPP_SOURCE_PATTERNS}
-        PATHS "${CMAKE_CURRENT_SOURCE_DIR}/src"
-)
-
-file(GLOB_RECURSE MODULE_FILES
-        LIST_DIRECTORIES false
-        CONFIGURE_DEPENDS
-        ${MODULE_PATTERNS}
-        PATHS "${CMAKE_CURRENT_SOURCE_DIR}/src"
-)
-
+if(IS_HEADER AND ENABLE_PYBIND)
+  message(FATAL_ERROR "enable_python_bindings needs compiled sources; header-only (is_header=true) has none")
+endif()
 
 if(IS_HEADER)  # header-only package
 
@@ -114,12 +132,48 @@ if(IS_HEADER)  # header-only package
           $<INSTALL_INTERFACE:include>
   )
 
+  # the only thing a header-only package can enforce on its consumers is the standard
+  target_compile_features(${LIB_NAME} INTERFACE cxx_std_${BUILD_CPPSTD})
+
+  # a header-only package ships no TU, so nothing would prove these headers compile for
+  # this toolchain: one probe TU per public header, built but never installed
+  set(HEADER_PROBE_DIR "${CMAKE_CURRENT_BINARY_DIR}/header_probe")
+  file(MAKE_DIRECTORY "${HEADER_PROBE_DIR}")
+  set(HEADER_PROBES "")
+  foreach(HEADER IN LISTS CPP_HEADERS C_HEADERS)
+    file(RELATIVE_PATH HEADER_REL "${CMAKE_CURRENT_SOURCE_DIR}/include" "${HEADER}")
+    if(HEADER MATCHES "\\.hpp$")
+      set(HEADER_SUFFIX ".cpp")
+    else()
+      set(HEADER_SUFFIX ".c")
+    endif()
+    string(REPLACE "/" "_" HEADER_FLAT "${HEADER_REL}")
+    set(HEADER_PROBE "${HEADER_PROBE_DIR}/probe_${HEADER_FLAT}${HEADER_SUFFIX}")
+    file(WRITE "${HEADER_PROBE}" "#include \"${HEADER_REL}\"\n")
+    list(APPEND HEADER_PROBES "${HEADER_PROBE}")
+  endforeach()
+
+  if(HEADER_PROBES)
+    add_library(${LIB_NAME}_header_probe OBJECT ${HEADER_PROBES})
+    target_link_libraries(${LIB_NAME}_header_probe PRIVATE ${LIB_NAME})
+    # MSVC needs the explicit standard: _Generic is invisible in its default C mode
+    set_target_properties(${LIB_NAME}_header_probe PROPERTIES
+            C_STANDARD ${BUILD_CSTD}
+            C_STANDARD_REQUIRED ON
+            C_EXTENSIONS OFF
+            CXX_STANDARD ${BUILD_CPPSTD}
+            CXX_STANDARD_REQUIRED ON
+            CXX_EXTENSIONS OFF
+    )
+  endif()
+
   if(NOT CPP_DEPS STREQUAL "[]")
       parse_conan_deps(CPP_DEPS PARSED_CPP_DEPS)
       foreach (CPP_ITEM IN LISTS PARSED_CPP_DEPS)
           split_conan_dependency(CPP_ITEM CPP_PKG_NAME CPP_PKG_TARGETS)
           find_package(${CPP_PKG_NAME} REQUIRED)
-          target_link_libraries(${LIB_NAME} PUBLIC ${CPP_PKG_TARGETS})
+          # an INTERFACE library only accepts the INTERFACE keyword here
+          target_link_libraries(${LIB_NAME} INTERFACE ${CPP_PKG_TARGETS})
       endforeach ()
   endif()
 
@@ -137,6 +191,18 @@ else()  # general package
       set(BUILD_TYPE "SHARED")
   else()
       set(BUILD_TYPE "STATIC")
+  endif()
+
+  # CMake rejects a library target with no sources, so a single-language project gets a placeholder TU.
+  if(NOT C_SOURCES)
+      set(_c_placeholder "${CMAKE_CURRENT_BINARY_DIR}/generated/${LIB_NAME}_c_placeholder.c")
+      file(WRITE "${_c_placeholder}" "/* placeholder TU: this component has no sources */\ntypedef int library_component_placeholder;\n")
+      list(APPEND C_SOURCES "${_c_placeholder}")
+  endif()
+  if(NOT CPP_SOURCES AND NOT MODULE_FILES)
+      set(_cpp_placeholder "${CMAKE_CURRENT_BINARY_DIR}/generated/${LIB_NAME}_cpp_placeholder.cpp")
+      file(WRITE "${_cpp_placeholder}" "/* placeholder TU: this component has no sources */\nstruct library_component_placeholder {};\n")
+      list(APPEND CPP_SOURCES "${_cpp_placeholder}")
   endif()
 
   # dynamically create lib targets
@@ -198,13 +264,17 @@ else()  # general package
 
 
   # code coverage options
-  if(ENABLE_COVERAGE)
+  # 交叉编译（MCU 裸机 / Linux 目标板）没有 libgcov 运行时，插桩会导致
+  # __gcov_init/__gcov_exit 等符号链接期未定义；覆盖率只对本机测试构建生效。
+  if(ENABLE_COVERAGE AND NOT CMAKE_CROSSCOMPILING)
       if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
           set(COVERAGE_FLAGS "--coverage" "-O0" "-g")
           set(LINK_FLAGS "--coverage")
       elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
           set(COVERAGE_FLAGS "-fprofile-instr-generate" "-fcoverage-mapping" "-O0" "-g")
-          set(LINK_FLAGS "")
+          # -fprofile-instr-generate is a driver flag: the LLVM profile runtime is
+          # only pulled in when the flag also appears on the link line.
+          set(LINK_FLAGS "-fprofile-instr-generate")
       else()
           message(FATAL_ERROR "Code coverage not support for compiler: ${CMAKE_CXX_COMPILER_ID}")
       endif()
@@ -213,7 +283,8 @@ else()  # general package
       target_compile_options(${LIB_NAME}_c PRIVATE ${COVERAGE_FLAGS})
       target_compile_options(${LIB_NAME}_cpp PRIVATE ${COVERAGE_FLAGS})
 
-      if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+      # Applies to GNU (--coverage) and Clang (-fprofile-instr-generate) alike.
+      if(LINK_FLAGS)
           target_link_options(${LIB_NAME}_c PRIVATE ${LINK_FLAGS})
           target_link_options(${LIB_NAME}_cpp PRIVATE ${LINK_FLAGS})
       endif()
@@ -288,7 +359,10 @@ else()  # general package
       message(STATUS "C++ standard ${BUILD_CPPSTD} < 23, disabling module support")
   endif()
 
-  if(ENABLE_PYBIND)
+  if(ENABLE_PYBIND AND CMAKE_CROSSCOMPILING)
+    # A pybind11 module needs the host CPython to build and import, which a cross toolchain lacks.
+    message(STATUS "Python bindings skipped: cross-compiling for ${CMAKE_SYSTEM_NAME}/${CMAKE_SYSTEM_PROCESSOR}")
+  elseif(ENABLE_PYBIND)
     set(PYTHON_MODULE_NAME "${LIB_NAME}_python")
 
     find_package(pybind11 CONFIG REQUIRED)
@@ -302,6 +376,11 @@ else()  # general package
     pybind11_add_module(${PY_TARGET_INTERNAL} ${PYTHON_BINDINGS_SOURCE})
     target_link_libraries(${PY_TARGET_INTERNAL} PRIVATE ${LIB_NAME})
 
+    # Under coverage the module links instrumented archives and needs the coverage runtime too.
+    if(ENABLE_COVERAGE AND NOT CMAKE_CROSSCOMPILING AND LINK_FLAGS)
+      target_link_options(${PY_TARGET_INTERNAL} PRIVATE ${LINK_FLAGS})
+    endif()
+
     set_target_properties(${PY_TARGET_INTERNAL} PROPERTIES
       OUTPUT_NAME "${PYTHON_MODULE_NAME}"
       LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
@@ -311,10 +390,10 @@ else()  # general package
       LIBRARY DESTINATION lib
       COMPONENT python_bindings
     )
-    
+
     message(STATUS "Python module '${PYTHON_MODULE_NAME}' will be built")
   else()
-    message(STATUS "Python bindings disabledPython bindings disabled")
+    message(STATUS "Python bindings disabled")
   endif()
 
   if(SHARED_MSG)
@@ -338,15 +417,10 @@ install(TARGETS ${INSTALL_TARGETS}
         RUNTIME DESTINATION bin
 )
 
-install(FILES ${C_HEADERS}
-        DESTINATION include
-        COMPONENT c_headers
-)
+# Public headers keep their tree: a flat include/ installs as before, a nested one keeps its relative path.
+install_header_tree("${C_HEADERS}" c_headers)
 
-install(FILES ${CPP_HEADERS}
-        DESTINATION include
-        COMPONENT cpp_headers
-)
+install_header_tree("${CPP_HEADERS}" cpp_headers)
 
 install(EXPORT ${LIB_NAME}Targets
         FILE ${LIB_NAME}Config.cmake

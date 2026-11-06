@@ -25,7 +25,7 @@ void test_cpp_zlib();
  * @exporter
  */
 class Person {
-public:
+  public:
     Person(std::string n, int a);
     std::string greet() const;
     std::string name;
@@ -41,10 +41,11 @@ public:
  * @return a numeric
  * @exporter
  */
-template <typename T>
-auto test_sum(const std::vector<T>& vec) {
+template <typename T> auto test_sum(const std::vector<T>& vec) {
     T sum = T();
-    for (const T& elem : vec) { sum += elem; }
+    for (const T& elem : vec) {
+        sum += elem;
+    }
     return sum;
 };
 
@@ -55,16 +56,22 @@ auto test_sum(const std::vector<T>& vec) {
  * @tparam T type trait
  * @exporter
  */
-template <typename T>
-class Color {
-public:
+template <typename T> class Color {
+  public:
     Color() = default;
-    Color(T r, T g, T b) : r(r), g(g), b(b) {};
-    void set(T r, T g, T b) { this->r = r; this->g = g; this->b = b; };
+    Color(T red_, T green_, T blue_) : r(red_), g(green_), b(blue_) {};
+    void set(T red_, T green_, T blue_) {
+        this->r = red_;
+        this->g = green_;
+        this->b = blue_;
+    };
     void print() const { std::cout << "RGB(" << r << ", " << g << ", " << b << ")\n"; };
-    auto components() const{ return std::make_tuple(r, g, b); };
-private:
-    T r{}, g{}, b{};
+    auto components() const { return std::make_tuple(r, g, b); };
+
+  private:
+    T r{};
+    T g{};
+    T b{};
 };
 
 
