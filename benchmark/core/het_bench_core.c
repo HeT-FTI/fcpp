@@ -23,7 +23,7 @@ static const HostInterface *g_bench_host_api = 0;
 
 static inline uint32_t __get_ticks(void)
 {
-        return (g_bench_host_api) && (g_bench_host_api->getTicks) ? g_bench_host_api->getTicks() : 0;
+        return g_bench_host_api && g_bench_host_api->getTicks ? g_bench_host_api->getTicks() : 0U;
 }
 
 static inline void __log(const char *data, uint32_t len)

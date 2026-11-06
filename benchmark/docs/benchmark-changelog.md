@@ -1,24 +1,4 @@
-# fcpp Benchmark 模块版本更新记录
-
-## v0.4.1-dev - 2026-07-21
-
-### 变更
-
-- 补充 `fcpp-dev` 分支 watcher `v1.3.0` 闭环联调记录。
-- 计划执行一次真实开发者 push 触发，用于验证：
-  - GitHub Actions 四矩阵构建
-  - self-hosted runner 容器化 build
-  - board bundle 自动下发
-  - watcher 自动消费与 `benchmark-report.md` 输出
-  - Build Registry 对 `run_id / github_run_attempt / run_key` 的登记
-- 计划在同一 `run_id` 上追加一次 `re-run jobs` 验证，确认 attempt-aware 记录不会覆盖首次执行结果。
-
-### 验证目标
-
-- `linux-armv7-11.3.rel1`
-- `linux-x86_64-11.3.rel1`
-- `baremetal-cortex-m0-11.3.rel1`
-- `baremetal-cortex-m4-11.3.rel1`（当前为 placeholder 验证，不要求物理板卡执行）
+# Benchmark 模块版本更新记录
 
 ## v0.4.0 - 2026-06-16
 
@@ -72,17 +52,17 @@ BENCHMARK_END
 
 ### 结论
 
-CI 产物已经从“只有 fcpp package”推进到“包含可直接上板运行的 benchmark ELF”。
+CI 产物已经从“只有 <pkg> package”推进到“包含可直接上板运行的 benchmark ELF”。
 
 ## v0.2.0 - 2026-06-10
 
 ### 变更
 
-- 明确 `10.12.71.82` 作为 fcpp board benchmark 调试服务器。
+- 明确内网调试服务器作为本项目 board benchmark 的部署目标。
 - 明确 CI 传输目录结构：
 
 ```text
-/home/lgq/WorkProject/fcpp_board_ci/<run_id>/build/HeT-FTI/fcpp/linux-armv7-11.3.rel1
+/path/to/<repo>_board_ci/<run_id>/build/<org>/<repo>/linux-armv7-11.3.rel1
 ```
 
 - 明确每个 run 目录内应包含：
@@ -99,8 +79,8 @@ CI 产物已经从“只有 fcpp package”推进到“包含可直接上板运�
 早期 CI package 只包含：
 
 ```text
-lib/libfcpp_cpp.a
-lib/libfcpp_c.a
+lib/lib<pkg>_cpp.a
+lib/lib<pkg>_c.a
 include/
 lib/cmake/
 ```
@@ -144,4 +124,4 @@ benchmark 框架具备基础扩展能力，但尚未完成 RK3506 上板验证�
 - 支持 dry-run 和 lock 防并发。
 - SSH 可达时优先使用 `scp + ssh`。
 - SSH 不可达时使用串口 base64 传输和执行。
-- 避免与其他项目临时目录冲突，fcpp 默认使用 `/tmp/fcpp_benchmark_fcpp`。
+- 避免与其他项目临时目录冲突，本项目默认使用 `/tmp/<pkg>_benchmark`。
