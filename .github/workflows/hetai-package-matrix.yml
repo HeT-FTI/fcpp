@@ -18,7 +18,7 @@ on:
         default: "[]"
         type: string
   push:
-    branches: [main, fcpp-dev]
+    branches: [main, fcpp-dev, fcpp_probe]
     paths:
       - ".github/workflows/hetai-package-matrix.yml"
       - ".hetai/build-matrix.yml"
@@ -156,8 +156,11 @@ jobs:
       - name: Prepare board transfer password helper
         if: >-
           success() &&
-          github.event_name == 'push' &&
-          github.ref == 'refs/heads/main' &&
+          (
+            (github.event_name == 'push' &&
+             (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/fcpp_probe')) ||
+            (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/fcpp_probe')
+          ) &&
           vars.BOARD_TRANSFER_ENABLED == '1'
         env:
           BOARD_TRANSFER_SSH_PASSWORD: ${{ secrets.BOARD_TRANSFER_SSH_PASSWORD }}
@@ -179,8 +182,11 @@ jobs:
       - name: Transfer build bundle to benchmark debug server
         if: >-
           success() &&
-          github.event_name == 'push' &&
-          github.ref == 'refs/heads/main' &&
+          (
+            (github.event_name == 'push' &&
+             (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/fcpp_probe')) ||
+            (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/fcpp_probe')
+          ) &&
           vars.BOARD_TRANSFER_ENABLED == '1'
         env:
           BOARD_CI_CONFIG: ${{ vars.BOARD_CI_CONFIG }}
