@@ -263,7 +263,9 @@ echo $?
 - 动态依赖可解析。
 - benchmark 退出码为 `0`。
 - 输出包含 `BENCHMARK_START` 和 `BENCHMARK_END`。
-- 每个 case 都有 `RESULT|...` 行。
+- 输出包含且仅包含一个 `UNIT|ns_per_call`。
+- 每个 case 都有对应的 `REPEAT|...` 和 `RESULT|...` 行。
+- 报告统一使用 `RESULT` 的 `ns/call`，不得混用 Base Firmware banner 中的 ms/µs。
 
 失败阶段分类：
 

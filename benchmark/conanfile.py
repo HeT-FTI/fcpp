@@ -46,6 +46,10 @@ class BenchMcuConan(ConanFile):
         "fpu": ["none", "fpv4-sp-d16", "fpv5-sp-d16", "fpv5-d16", "auto"],
         "algo_flash_origin": ["ANY"],
         "algo_ram_origin": ["ANY"],
+        "tick_ns_num": ["ANY"],
+        "tick_ns_den": ["ANY"],
+        "target_ticks": ["ANY"],
+        "initial_repeat": ["ANY"],
     }
     default_options = {
         "target_mcu": "cortex-m4",
@@ -53,6 +57,10 @@ class BenchMcuConan(ConanFile):
         "fpu": "auto",
         "algo_flash_origin": "0x08020000",
         "algo_ram_origin": "0x20010000",
+        "tick_ns_num": "1000",
+        "tick_ns_den": "1",
+        "target_ticks": "100",
+        "initial_repeat": "100",
     }
 
     exports_sources = [
@@ -137,6 +145,10 @@ class BenchMcuConan(ConanFile):
         tc.variables["ALGO_FLASH_ORIGIN"] = str(self.options.algo_flash_origin)
         tc.variables["ALGO_RAM_ORIGIN"] = str(self.options.algo_ram_origin)
         tc.variables["TARGET_MCU"] = str(self.options.target_mcu)
+        tc.variables["BENCH_TICK_NS_NUM"] = str(self.options.tick_ns_num)
+        tc.variables["BENCH_TICK_NS_DEN"] = str(self.options.tick_ns_den)
+        tc.variables["BENCH_TARGET_TICKS"] = str(self.options.target_ticks)
+        tc.variables["BENCH_INITIAL_REPEAT"] = str(self.options.initial_repeat)
 
         # library name
         lib_name = self._metadata.get("name", "lib")
@@ -272,7 +284,7 @@ class BenchMcuConan(ConanFile):
                     if len(parts) >= 3:
                         results.append({
                             "name": parts[1],
-                            "cycles": int(parts[2]),
+                            "ns_per_call": int(parts[2]),
                             "mcu": str(self.options.target_mcu),
                         })
 
@@ -290,9 +302,9 @@ class BenchMcuConan(ConanFile):
         self.output.info(f"{'=' * 50}")
         self.output.info(f"  LIB Benchmark Report - {mcu}")
         self.output.info(f"{'=' * 50}")
-        self.output.info(f"  {'Algorithm':<25} {'Cycles':>10}")
+        self.output.info(f"  {'Algorithm':<25} {'ns/call':>10}")
         self.output.info(f"  {'-' * 25} {'-' * 10}")
         for r in results:
-            self.output.info(f"  {r['name']:<25} {r['cycles']:>10}")
+            self.output.info(f"  {r['name']:<25} {r['ns_per_call']:>10}")
         self.output.info(f"{'=' * 50}")
         self.output.info("")

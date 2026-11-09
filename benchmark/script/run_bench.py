@@ -17,6 +17,7 @@ Usage:
 
 import argparse
 import json
+import math
 import os
 import subprocess
 import sys
@@ -27,6 +28,21 @@ BENCH_DIR  = SCRIPT_DIR.parent
 ROOT_DIR   = BENCH_DIR.parent
 
 _BUILD_CPPSTD = None
+
+# Base Firmware owns getTicks() and its unit varies by board.  Express the
+# verified tick rates in one canonical unit so the benchmark protocol can emit
+# integer nanoseconds per case invocation on every target.
+BENCH_TICK_NS_BY_MCU = {
+    "cortex-m0": (125, 8),          # BAT32: 64 MHz expanded cycle counter
+    "cortex-m3": (1_000_000, 1),    # STM32F205: 1 ms tick
+    "cortex-m4": (1_000, 1),        # GD32F470: high-resolution us tick
+    "cortex-m7": (1_000_000, 1),    # STM32F767: 1 ms tick
+    "cortex-m23": (1_000, 1),       # GD32L233: us tick
+    "cortex-m33": (1_000_000, 1),   # STM32U575: 1 ms tick
+}
+
+BENCHMARK_TARGET_WINDOW_NS = 100_000_000
+BENCHMARK_INITIAL_REPEAT = 100
 
 
 def build_cppstd():
@@ -85,6 +101,33 @@ def _flags_list(flags: list) -> str:
     return "[" + ",".join(f'"{x}"' for x in flags) + "]"
 
 
+def _benchmark_timing_options(
+    cfg: dict, package_name: str, default_tick_ns: tuple[int, int]
+) -> list[str]:
+    tick_hz = int(cfg.get("benchmark_tick_hz", 0))
+    if tick_hz > 0:
+        common = math.gcd(1_000_000_000, tick_hz)
+        tick_ns = (1_000_000_000 // common, tick_hz // common)
+    else:
+        tick_ns = default_tick_ns
+    num, den = tick_ns
+    if tick_hz <= 0:
+        tick_hz = (1_000_000_000 * tick_ns[1]) // tick_ns[0]
+    default_target_ticks = max(100, tick_hz // 10)
+    target_ticks = int(
+        cfg.get("benchmark_target_ticks", default_target_ticks)
+    )
+    initial_repeat = int(cfg.get("benchmark_initial_repeat", BENCHMARK_INITIAL_REPEAT))
+    if num <= 0 or den <= 0 or target_ticks <= 0 or initial_repeat <= 0:
+        raise ValueError("benchmark timing fields must be positive")
+    return [
+        f"{package_name}/*:tick_ns_num={num}",
+        f"{package_name}/*:tick_ns_den={den}",
+        f"{package_name}/*:target_ticks={target_ticks}",
+        f"{package_name}/*:initial_repeat={initial_repeat}",
+    ]
+
+
 def generate_profile(cfg: dict, lib_name: str) -> Path:
     """Generate Conan profile for Cortex-M / baremetal target."""
     mcu               = cfg["target_mcu"]
@@ -107,6 +150,12 @@ def generate_profile(cfg: dict, lib_name: str) -> Path:
     flags = [f"-mcpu={mcu}", "-mthumb", f"-mfloat-abi={float_abi}"]
     if fpu != "none":
         flags.append(f"-mfpu={fpu}")
+    timing_options = _benchmark_timing_options(
+        cfg,
+        pkg_name,
+        BENCH_TICK_NS_BY_MCU.get(mcu, (1_000, 1)),
+    )
+    timing_options_text = "".join(f"{option}\n" for option in timing_options)
     flags.extend(extra_cflags)
     flags_str = _flags_list(flags)
 
@@ -129,6 +178,7 @@ def generate_profile(cfg: dict, lib_name: str) -> Path:
         f"{pkg_name}/*:fpu={fpu}\n"
         f"{pkg_name}/*:algo_flash_origin={flash_origin}\n"
         f"{pkg_name}/*:algo_ram_origin={ram_origin}\n"
+        f"{timing_options_text}"
         "\n"
         "[conf]\n"
         "tools.cmake.cmaketoolchain:system_name=Generic\n"
@@ -189,6 +239,11 @@ def generate_profile_linux(cfg: dict, lib_name: str) -> Path:
     elif not is_native_x86 and not is_riscv64 and not is_aarch64 and float_abi:
         flags.append(f"-mfloat-abi={float_abi}")
     flags.extend(extra_cflags)
+    timing_options = _benchmark_timing_options(
+        cfg,
+        f"{lib_name}_bench_mcu",
+        (1_000, 1),
+    )
     flags_str = _flags_list(flags)
 
     profile_lines = [
@@ -201,6 +256,9 @@ def generate_profile_linux(cfg: dict, lib_name: str) -> Path:
         f"compiler.cppstd={build_cppstd()}",
         "compiler.libcxx=libstdc++11",
         "build_type=Release",
+        "",
+        "[options]",
+        *timing_options,
         "",
         "[conf]",
         f"tools.cmake.cmaketoolchain:extra_variables={{\"TARGET_MCU\": \"{cpu}\"}}",

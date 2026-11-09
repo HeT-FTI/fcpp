@@ -177,7 +177,9 @@ libc.so.6 => /lib/libc.so.6
 | --- | --- |
 | BENCHMARK_START | benchmark 开始 |
 | MODULE\|name\|cases=n | 模块名和用例数量 |
-| RESULT\|case\|value | 单个用例结果 |
+| UNIT\|ns_per_call | 所有 RESULT 的统一单位 |
+| REPEAT\|case\|n | 自动标定后实际重复次数 |
+| RESULT\|case\|value | 每次用例调用的纳秒平均值 |
 | BENCHMARK_END | benchmark 结束 |
 
 通过条件：
@@ -185,19 +187,23 @@ libc.so.6 => /lib/libc.so.6
 - `BENCHMARK_START` 出现一次。
 - `BENCHMARK_END` 出现一次。
 - `MODULE` 出现一次。
+- `UNIT|ns_per_call` 出现一次。
 - `RESULT` 数量与 `MODULE` 中 `cases` 一致。
+- 每个 `RESULT` 都有对应的 `REPEAT`。
 - 退出码为 `0`。
 
 ## 11. 结果汇总表
 
 报告应将结果整理成表格：
 
-| module | case | value | unit |
-| --- | --- | ---: | --- |
-| LibBench | test_add_n128 | 80 | benchmark 输出原始值 |
-| LibBench | test_sub_n128 | 76 | benchmark 输出原始值 |
+| module | case | value | unit | repeat |
+| --- | --- | ---: | --- | ---: |
+| LibBench | test_add_n128 | 10000 | ns/call | 10000 |
+| LibBench | test_sub_n128 | 12000 | ns/call | 10000 |
 
-当前 `RESULT` 第三列是 benchmark 输出原始值。Linux A 核端口使用 `clock_gettime(CLOCK_MONOTONIC)`，通常可按微秒级耗时理解，但报告中应保留“原始值”字样，避免后续 MCU cycles 与 Linux us 混淆。
+`RESULT` 是每次用例调用的纳秒平均值，可跨 Linux、Cortex-M 和不同 Base Firmware
+tick 单位比较。Base Firmware 在 `BENCHMARK_START` 前打印的芯片型号或
+`Unit (ms/us)` banner 不参与报告单位判定。
 
 ## 12. 结论字段
 
