@@ -1,6 +1,6 @@
 # fcpp-dev validates the merged benchmark implementation against the full
 # HETAI board matrix while tracking the current main package identity.
-package_ref: fcpp/0.3.4
+package_ref: fcpp/0.3.6
 
 defaults:
   mode: default
