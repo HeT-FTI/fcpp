@@ -1,3 +1,9 @@
+## [0.3.6](https://github.com/HeT-FTI/fcpp/compare/v0.3.5+build...v0.3.6) (2026-11-09)
+
+### Bug Fixes
+
+* land the HETAI board matrix and benchmark profiles ([7651efa](https://github.com/HeT-FTI/fcpp/commit/7651efad677dfe26ac646dbc2a7940f46ca437a7))
+
 ## [0.3.4](https://github.com/HeT-FTI/fcpp/compare/v0.3.3...v0.3.4) (2026-11-04)
 
 ### Bug Fixes
