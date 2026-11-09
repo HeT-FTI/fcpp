@@ -69,6 +69,57 @@ platform/bench_config_rk3506.json
 
 CI 临时配置可由 CI 脚本生成，不要求提交到仓库。
 
+### OrangePi RK3588 CI 预留
+
+`linux-orangepi-rk3588-A76` 是独立于 OrangePi 3B、OrangePi 3 LTS 和 Raspberry Pi 5 的
+板级目标。它固定使用 `Linux/armv8`、`target_cpu=cortex-a76`、
+`aarch64-linux-gnu`、`ELF64/AArch64` 和 `arm-toolchain/11.3.rel1`，bundle 路径使用
+独立的 `orangepi-rk3588-a76` route。该目标已启用但不属于普通 `default` 选择；在
+`all` 或显式 `selected` 矩阵中会构建并传输 bundle。
+
+该预留的 watcher 执行态为 `blocked`：CI 成功仅代表 package、ELF 和 bundle 合同成功，
+不代表已连接或运行 OrangePi。89 侧必须先受控登记共享 catalog、inventory、SSH route 和
+目标板运行前置条件，随后才能将该 route 切换为可执行状态。
+
+### Cortex-M3 / M4 / M7 / M23 / M33 受控 CI 配置
+
+每块 Cortex-M 板均使用独立 target，不能以重复的 matrix 块或泛用 `armv7` / `armv8_32`
+标识代替物理板：
+
+| target_key | MCU | Conan build arch | watcher profile_arch | ABI |
+| --- | --- | --- | --- | --- |
+| `baremetal-cortex-m3` | STM32F205 | `cortex-m3` | `cortex-m3` | soft / 无 FPU |
+| `baremetal-cortex-m4` | GD32F470 | `cortex-m4` | `cortex-m4` | hard / `fpv4-sp-d16` |
+| `baremetal-cortex-m7` | STM32F767IG | `cortex-m7d` | `cortex-m7` | hard / `fpv5-d16` |
+| `baremetal-cortex-m23` | GD32L233 | `armv8_32` | `cortex-m23` | soft / 无 FPU |
+| `baremetal-cortex-m33` | STM32U575 | `armv8_32` | `cortex-m33` | hard / `fpv5-sp-d16` |
+
+上述 target 固定使用 `arm-toolchain/11.3.rel1`（compiler major `11`）。M7 的
+`cortex-m7d` 仅用于区分 Conan 构建 ABI；交付给 watcher 的物理核心字段仍必须是
+`target_cpu=cortex-m7` 和 `profile_arch=cortex-m7`。
+
+CI 使用对应的 `platform/bench_config_ci_cortex_m*.json`。不要将 ST-Link、CMSIS-DAP、
+WCH-Link 或 J-Link 的唯一序列号写入仓库或 CI 配置；它由 71.89 watcher inventory
+独占管理。
+
+所有 Cortex-M 成功 bundle 必须同时具备：
+
+```text
+artifacts/benchmark-<target>-11.3.rel1.elf
+artifacts/benchmark-<target>-11.3.rel1.bin   # 或 .hex
+artifacts/benchmark-info.json
+board-transfer.files
+board-transfer.json
+```
+
+`benchmark-info.json` 的 ELF 路径/哈希、`board-transfer.json.artifact_contract`、
+实际 ELF 及 flash sidecar 必须一致。CI 只构建和投递 bundle，不会自行选择 71.89 的
+物理 probe 或解除 watcher 的 route 阻塞状态。M4、M23 与 M33 当前均为
+`watcher_execution_state=blocked`：CI 成功只表示构建、严格 V3 合同和 bundle 成功，
+不表示已刷写、已运行或已取得 benchmark 结果。M23 还须等待 WCH-Link 的受支持驱动或
+已实测替代 SWD probe；M4/M33 须先由固件所有者冻结 Base Firmware、Slot 擦写策略与
+UART 启动协议。
+
 ## 4. 本机构建验证
 
 只构建，不部署：

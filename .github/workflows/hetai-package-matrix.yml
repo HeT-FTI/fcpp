@@ -13,12 +13,12 @@ on:
           - all
           - selected
       selected_targets_json:
-        description: JSON array for selected mode, e.g. ["linux-armv7"] or [{"id":"linux-armv7"}]
+        description: JSON array for selected mode, e.g. ["linux-x86_64"] or [{"id":"linux-x86_64"}]
         required: false
         default: "[]"
         type: string
   push:
-    branches: [main, fcpp-dev]
+    branches: [main, fcpp-dev, fcpp_probe]
     paths:
       - ".github/workflows/hetai-package-matrix.yml"
       - ".hetai/build-matrix.yml"
@@ -79,6 +79,7 @@ jobs:
             .hetai/build-matrix.yml \
             --mode "${{ steps.mode.outputs.mode }}" \
             --selected-targets-json '${{ steps.mode.outputs.selected_targets_json }}' \
+            --target-catalog "$HETAI_PLAN_ROOT/ops/board/contracts/board_ci_target_catalog.json" \
             --format github-output >> "$GITHUB_OUTPUT"
 
   build:
@@ -107,25 +108,43 @@ jobs:
             --build-kind '${{ matrix.build_kind }}' \
             --os-name '${{ matrix.os_name }}' \
             --arch '${{ matrix.arch }}' \
+            --target-cpu '${{ matrix.benchmark_target_cpu }}' \
+            --float-abi '${{ matrix.benchmark_float_abi }}' \
+            --fpu '${{ matrix.benchmark_fpu }}' \
+            --target-key '${{ matrix.target_key }}' \
             --toolchain-version '${{ matrix.toolchain_version }}' \
+            --toolchain-package '${{ matrix.benchmark_toolchain_package }}' \
+            --toolchain-family '${{ matrix.toolchain_family }}' \
+            --toolchain-availability '${{ matrix.toolchain_availability }}' \
+            --toolchain-compiler-version '${{ matrix.benchmark_compiler_version }}' \
+            --target-catalog-schema-version '${{ matrix.target_catalog_schema_version }}' \
             --recipe-subdir '${{ matrix.recipe_subdir }}'
 
       - name: Build benchmark bundle
-        if: ${{ success() && matrix.target_key == 'linux-armv7' && matrix.toolchain_version == '11.3.rel1' }}
+        if: ${{ success() && matrix.benchmark_enabled }}
         env:
           BOARD_CI_CONFIG: ${{ vars.BOARD_CI_CONFIG }}
           CONAN_USER: ${{ secrets.CONAN_USER }}
           CONAN_PASS: ${{ secrets.CONAN_PASS }}
-          BENCHMARK_CI_TARGET_KEYS: ${{ vars.BENCHMARK_CI_TARGET_KEYS }}
-          BENCHMARK_CI_TOOLCHAIN_VERSIONS: ${{ vars.BENCHMARK_CI_TOOLCHAIN_VERSIONS }}
-          BENCHMARK_TARGET_CPU: ${{ vars.BENCHMARK_TARGET_CPU }}
-          BENCHMARK_FLOAT_ABI: ${{ vars.BENCHMARK_FLOAT_ABI }}
-          BENCHMARK_FPU: ${{ vars.BENCHMARK_FPU }}
-          BENCHMARK_EXTRA_CFLAGS: ${{ vars.BENCHMARK_EXTRA_CFLAGS }}
-          BENCHMARK_CONFIG_REL: ${{ vars.BENCHMARK_CONFIG_REL }}
-          BENCHMARK_REMOTE_PATH: ${{ vars.BENCHMARK_REMOTE_PATH }}
-          BENCHMARK_DEPLOY_TOOL: ${{ vars.BENCHMARK_DEPLOY_TOOL }}
-          BENCHMARK_SSH_HOST: ${{ vars.BENCHMARK_SSH_HOST }}
+          BENCHMARK_CI_TARGET_KEYS: ${{ matrix.target_key }}
+          BENCHMARK_CI_TOOLCHAIN_VERSIONS: ${{ matrix.toolchain_version }}
+          BENCHMARK_TARGET_OS: ${{ matrix.benchmark_target_os }}
+          BENCHMARK_TARGET_CPU: ${{ matrix.benchmark_target_cpu }}
+          BENCHMARK_TARGET_ABI: ${{ matrix.benchmark_target_abi }}
+          BENCHMARK_PROFILE_ARCH: ${{ matrix.benchmark_profile_arch }}
+          BENCHMARK_ARTIFACT_KIND: ${{ matrix.benchmark_artifact_kind }}
+          BENCHMARK_TOOLCHAIN_PACKAGE: ${{ matrix.benchmark_toolchain_package }}
+          BENCHMARK_COMPILER_VERSION: ${{ matrix.benchmark_compiler_version }}
+          BENCHMARK_FLOAT_ABI: ${{ matrix.benchmark_float_abi }}
+          BENCHMARK_FPU: ${{ matrix.benchmark_fpu }}
+          BENCHMARK_EXTRA_CFLAGS: ${{ matrix.benchmark_extra_cflags }}
+          BENCHMARK_CONFIG_REL: ${{ matrix.benchmark_config_rel }}
+          BENCHMARK_REMOTE_PATH: ${{ matrix.benchmark_remote_path }}
+          BENCHMARK_DEPLOY_TOOL: ${{ matrix.benchmark_deploy_tool }}
+          BENCHMARK_SSH_HOST: ${{ matrix.benchmark_ssh_host }}
+          BENCHMARK_EXECUTION_ROUTE: ${{ matrix.benchmark_execution_route }}
+          BENCHMARK_ROUTE_ID: ${{ matrix.benchmark_route_id }}
+          BENCHMARK_ROUTE_NOTE: ${{ matrix.benchmark_route_note }}
         run: |
           set -euo pipefail
           bash "$HETAI_PLAN_ROOT/ops/board/build_benchmark_artifacts.sh" \
@@ -135,7 +154,14 @@ jobs:
             --toolchain-version '${{ matrix.toolchain_version }}'
 
       - name: Prepare board transfer password helper
-        if: ${{ success() }}
+        if: >-
+          success() &&
+          (
+            (github.event_name == 'push' &&
+             (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/fcpp_probe')) ||
+            (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/fcpp_probe')
+          ) &&
+          vars.BOARD_TRANSFER_ENABLED == '1'
         env:
           BOARD_TRANSFER_SSH_PASSWORD: ${{ secrets.BOARD_TRANSFER_SSH_PASSWORD }}
         run: |
@@ -154,7 +180,14 @@ jobs:
           echo "${tmp_dir}/root/usr/bin" >> "$GITHUB_PATH"
 
       - name: Transfer build bundle to benchmark debug server
-        if: ${{ success() }}
+        if: >-
+          success() &&
+          (
+            (github.event_name == 'push' &&
+             (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/fcpp_probe')) ||
+            (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/fcpp_probe')
+          ) &&
+          vars.BOARD_TRANSFER_ENABLED == '1'
         env:
           BOARD_CI_CONFIG: ${{ vars.BOARD_CI_CONFIG }}
           BOARD_TRANSFER_ENABLED: ${{ vars.BOARD_TRANSFER_ENABLED }}
@@ -163,6 +196,7 @@ jobs:
           BOARD_TRANSFER_BASE_DIR: ${{ vars.BOARD_TRANSFER_BASE_DIR }}
           BOARD_TRANSFER_PORT: ${{ vars.BOARD_TRANSFER_PORT }}
           BOARD_TRANSFER_STRICT_HOST_KEY_CHECKING: ${{ vars.BOARD_TRANSFER_STRICT_HOST_KEY_CHECKING }}
+          BOARD_TRANSFER_QUEUE_INDEX_ENABLED: ${{ vars.BOARD_TRANSFER_QUEUE_INDEX_ENABLED }}
           BOARD_TRANSFER_SSH_KEY: ${{ secrets.BOARD_TRANSFER_SSH_KEY }}
           BOARD_TRANSFER_SSH_PASSWORD: ${{ secrets.BOARD_TRANSFER_SSH_PASSWORD }}
           BOARD_TRANSFER_KNOWN_HOSTS: ${{ secrets.BOARD_TRANSFER_KNOWN_HOSTS }}
@@ -171,6 +205,7 @@ jobs:
           bash "$HETAI_PLAN_ROOT/ops/board/transfer_build_artifacts.sh" \
             --phase build \
             --run-id "$GITHUB_RUN_ID" \
+            --run-key "$HETAI_RUN_KEY" \
             --repo "$GITHUB_REPOSITORY" \
             --target-key '${{ matrix.target_key }}' \
             --toolchain-version '${{ matrix.toolchain_version }}' \
@@ -189,6 +224,11 @@ jobs:
             /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/cache-snapshot-info.json
             /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/metadata-override.json
             /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}.elf
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}.bin
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}.hex
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}.elf.bin
+            /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}.elf.hex
             /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}.map
             /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-${{ matrix.target_key }}-${{ matrix.toolchain_version }}.dis
             /opt/hetai/build-runs/${{ env.HETAI_RUN_KEY }}/${{ github.repository }}/${{ matrix.target_key }}-${{ matrix.toolchain_version }}/artifacts/benchmark-build.log
