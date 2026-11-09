@@ -1,3 +1,9 @@
+## [0.3.5](https://github.com/HeT-FTI/fcpp/compare/v0.3.4...v0.3.5) (2026-11-09)
+
+### Bug Fixes
+
+* drive the board matrix from the target catalog ([e6aba54](https://github.com/HeT-FTI/fcpp/commit/e6aba54631d46a48cf8fbd7811cc42dceb87eb55))
+
 ## [0.3.4](https://github.com/HeT-FTI/fcpp/compare/v0.3.3...v0.3.4) (2026-11-04)
 
 ### Bug Fixes
