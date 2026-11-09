@@ -67,7 +67,9 @@ jobs:
               echo "__JSON__"
             } >> "$GITHUB_OUTPUT"
           else
-            echo "mode=default" >> "$GITHUB_OUTPUT"
+            # Only :fire:/🔥 push runs enter this job, so they represent an
+            # explicit request for the complete configured board matrix.
+            echo "mode=all" >> "$GITHUB_OUTPUT"
             echo 'selected_targets_json=[]' >> "$GITHUB_OUTPUT"
           fi
 

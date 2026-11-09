@@ -21,6 +21,9 @@
   `build`、`style` 或 `chore` 等非发布类型。
 - 不要在 `fcpp-dev` 使用 `feat`、`fix`、`perf` 或 `BREAKING CHANGE` 作为
   版本意图；这些变更合并到 main 后统一由 main 的发布 PR 决定版本。
+- 在 `main` 或 `fcpp-dev` push 包含 `:fire:` / `🔥` 的提交时，
+  `hetai-package-matrix` 使用 `all` 模式运行全部已启用板端目标；只跑单个
+  默认目标时使用 `workflow_dispatch(default)`。
 - **CI 门禁强制**：`ci-orchestrator.yml` 的 `commit-lint` job 在 push/PR 上校验；本地自查 `npx commitlint --config .github/misc/commitlint.config.js --from HEAD~1 --to HEAD`。
 - ⚠️ `.github/misc/commitlint.config.js` 与 `.github/misc/.releaserc.json` 的 `headerPattern` 必须同步修改，否则会出现"门禁通过但版本不自增"。
 
