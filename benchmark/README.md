@@ -37,7 +37,7 @@ benchmark/
 | 项目 | Cortex-M（裸机） | Cortex-A（Linux） |
 |------|-----------------|-------------------|
 | 入口 | Base Firmware 通过函数指针调用 | `main()` 直接调用 |
-| 计时 | SYSTICK（由 Base Firmware 提供） | `clock_gettime(CLOCK_MONOTONIC)` → µs |
+| 计时 | Base Firmware 提供 tick；统一换算为 ns/call | `clock_gettime(CLOCK_MONOTONIC)` → µs；统一换算为 ns/call |
 | 输出 | UART 回调 → 串口捕获 | `printf()` → stdout（ADB/SSH 捕获） |
 | 输出协议 | `BENCHMARK_START / RESULT / BENCHMARK_END` | **完全相同** |
 | 部署 | JLink / OpenOCD / PyOCD 烧录 | `adb push` / `scp` 传输后执行 |
@@ -301,7 +301,10 @@ minicom -D /dev/ttyUSB0 -b 115200
 ```
 BENCHMARK_START
 MODULE|MyAlgo-v2.1|cases=2
+UNIT|ns_per_call
+REPEAT|fir_n256|12800
 RESULT|fir_n256|18432
+REPEAT|fft_n256|4096
 RESULT|fft_n256|47120
 BENCHMARK_END
 ```
@@ -310,11 +313,32 @@ BENCHMARK_END
 |--------|------|
 | `BENCHMARK_START` | Benchmark 开始标记 |
 | `MODULE\|<名称>\|cases=<N>` | 模块信息 |
-| `RESULT\|<用例名>\|<Tick 数>` | 单用例结果（repeat 次重复的总计时） |
+| `UNIT\|ns_per_call` | 所有 `RESULT` 的统一单位：每次用例调用的纳秒平均值 |
+| `REPEAT\|<用例名>\|<N>` | 自动标定后实际执行的重复次数 |
+| `RESULT\|<用例名>\|<ns/call>` | 机器可读标准性能值，已按实际 tick 频率和重复次数归一化 |
 | `CASE_ERROR\|<用例名> [N/M]` | 用例返回 0（失败），N 为失败时的迭代号 |
 | `BENCHMARK_END` | Benchmark 结束标记 |
 
-> Cortex-M 的 Tick 单位由 Base Firmware 的 `getTicks()` 决定；Cortex-A Linux 的 Tick 单位为 **µs**（`clock_gettime` 精度）。
+> Base Firmware 仍可提供 ms、µs 或 CPU-cycle tick。`run_bench.py` 将目标 tick
+> 频率传给 benchmark core，以约 100 ms 测量窗口自动倍增 `REPEAT`；低分辨率
+> tick 至少累计 100 个原始 tick。最终统一输出 **ns/call**。因此串口启动 banner
+> 中出现的芯片型号或旧 `Unit (ms/us)` 文案只属于 Base Firmware，不应作为报告单位。
+> `benchmark-report.md` 将整数 `ns/call` 精确换算为 **ms/call**，并在独立板块中
+> 同时展示标准化 log 与换算公式。
+
+当前 HETAI 裸机目标的已验证换算基准：
+
+| target | Base Firmware tick | `benchmark_tick_hz` |
+| --- | --- | ---: |
+| baremetal-cortex-m0 | 64 MHz expanded cycle counter | 64000000 |
+| baremetal-cortex-m3 | 1 ms | 1000 |
+| baremetal-cortex-m4 | 1 µs | 1000000 |
+| baremetal-cortex-m7 | 1 ms | 1000 |
+| baremetal-cortex-m23 | 1 µs | 1000000 |
+| baremetal-cortex-m33 | 1 ms | 1000 |
+
+单板 Base Firmware 升级后，应在对应 `bench_config_ci_*.json` 中通过
+`benchmark_tick_hz` 覆盖上表默认值。
 
 ---
 
@@ -520,7 +544,7 @@ flowchart TD
         CM5 --> CM6[MCU Flash Slot\n0x08030000]
         CM6 --> CM7[Base Firmware\n提供 getTicks + write]
         CM7 --> CM8[bench_module_entry\n通过函数指针调用]
-        CM8 --> OUT[UART 输出\nBENCHMARK_START\nRESULT name ticks\nBENCHMARK_END]
+        CM8 --> OUT[UART 输出\nBENCHMARK_START\nUNIT ns_per_call\nRESULT ns/call\nBENCHMARK_END]
     end
 
     subgraph LA["Cortex-A 路径（Linux）"]
@@ -531,7 +555,7 @@ flowchart TD
         LA4 --> LA5[download.py\nadb push / scp]
         LA5 --> LA6[设备执行\nbench_main_linux.c main]
         LA6 --> LA7[clock_gettime getTicks\nprintf write]
-        LA7 --> OUT2[stdout 输出\nBENCHMARK_START\nRESULT name µs\nBENCHMARK_END]
+        LA7 --> OUT2[stdout 输出\nBENCHMARK_START\nUNIT ns_per_call\nRESULT ns/call\nBENCHMARK_END]
     end
 
     OUT  --> CI[CI 解析器\n相同协议，无需区分平台]
@@ -562,8 +586,11 @@ A: 确认：① binary 烧到了正确的 Flash 地址；② Base Firmware 的 `
 **Q: ADB 部署后设备无输出**  
 A: 确认 `adb devices` 可以看到设备，且 `remote_path` 所在目录有执行权限（`adb shell chmod +x /data/local/tmp/benchmark`）。
 
-**Q: Linux 和 MCU 的 RESULT tick 数量级不同**  
-A: 正常现象——MCU 的 Tick 是 Base Firmware 定义的计数单位（如 CPU cycle）；Linux 的 Tick 是 µs。两者不能直接比较绝对值，但可以比较同平台不同版本的相对变化。
+**Q: Linux 和 MCU 的报告还有不同单位吗？**
+
+A: 不应再有。原始协议统一输出整数 `ns/call`，`benchmark-report.md` 统一
+换算为 `ms/call`。若报告单位不一致，应检查 `UNIT|ns_per_call`、
+`REPEAT|...` 和报告中的 `canonical_unit: ms/call`。
 
 **Q: `CASE_ERROR` 出现在输出中**  
 A: 用例 wrapper 函数返回了 `0`。检查 `bench_entry.c` 中对应函数的返回值（应返回 `1` 表示通过）。

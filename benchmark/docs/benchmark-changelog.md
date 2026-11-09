@@ -1,5 +1,19 @@
 # Benchmark 模块版本更新记录
 
+## v0.4.2-dev - 2026-11-09
+
+### 变更
+
+- `RESULT` 统一为每次用例调用的纳秒平均耗时，报告单位固定为 `ns/call`。
+- `benchmark-report.md` 将 `RESULT` 精确换算为 `ms/call`，并新增标准化
+  benchmark log 与换算公式板块。
+- 新增 `UNIT|ns_per_call` 与 `REPEAT|<case>|<n>` 协议行。
+- 目标 tick 频率由 `run_bench.py` 显式注入；M0、M3、M4、M7、M23、M33
+  分别按当前 Base Firmware 的 cycles/ms/µs 基准换算。
+- 以约 100 ms 为目标自动倍增重复次数，并保证低分辨率 tick 至少累计 100 个
+  原始 tick，避免 M7/M33 的 1 ms tick
+  将结果量化成 `1`。
+
 ## v0.4.1-dev - 2026-07-21
 
 ### 变更

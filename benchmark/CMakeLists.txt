@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.28)
 project(lib_bench C CXX)
 
+set(BENCH_TICK_NS_NUM "1000" CACHE STRING "Nanoseconds-per-tick numerator")
+set(BENCH_TICK_NS_DEN "1" CACHE STRING "Nanoseconds-per-tick denominator")
+set(BENCH_TARGET_TICKS "100" CACHE STRING "Minimum raw ticks per measurement")
+set(BENCH_INITIAL_REPEAT "100" CACHE STRING "Initial benchmark case repetitions")
+
 # 抑制 Conan Preset 模式下 CMAKE_TOOLCHAIN_FILE 的"未使用变量"警告
 # （toolchain 已由 CMakePresets.json include() 加载，此变量仅供 cmake 内部使用）
 set(CMAKE_TOOLCHAIN_FILE "${CMAKE_TOOLCHAIN_FILE}" CACHE STRING "" FORCE)
@@ -39,6 +44,15 @@ set(BENCH_SOURCES
     core/het_bench_core.c
 )
 
+function(configure_benchmark_timing target)
+    target_compile_definitions(${target} PRIVATE
+        BENCH_TICK_NS_NUM=${BENCH_TICK_NS_NUM}U
+        BENCH_TICK_NS_DEN=${BENCH_TICK_NS_DEN}U
+        BENCH_TARGET_TICKS=${BENCH_TARGET_TICKS}U
+        BENCH_INITIAL_REPEAT=${BENCH_INITIAL_REPEAT}U
+    )
+endfunction()
+
 
 # ════════════════════════════════════════════════════════════════
 #  分支 A：A 核 / Linux（带操作系统，标准可执行文件）
@@ -49,6 +63,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         ${BENCH_SOURCES}
         port/linux/bench_main_linux.cpp
     )
+    configure_benchmark_timing(benchmark)
 
     target_link_libraries(benchmark PRIVATE
         ${LIB_NAME}::${LIB_NAME}_cpp
@@ -113,6 +128,7 @@ else()
     add_executable(benchmark
         ${BENCH_SOURCES}
     )
+    configure_benchmark_timing(benchmark)
 
     target_link_libraries(benchmark PRIVATE
         ${LIB_NAME}::${LIB_NAME}_cpp

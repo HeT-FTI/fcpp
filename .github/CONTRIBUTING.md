@@ -12,6 +12,18 @@
 | `docs` / `test` / `build` / `ci` / `refactor` / `style` / `chore` | 不触发版本变更 | `chore(release): 1.0.0 [skip ci]` |
 
 - 破坏性变更：`feat!:` 或正文含 `BREAKING CHANGE:` → major。
+
+### 分支版本边界
+
+- `main` 是唯一发版分支：只有 main push、发布开关开启且提交包含
+  `(:package:):` 时才由 semantic-release 生成 tag、CHANGELOG 和版本号。
+- `fcpp-dev` 只做集成分支，提交应使用 `ci`、`refactor`、`docs`、`test`、
+  `build`、`style` 或 `chore` 等非发布类型。
+- 不要在 `fcpp-dev` 使用 `feat`、`fix`、`perf` 或 `BREAKING CHANGE` 作为
+  版本意图；这些变更合并到 main 后统一由 main 的发布 PR 决定版本。
+- 在 `main` 或 `fcpp-dev` push 包含 `:fire:` / `🔥` 的提交时，
+  `hetai-package-matrix` 使用 `all` 模式运行全部已启用板端目标；只跑单个
+  默认目标时使用 `workflow_dispatch(default)`。
 - **CI 门禁强制**：`ci-orchestrator.yml` 的 `commit-lint` job 在 push/PR 上校验；本地自查 `npx commitlint --config .github/misc/commitlint.config.js --from HEAD~1 --to HEAD`。
 - ⚠️ `.github/misc/commitlint.config.js` 与 `.github/misc/.releaserc.json` 的 `headerPattern` 必须同步修改，否则会出现"门禁通过但版本不自增"。
 

@@ -144,6 +144,8 @@ benchmark ELF 标准输出必须包含：
 ```text
 BENCHMARK_START
 MODULE|<module>|cases=<n>
+UNIT|ns_per_call
+REPEAT|<case>|<count>
 RESULT|<case>|<value>
 ...
 BENCHMARK_END
@@ -154,12 +156,18 @@ BENCHMARK_END
 ```text
 BENCHMARK_START
 MODULE|LibBench|cases=2
-RESULT|test_add_n128|80
-RESULT|test_sub_n128|76
+UNIT|ns_per_call
+REPEAT|test_add_n128|12800
+RESULT|test_add_n128|1000000
+REPEAT|test_sub_n128|12800
+RESULT|test_sub_n128|1000000
 BENCHMARK_END
 ```
 
-watcher 和 report 生成器只依赖这些协议行，不依赖额外日志格式。
+`RESULT` 固定表示每次用例调用的纳秒平均值，`REPEAT` 记录得出该平均值时的
+实际重复次数。watcher 和 report 生成器不应把 Base Firmware banner 中的芯片
+型号或 `Unit (ms/us)` 当作报告单位。`benchmark-report.md` 将 ns/call 精确
+换算为 ms/call，并单列标准化 log 和换算公式。
 
 ## 8. Watcher 初版职责
 

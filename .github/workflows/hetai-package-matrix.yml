@@ -18,7 +18,7 @@ on:
         default: "[]"
         type: string
   push:
-    branches: [main, fcpp-dev, fcpp_probe]
+    branches: [main, fcpp-dev]
     paths:
       - ".github/workflows/hetai-package-matrix.yml"
       - ".hetai/build-matrix.yml"
@@ -67,7 +67,9 @@ jobs:
               echo "__JSON__"
             } >> "$GITHUB_OUTPUT"
           else
-            echo "mode=default" >> "$GITHUB_OUTPUT"
+            # Only :fire:/🔥 push runs enter this job, so they represent an
+            # explicit request for the complete configured board matrix.
+            echo "mode=all" >> "$GITHUB_OUTPUT"
             echo 'selected_targets_json=[]' >> "$GITHUB_OUTPUT"
           fi
 
@@ -158,8 +160,8 @@ jobs:
           success() &&
           (
             (github.event_name == 'push' &&
-             (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/fcpp_probe')) ||
-            (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/fcpp_probe')
+             (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/fcpp-dev')) ||
+            (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/fcpp-dev')
           ) &&
           vars.BOARD_TRANSFER_ENABLED == '1'
         env:
@@ -184,8 +186,8 @@ jobs:
           success() &&
           (
             (github.event_name == 'push' &&
-             (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/fcpp_probe')) ||
-            (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/fcpp_probe')
+             (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/fcpp-dev')) ||
+            (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/fcpp-dev')
           ) &&
           vars.BOARD_TRANSFER_ENABLED == '1'
         env:

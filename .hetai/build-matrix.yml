@@ -1,6 +1,7 @@
-# fcpp_probe validates the merged benchmark implementation against the full
-# HETAI board matrix while tracking the current main package identity.
-package_ref: fcpp/0.3.5
+# fcpp-dev keeps linux-x86_64 as the default build target while tracking the
+# current main package identity. Other board targets remain commented below
+# for controlled opt-in full-matrix runs.
+package_ref: fcpp/0.3.6
 
 defaults:
   mode: default
@@ -8,183 +9,185 @@ defaults:
   create_extra_args: --build=missing --test-folder= -c user.het:run_tests=False
 
 targets:
-  - id: linux-myir-3506-A7
-    target_key: linux-myir-3506-A7
-    default: true
-    enabled: true
-    build_kind: linux
-    os: Linux
-    arch: armv7
-    toolchain_versions:
-      - 11.3.rel1
-    benchmark:
-      enabled: true
-      target_os: Linux
-      target_cpu: cortex-a7
-      target_abi: arm-linux-gnueabihf
-      profile_arch: armv7
-      artifact_kind: linux-elf
-      toolchain_package: auto
-      float_abi: hard
-      fpu: neon-vfpv4
-      extra_cflags: []
-      config_rel: platform/bench_config_ci_rk3506.json
-      remote_path: /tmp/fcpp_benchmark_myir_3506_a7/benchmark
-      deploy_tool: ssh
-      ssh_host: ""
-      execution_route: ssh-board
-      route_id: myir-3506-a7
-      route_note: MYIR MYD-YR3506J Linux ARMv7 board route
+  # Only linux-x86_64 is active by default. Uncomment another complete target
+  # block only for an explicitly controlled matrix run.
+  #   - id: linux-myir-3506-A7
+  #     target_key: linux-myir-3506-A7
+  #     default: true
+  #     enabled: true
+  #     build_kind: linux
+  #     os: Linux
+  #     arch: armv7
+  #     toolchain_versions:
+  #       - 11.3.rel1
+  #     benchmark:
+  #       enabled: true
+  #       target_os: Linux
+  #       target_cpu: cortex-a7
+  #       target_abi: arm-linux-gnueabihf
+  #       profile_arch: armv7
+  #       artifact_kind: linux-elf
+  #       toolchain_package: auto
+  #       float_abi: hard
+  #       fpu: neon-vfpv4
+  #       extra_cflags: []
+  #       config_rel: platform/bench_config_ci_rk3506.json
+  #       remote_path: /tmp/fcpp_benchmark_myir_3506_a7/benchmark
+  #       deploy_tool: ssh
+  #       ssh_host: ""
+  #       execution_route: ssh-board
+  #       route_id: myir-3506-a7
+  #       route_note: MYIR MYD-YR3506J Linux ARMv7 board route
 
-  - id: linux-orangepi-rk3566-A55
-    target_key: linux-orangepi-rk3566-A55
-    default: false
-    enabled: true
-    build_kind: linux
-    os: Linux
-    arch: armv8
-    toolchain_versions:
-      - 11.3.rel1
-    benchmark:
-      enabled: true
-      target_os: Linux
-      target_cpu: cortex-a55
-      target_abi: aarch64-linux-gnu
-      profile_arch: armv8
-      artifact_kind: linux-elf
-      toolchain_package: auto
-      float_abi: ""
-      fpu: ""
-      extra_cflags: []
-      config_rel: platform/bench_config_ci_aarch64.json
-      remote_path: /tmp/fcpp_benchmark_orangepi_3b/benchmark
-      deploy_tool: ssh
-      ssh_host: ""
-      execution_route: ssh-board
-      route_id: orangepi-rk3566-a55
-      route_note: OrangePi 3B AArch64 board route
+  #   - id: linux-orangepi-rk3566-A55
+  #     target_key: linux-orangepi-rk3566-A55
+  #     default: false
+  #     enabled: true
+  #     build_kind: linux
+  #     os: Linux
+  #     arch: armv8
+  #     toolchain_versions:
+  #       - 11.3.rel1
+  #     benchmark:
+  #       enabled: true
+  #       target_os: Linux
+  #       target_cpu: cortex-a55
+  #       target_abi: aarch64-linux-gnu
+  #       profile_arch: armv8
+  #       artifact_kind: linux-elf
+  #       toolchain_package: auto
+  #       float_abi: ""
+  #       fpu: ""
+  #       extra_cflags: []
+  #       config_rel: platform/bench_config_ci_aarch64.json
+  #       remote_path: /tmp/fcpp_benchmark_orangepi_3b/benchmark
+  #       deploy_tool: ssh
+  #       ssh_host: ""
+  #       execution_route: ssh-board
+  #       route_id: orangepi-rk3566-a55
+  #       route_note: OrangePi 3B AArch64 board route
 
   # RK3588 is a separate board-level contract from the other AArch64 targets.
   # It participates in explicit full-matrix builds and produces a versioned
   # bundle, while the 71.89 watcher keeps execution blocked until its inventory
   # and SSH route are provisioned under its own change control.
-  - id: linux-orangepi-rk3588-A76
-    target_key: linux-orangepi-rk3588-A76
-    default: false
-    enabled: true
-    build_kind: linux
-    os: Linux
-    arch: armv8
-    toolchain_versions:
-      - 11.3.rel1
-    benchmark:
-      enabled: true
-      target_os: Linux
-      target_cpu: cortex-a76
-      target_abi: aarch64-linux-gnu
-      profile_arch: armv8
-      artifact_kind: linux-elf
-      toolchain_package: auto
-      float_abi: ""
-      fpu: ""
-      extra_cflags: []
-      config_rel: platform/bench_config_ci_rk3588.json
-      remote_path: /tmp/fcpp_benchmark_orangepi_rk3588/benchmark
-      deploy_tool: ssh
-      ssh_host: ""
-      execution_route: ssh-board
-      route_id: orangepi-rk3588-a76
-      route_note: OrangePi RK3588 Cortex-A76 CI bundle route is reserved; 71.89 inventory and SSH route must be registered before execution
+  #   - id: linux-orangepi-rk3588-A76
+  #     target_key: linux-orangepi-rk3588-A76
+  #     default: false
+  #     enabled: true
+  #     build_kind: linux
+  #     os: Linux
+  #     arch: armv8
+  #     toolchain_versions:
+  #       - 11.3.rel1
+  #     benchmark:
+  #       enabled: true
+  #       target_os: Linux
+  #       target_cpu: cortex-a76
+  #       target_abi: aarch64-linux-gnu
+  #       profile_arch: armv8
+  #       artifact_kind: linux-elf
+  #       toolchain_package: auto
+  #       float_abi: ""
+  #       fpu: ""
+  #       extra_cflags: []
+  #       config_rel: platform/bench_config_ci_rk3588.json
+  #       remote_path: /tmp/fcpp_benchmark_orangepi_rk3588/benchmark
+  #       deploy_tool: ssh
+  #       ssh_host: ""
+  #       execution_route: ssh-board
+  #       route_id: orangepi-rk3588-a76
+  #       route_note: OrangePi RK3588 Cortex-A76 CI bundle route is reserved; 71.89 inventory and SSH route must be registered before execution
 
-  - id: linux-orangepi-h6-A53
-    target_key: linux-orangepi-h6-A53
-    default: false
-    enabled: true
-    build_kind: linux
-    os: Linux
-    arch: armv8
-    toolchain_versions:
-      - 11.3.rel1
-    benchmark:
-      enabled: true
-      target_os: Linux
-      target_cpu: cortex-a53
-      target_abi: aarch64-linux-gnu
-      profile_arch: armv8
-      artifact_kind: linux-elf
-      toolchain_package: auto
-      float_abi: ""
-      fpu: ""
-      extra_cflags: []
-      config_rel: platform/bench_config_ci_aarch64.json
-      remote_path: /tmp/fcpp_benchmark_orangepi_3_lts/benchmark
-      deploy_tool: ssh
-      ssh_host: ""
-      execution_route: ssh-board
-      route_id: orangepi-h6-a53
-      route_note: OrangePi 3 LTS AArch64 board route
+  #   - id: linux-orangepi-h6-A53
+  #     target_key: linux-orangepi-h6-A53
+  #     default: false
+  #     enabled: true
+  #     build_kind: linux
+  #     os: Linux
+  #     arch: armv8
+  #     toolchain_versions:
+  #       - 11.3.rel1
+  #     benchmark:
+  #       enabled: true
+  #       target_os: Linux
+  #       target_cpu: cortex-a53
+  #       target_abi: aarch64-linux-gnu
+  #       profile_arch: armv8
+  #       artifact_kind: linux-elf
+  #       toolchain_package: auto
+  #       float_abi: ""
+  #       fpu: ""
+  #       extra_cflags: []
+  #       config_rel: platform/bench_config_ci_aarch64.json
+  #       remote_path: /tmp/fcpp_benchmark_orangepi_3_lts/benchmark
+  #       deploy_tool: ssh
+  #       ssh_host: ""
+  #       execution_route: ssh-board
+  #       route_id: orangepi-h6-a53
+  #       route_note: OrangePi 3 LTS AArch64 board route
 
-  - id: linux-raspberry-bcm2712-A76
-    target_key: linux-raspberry-bcm2712-A76
-    default: false
-    enabled: true
-    build_kind: linux
-    os: Linux
-    arch: armv8
-    toolchain_versions:
-      - 11.3.rel1
-    benchmark:
-      enabled: true
-      target_os: Linux
-      target_cpu: cortex-a76
-      target_abi: aarch64-linux-gnu
-      profile_arch: armv8
-      artifact_kind: linux-elf
-      toolchain_package: auto
-      float_abi: ""
-      fpu: ""
-      extra_cflags: []
-      config_rel: platform/bench_config_ci_aarch64.json
-      remote_path: /tmp/fcpp_benchmark_raspberrypi_5/benchmark
-      deploy_tool: ssh
-      ssh_host: ""
-      execution_route: ssh-board
-      route_id: raspberry-bcm2712-a76
-      route_note: Raspberry Pi 5 AArch64 route is active after 71.89 SSH public-key authorization
+  #   - id: linux-raspberry-bcm2712-A76
+  #     target_key: linux-raspberry-bcm2712-A76
+  #     default: false
+  #     enabled: true
+  #     build_kind: linux
+  #     os: Linux
+  #     arch: armv8
+  #     toolchain_versions:
+  #       - 11.3.rel1
+  #     benchmark:
+  #       enabled: true
+  #       target_os: Linux
+  #       target_cpu: cortex-a76
+  #       target_abi: aarch64-linux-gnu
+  #       profile_arch: armv8
+  #       artifact_kind: linux-elf
+  #       toolchain_package: auto
+  #       float_abi: ""
+  #       fpu: ""
+  #       extra_cflags: []
+  #       config_rel: platform/bench_config_ci_aarch64.json
+  #       remote_path: /tmp/fcpp_benchmark_raspberrypi_5/benchmark
+  #       deploy_tool: ssh
+  #       ssh_host: ""
+  #       execution_route: ssh-board
+  #       route_id: raspberry-bcm2712-a76
+  #       route_note: Raspberry Pi 5 AArch64 route is active after 71.89 SSH public-key authorization
 
   # RISC-V is intentionally paused in this board-CI iteration. Keep the
   # declaration for future recovery but do not include it in any CI matrix.
-  - id: linux-riscv64
-    default: false
-    enabled: false
-    build_kind: linux
-    os: Linux
-    arch: riscv64
-    toolchain_versions:
-      - 11.3.rel1
-    benchmark:
-      enabled: true
-      target_os: Linux
-      target_cpu: riscv64
-      target_abi: riscv64-linux-gnu-lp64d
-      profile_arch: riscv64
-      artifact_kind: linux-elf
-      toolchain_package: system-gcc-riscv64/13
-      compiler_version: "13"
-      float_abi: ""
-      fpu: ""
-      extra_cflags: []
-      config_rel: platform/bench_config_ci_riscv64.json
-      remote_path: /tmp/fcpp_benchmark_riscv64/benchmark
-      deploy_tool: ssh
-      ssh_host: root@192.168.1.101
-      execution_route: ssh-board
-      route_id: pending-linux-riscv64
-      route_note: RISC-V CI artifact for 71.89 contract and ABI preflight; execution route is pending board registration
+  #   - id: linux-riscv64
+  #     default: false
+  #     enabled: false
+  #     build_kind: linux
+  #     os: Linux
+  #     arch: riscv64
+  #     toolchain_versions:
+  #       - 11.3.rel1
+  #     benchmark:
+  #       enabled: true
+  #       target_os: Linux
+  #       target_cpu: riscv64
+  #       target_abi: riscv64-linux-gnu-lp64d
+  #       profile_arch: riscv64
+  #       artifact_kind: linux-elf
+  #       toolchain_package: system-gcc-riscv64/13
+  #       compiler_version: "13"
+  #       float_abi: ""
+  #       fpu: ""
+  #       extra_cflags: []
+  #       config_rel: platform/bench_config_ci_riscv64.json
+  #       remote_path: /tmp/fcpp_benchmark_riscv64/benchmark
+  #       deploy_tool: ssh
+  #       ssh_host: root@192.168.1.101
+  #       execution_route: ssh-board
+  #       route_id: pending-linux-riscv64
+  #       route_note: RISC-V CI artifact for 71.89 contract and ABI preflight; execution route is pending board registration
 
   - id: linux-x86_64
     target_key: linux-x86_64
-    default: false
+    default: true
     enabled: true
     build_kind: linux
     os: Linux
@@ -210,172 +213,172 @@ targets:
       route_id: watcher-host-linux-x86_64
       route_note: Execute benchmark directly on the watcher host
 
-  - id: baremetal-cortex-m4
-    target_key: baremetal-cortex-m4
-    default: false
-    enabled: true
-    build_kind: baremetal
-    os: baremetal
-    arch: cortex-m4
-    toolchain_versions:
-      - 11.3.rel1
-    benchmark:
-      enabled: true
-      target_os: baremetal
-      target_cpu: cortex-m4
-      target_abi: arm-none-eabi
-      profile_arch: cortex-m4
-      artifact_kind: baremetal-elf
-      toolchain_package: auto
-      float_abi: hard
-      fpu: fpv4-sp-d16
-      extra_cflags: []
-      config_rel: platform/bench_config_ci_cortex_m4.json
-      remote_path: /tmp/fcpp_benchmark_m4/benchmark
-      deploy_tool: openocd
-      ssh_host: ""
-      execution_route: openocd-serial
-      route_id: gd32f470-cortex-m4
-      route_note: GD32F470 Cortex-M4 bundle route is contract-blocked pending Base Firmware, Slot erase policy, and UART start-protocol verification on 71.89
+  #   - id: baremetal-cortex-m4
+  #     target_key: baremetal-cortex-m4
+  #     default: false
+  #     enabled: true
+  #     build_kind: baremetal
+  #     os: baremetal
+  #     arch: cortex-m4
+  #     toolchain_versions:
+  #       - 11.3.rel1
+  #     benchmark:
+  #       enabled: true
+  #       target_os: baremetal
+  #       target_cpu: cortex-m4
+  #       target_abi: arm-none-eabi
+  #       profile_arch: cortex-m4
+  #       artifact_kind: baremetal-elf
+  #       toolchain_package: auto
+  #       float_abi: hard
+  #       fpu: fpv4-sp-d16
+  #       extra_cflags: []
+  #       config_rel: platform/bench_config_ci_cortex_m4.json
+  #       remote_path: /tmp/fcpp_benchmark_m4/benchmark
+  #       deploy_tool: openocd
+  #       ssh_host: ""
+  #       execution_route: openocd-serial
+  #       route_id: gd32f470-cortex-m4
+  #       route_note: GD32F470 Cortex-M4 bundle route is contract-blocked pending Base Firmware, Slot erase policy, and UART start-protocol verification on 71.89
 
-  - id: baremetal-cortex-m23
-    target_key: baremetal-cortex-m23
-    default: false
-    enabled: true
-    build_kind: baremetal
-    os: baremetal
-    arch: armv8_32
-    toolchain_versions:
-      - 11.3.rel1
-    benchmark:
-      enabled: true
-      target_os: baremetal
-      target_cpu: cortex-m23
-      target_abi: arm-none-eabi
-      profile_arch: cortex-m23
-      artifact_kind: baremetal-elf
-      toolchain_package: auto
-      float_abi: soft
-      fpu: none
-      extra_cflags: []
-      config_rel: platform/bench_config_ci_cortex_m23.json
-      remote_path: /tmp/fcpp_benchmark_m23/benchmark
-      deploy_tool: openocd
-      ssh_host: ""
-      execution_route: openocd-serial
-      route_id: gd32l233-cortex-m23
-      route_note: GD32L233 Cortex-M23 bundle route is contract-blocked because the 71.89 xPack OpenOCD 0.12.0 stack has no verified WCH-Link driver; do not flash until a supported probe is validated
+  #   - id: baremetal-cortex-m23
+  #     target_key: baremetal-cortex-m23
+  #     default: false
+  #     enabled: true
+  #     build_kind: baremetal
+  #     os: baremetal
+  #     arch: armv8_32
+  #     toolchain_versions:
+  #       - 11.3.rel1
+  #     benchmark:
+  #       enabled: true
+  #       target_os: baremetal
+  #       target_cpu: cortex-m23
+  #       target_abi: arm-none-eabi
+  #       profile_arch: cortex-m23
+  #       artifact_kind: baremetal-elf
+  #       toolchain_package: auto
+  #       float_abi: soft
+  #       fpu: none
+  #       extra_cflags: []
+  #       config_rel: platform/bench_config_ci_cortex_m23.json
+  #       remote_path: /tmp/fcpp_benchmark_m23/benchmark
+  #       deploy_tool: openocd
+  #       ssh_host: ""
+  #       execution_route: openocd-serial
+  #       route_id: gd32l233-cortex-m23
+  #       route_note: GD32L233 Cortex-M23 bundle route is contract-blocked because the 71.89 xPack OpenOCD 0.12.0 stack has no verified WCH-Link driver; do not flash until a supported probe is validated
 
-  - id: baremetal-cortex-m33
-    target_key: baremetal-cortex-m33
-    default: false
-    enabled: true
-    build_kind: baremetal
-    os: baremetal
-    arch: armv8_32
-    toolchain_versions:
-      - 11.3.rel1
-    benchmark:
-      enabled: true
-      target_os: baremetal
-      target_cpu: cortex-m33
-      target_abi: arm-none-eabi
-      profile_arch: cortex-m33
-      artifact_kind: baremetal-elf
-      toolchain_package: auto
-      float_abi: hard
-      fpu: fpv5-sp-d16
-      extra_cflags: []
-      config_rel: platform/bench_config_ci_cortex_m33.json
-      remote_path: /tmp/fcpp_benchmark_m33/benchmark
-      deploy_tool: openocd
-      ssh_host: ""
-      execution_route: openocd-serial
-      route_id: stm32u575-cortex-m33
-      route_note: STM32U575 Cortex-M33 bundle route is contract-blocked pending Base Firmware, Slot erase policy, and UART start-protocol verification on 71.89
+  #   - id: baremetal-cortex-m33
+  #     target_key: baremetal-cortex-m33
+  #     default: false
+  #     enabled: true
+  #     build_kind: baremetal
+  #     os: baremetal
+  #     arch: armv8_32
+  #     toolchain_versions:
+  #       - 11.3.rel1
+  #     benchmark:
+  #       enabled: true
+  #       target_os: baremetal
+  #       target_cpu: cortex-m33
+  #       target_abi: arm-none-eabi
+  #       profile_arch: cortex-m33
+  #       artifact_kind: baremetal-elf
+  #       toolchain_package: auto
+  #       float_abi: hard
+  #       fpu: fpv5-sp-d16
+  #       extra_cflags: []
+  #       config_rel: platform/bench_config_ci_cortex_m33.json
+  #       remote_path: /tmp/fcpp_benchmark_m33/benchmark
+  #       deploy_tool: openocd
+  #       ssh_host: ""
+  #       execution_route: openocd-serial
+  #       route_id: stm32u575-cortex-m33
+  #       route_note: STM32U575 Cortex-M33 bundle route is contract-blocked pending Base Firmware, Slot erase policy, and UART start-protocol verification on 71.89
 
-  - id: baremetal-cortex-m0
-    target_key: baremetal-cortex-m0
-    default: false
-    enabled: true
-    build_kind: baremetal
-    os: baremetal
-    arch: cortex-m0
-    toolchain_versions:
-      - 11.3.rel1
-    benchmark:
-      enabled: true
-      target_os: baremetal
-      target_cpu: cortex-m0
-      target_abi: arm-none-eabi
-      profile_arch: cortex-m0
-      artifact_kind: baremetal-bin
-      toolchain_package: auto
-      float_abi: soft
-      fpu: none
-      extra_cflags: []
-      config_rel: platform/bench_config_ci_cortex_m0.json
-      remote_path: /tmp/fcpp_benchmark_m0/benchmark
-      deploy_tool: jlink
-      ssh_host: ""
-      execution_route: jlink-serial
-      route_id: bat32-baremetal-cortex-m0
-      route_note: BAT32 Cortex-M0 route via J-Link and UART
+  #   - id: baremetal-cortex-m0
+  #     target_key: baremetal-cortex-m0
+  #     default: false
+  #     enabled: true
+  #     build_kind: baremetal
+  #     os: baremetal
+  #     arch: cortex-m0
+  #     toolchain_versions:
+  #       - 11.3.rel1
+  #     benchmark:
+  #       enabled: true
+  #       target_os: baremetal
+  #       target_cpu: cortex-m0
+  #       target_abi: arm-none-eabi
+  #       profile_arch: cortex-m0
+  #       artifact_kind: baremetal-bin
+  #       toolchain_package: auto
+  #       float_abi: soft
+  #       fpu: none
+  #       extra_cflags: []
+  #       config_rel: platform/bench_config_ci_cortex_m0.json
+  #       remote_path: /tmp/fcpp_benchmark_m0/benchmark
+  #       deploy_tool: jlink
+  #       ssh_host: ""
+  #       execution_route: jlink-serial
+  #       route_id: bat32-baremetal-cortex-m0
+  #       route_note: BAT32 Cortex-M0 route via J-Link and UART
 
-  - id: baremetal-cortex-m3
-    target_key: baremetal-cortex-m3
-    default: false
-    enabled: true
-    build_kind: baremetal
-    os: baremetal
-    arch: cortex-m3
-    toolchain_versions:
-      - 11.3.rel1
-    benchmark:
-      enabled: true
-      target_os: baremetal
-      target_cpu: cortex-m3
-      target_abi: arm-none-eabi
-      profile_arch: cortex-m3
-      artifact_kind: baremetal-elf
-      toolchain_package: auto
-      float_abi: soft
-      fpu: none
-      extra_cflags: []
-      config_rel: platform/bench_config_ci_cortex_m3.json
-      remote_path: /tmp/fcpp_benchmark_m3/benchmark
-      deploy_tool: openocd
-      ssh_host: ""
-      execution_route: openocd-serial
-      route_id: stm32f205-cortex-m3
-      route_note: STM32F205 Cortex-M3 route is contract-blocked until 71.89 enables its serial-bound ST-Link inventory entry
+  #   - id: baremetal-cortex-m3
+  #     target_key: baremetal-cortex-m3
+  #     default: false
+  #     enabled: true
+  #     build_kind: baremetal
+  #     os: baremetal
+  #     arch: cortex-m3
+  #     toolchain_versions:
+  #       - 11.3.rel1
+  #     benchmark:
+  #       enabled: true
+  #       target_os: baremetal
+  #       target_cpu: cortex-m3
+  #       target_abi: arm-none-eabi
+  #       profile_arch: cortex-m3
+  #       artifact_kind: baremetal-elf
+  #       toolchain_package: auto
+  #       float_abi: soft
+  #       fpu: none
+  #       extra_cflags: []
+  #       config_rel: platform/bench_config_ci_cortex_m3.json
+  #       remote_path: /tmp/fcpp_benchmark_m3/benchmark
+  #       deploy_tool: openocd
+  #       ssh_host: ""
+  #       execution_route: openocd-serial
+  #       route_id: stm32f205-cortex-m3
+  #       route_note: STM32F205 Cortex-M3 route is contract-blocked until 71.89 enables its serial-bound ST-Link inventory entry
 
-  - id: baremetal-cortex-m7
-    target_key: baremetal-cortex-m7
-    default: false
-    enabled: true
-    build_kind: baremetal
-    os: baremetal
+  #   - id: baremetal-cortex-m7
+  #     target_key: baremetal-cortex-m7
+  #     default: false
+  #     enabled: true
+  #     build_kind: baremetal
+  #     os: baremetal
     # cortex-m7d is the Conan build ABI selector; benchmark.profile_arch stays
     # cortex-m7 because the V3 watcher contract identifies the physical core.
-    arch: cortex-m7d
-    toolchain_versions:
-      - 11.3.rel1
-    benchmark:
-      enabled: true
-      target_os: baremetal
-      target_cpu: cortex-m7
-      target_abi: arm-none-eabi
-      profile_arch: cortex-m7
-      artifact_kind: baremetal-elf
-      toolchain_package: auto
-      float_abi: hard
-      fpu: fpv5-d16
-      extra_cflags: []
-      config_rel: platform/bench_config_ci_cortex_m7.json
-      remote_path: /tmp/fcpp_benchmark_m7/benchmark
-      deploy_tool: jlink
-      ssh_host: ""
-      execution_route: jlink-serial
-      route_id: stm32f767-cortex-m7
-      route_note: STM32F767IG Cortex-M7 bundle route is contract-blocked until 71.89 registers its dedicated J-Link probe and inventory entry
+  #     arch: cortex-m7d
+  #     toolchain_versions:
+  #       - 11.3.rel1
+  #     benchmark:
+  #       enabled: true
+  #       target_os: baremetal
+  #       target_cpu: cortex-m7
+  #       target_abi: arm-none-eabi
+  #       profile_arch: cortex-m7
+  #       artifact_kind: baremetal-elf
+  #       toolchain_package: auto
+  #       float_abi: hard
+  #       fpu: fpv5-d16
+  #       extra_cflags: []
+  #       config_rel: platform/bench_config_ci_cortex_m7.json
+  #       remote_path: /tmp/fcpp_benchmark_m7/benchmark
+  #       deploy_tool: jlink
+  #       ssh_host: ""
+  #       execution_route: jlink-serial
+  #       route_id: stm32f767-cortex-m7
+  #       route_note: STM32F767IG Cortex-M7 bundle route is contract-blocked until 71.89 registers its dedicated J-Link probe and inventory entry
