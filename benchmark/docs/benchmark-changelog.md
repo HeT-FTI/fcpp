@@ -5,6 +5,8 @@
 ### 变更
 
 - `RESULT` 统一为每次用例调用的纳秒平均耗时，报告单位固定为 `ns/call`。
+- `benchmark-report.md` 将 `RESULT` 精确换算为 `ms/call`，并新增标准化
+  benchmark log 与换算公式板块。
 - 新增 `UNIT|ns_per_call` 与 `REPEAT|<case>|<n>` 协议行。
 - 目标 tick 频率由 `run_bench.py` 显式注入；M0、M3、M4、M7、M23、M33
   分别按当前 Base Firmware 的 cycles/ms/µs 基准换算。

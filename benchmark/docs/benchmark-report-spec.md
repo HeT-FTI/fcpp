@@ -198,12 +198,28 @@ libc.so.6 => /lib/libc.so.6
 
 | module | case | value | unit | repeat |
 | --- | --- | ---: | --- | ---: |
-| LibBench | test_add_n128 | 10000 | ns/call | 10000 |
-| LibBench | test_sub_n128 | 12000 | ns/call | 10000 |
+| LibBench | test_add_n128 | 0.003535 | ms/call | 51200 |
+| LibBench | test_sub_n128 | 0.003574 | ms/call | 51200 |
 
-`RESULT` 是每次用例调用的纳秒平均值，可跨 Linux、Cortex-M 和不同 Base Firmware
-tick 单位比较。Base Firmware 在 `BENCHMARK_START` 前打印的芯片型号或
-`Unit (ms/us)` banner 不参与报告单位判定。
+原始 `RESULT` 是每次用例调用的整数纳秒平均值；`benchmark-report.md` 的正式
+单位固定为 **ms/call**，换算公式必须写入报告。Base Firmware 在
+`BENCHMARK_START` 前打印的芯片型号或 `Unit (ms/us)` banner 不参与报告单位判定。
+
+报告必须包含“标准化 Benchmark Log 与单位换算”板块，包含：
+
+- `canonical_unit: ms/call`
+- `source_unit: ns_per_call`
+- `ms/call = RESULT(ns/call) / 1,000,000`
+- 去掉 Base Firmware banner、仅保留 benchmark 协议行的标准化 log
+
+示例：
+
+```text
+RESULT|test_add_n128|0.003535
+```
+
+表示单次 `test_add_n128` 调用平均耗时 `0.003535 ms`，即 `3.535 µs`
+或 `3535 ns`。
 
 ## 12. 结论字段
 

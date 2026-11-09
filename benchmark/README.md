@@ -315,7 +315,7 @@ BENCHMARK_END
 | `MODULE\|<名称>\|cases=<N>` | 模块信息 |
 | `UNIT\|ns_per_call` | 所有 `RESULT` 的统一单位：每次用例调用的纳秒平均值 |
 | `REPEAT\|<用例名>\|<N>` | 自动标定后实际执行的重复次数 |
-| `RESULT\|<用例名>\|<ns/call>` | 标准性能值，已按实际 tick 频率和重复次数归一化 |
+| `RESULT\|<用例名>\|<ns/call>` | 机器可读标准性能值，已按实际 tick 频率和重复次数归一化 |
 | `CASE_ERROR\|<用例名> [N/M]` | 用例返回 0（失败），N 为失败时的迭代号 |
 | `BENCHMARK_END` | Benchmark 结束标记 |
 
@@ -323,6 +323,8 @@ BENCHMARK_END
 > 频率传给 benchmark core，以约 100 ms 测量窗口自动倍增 `REPEAT`；低分辨率
 > tick 至少累计 100 个原始 tick。最终统一输出 **ns/call**。因此串口启动 banner
 > 中出现的芯片型号或旧 `Unit (ms/us)` 文案只属于 Base Firmware，不应作为报告单位。
+> `benchmark-report.md` 将整数 `ns/call` 精确换算为 **ms/call**，并在独立板块中
+> 同时展示标准化 log 与换算公式。
 
 当前 HETAI 裸机目标的已验证换算基准：
 
@@ -584,10 +586,11 @@ A: 确认：① binary 烧到了正确的 Flash 地址；② Base Firmware 的 `
 **Q: ADB 部署后设备无输出**  
 A: 确认 `adb devices` 可以看到设备，且 `remote_path` 所在目录有执行权限（`adb shell chmod +x /data/local/tmp/benchmark`）。
 
-**Q: Linux 和 MCU 的 RESULT 还有不同单位吗？**
+**Q: Linux 和 MCU 的报告还有不同单位吗？**
 
-A: 不应再有。新协议统一输出 `ns/call`。若报告单位不一致，应检查
-`UNIT|ns_per_call` 和 `REPEAT|...` 是否存在。
+A: 不应再有。原始协议统一输出整数 `ns/call`，`benchmark-report.md` 统一
+换算为 `ms/call`。若报告单位不一致，应检查 `UNIT|ns_per_call`、
+`REPEAT|...` 和报告中的 `canonical_unit: ms/call`。
 
 **Q: `CASE_ERROR` 出现在输出中**  
 A: 用例 wrapper 函数返回了 `0`。检查 `bench_entry.c` 中对应函数的返回值（应返回 `1` 表示通过）。

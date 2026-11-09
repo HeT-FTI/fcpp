@@ -166,7 +166,8 @@ BENCHMARK_END
 
 `RESULT` 固定表示每次用例调用的纳秒平均值，`REPEAT` 记录得出该平均值时的
 实际重复次数。watcher 和 report 生成器不应把 Base Firmware banner 中的芯片
-型号或 `Unit (ms/us)` 当作报告单位。
+型号或 `Unit (ms/us)` 当作报告单位。`benchmark-report.md` 将 ns/call 精确
+换算为 ms/call，并单列标准化 log 和换算公式。
 
 ## 8. Watcher 初版职责
 

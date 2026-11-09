@@ -265,7 +265,8 @@ echo $?
 - 输出包含 `BENCHMARK_START` 和 `BENCHMARK_END`。
 - 输出包含且仅包含一个 `UNIT|ns_per_call`。
 - 每个 case 都有对应的 `REPEAT|...` 和 `RESULT|...` 行。
-- 报告统一使用 `RESULT` 的 `ns/call`，不得混用 Base Firmware banner 中的 ms/µs。
+- 原始协议使用整数 `ns/call`；`benchmark-report.md` 统一换算为 `ms/call`，
+  并在新增板块中给出公式和标准化 log。不得混用 Base Firmware banner 中的 ms/µs。
 
 失败阶段分类：
 
