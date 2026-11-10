@@ -1,3 +1,9 @@
+## [0.3.7](https://github.com/HeT-FTI/fcpp/compare/v0.3.6...v0.3.7) (2026-11-10)
+
+### Bug Fixes
+
+* remove the ms/ns skew that distorted matrix results ([e1c792f](https://github.com/HeT-FTI/fcpp/commit/e1c792f74f6cc4bb1e3f346327707a92a84fc73e))
+
 ## [0.3.6](https://github.com/HeT-FTI/fcpp/compare/v0.3.5+build...v0.3.6) (2026-11-09)
 
 ### Bug Fixes
