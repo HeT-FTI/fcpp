@@ -1,6 +1,6 @@
 # metadata.json Contract（契约：单一驱动源）
 
-> fcpp drives everything from `metadata.json`: CMake, main recipe, test_package and CI controller all read it. Before changing any field, confirm all consumers stay consistent. 修改任何字段前必须确认所有消费方行为一致。
+> This project drives everything from `metadata.json`: CMake, main recipe, test_package and CI controller all read it. Before changing any field, confirm all consumers stay consistent. 修改任何字段前必须确认所有消费方行为一致。
 
 ## Fields & Consumers（字段与消费方）
 
@@ -17,6 +17,17 @@
 | `is_shared` / `is_header` | CMake | shared forced to static on Windows |
 | `generate_modules_inplace` | recipe | auto-generate .ixx/.cppm modules |
 | `std_modules` / `user_modules` | recipe | import conversion |
+
+### Template vs project identity（模板身份 vs 项目身份）
+
+> `fcpp` is the **upstream template's own project name**. It may appear only in identity fields:
+> `metadata.json.name`/`url`, `package.json.name`, `.github/skills/manifest.json.project`, and the
+> `Based on:` provenance line in `.github/misc/Codegen-Starter.txt`.
+>
+> In a derived project, `metadata.json.name` is the single source of truth: rename it, then
+> `manifest.json.project` must follow (`skillkit validate --strict` fails otherwise). Any prose or
+> example a developer could copy verbatim must not carry the template name; `gates.py neutral`
+> reports those as defects.
 
 ### Dependency Contract（依赖契约，最关键）
 ```json
@@ -64,7 +75,26 @@
 | `saving_tests_log` | save test log |
 | `enable_python_bindings` | build pybind11 module |
 | `workflow_triggers.*` | CI master switches (build/tests/release/docs/security_scan/cross_compile); **all false = gitmoji triggers nothing**; on by default: build/tests/docs/security_scan/cross_compile (only `release` is off); `cross_compile` is not part of PR shift-left |
+| `workflow_triggers.on_board` | permission for the self-hosted board matrix; `:fire:` is the intent. Optional (absent = off), so a derived project upgrades without editing the schema. Only `main` reaches the orchestrator, so the board workflow needs no branch literal |
 | `baremetal_white_list` | baremetal cross-compile whitelist (default `["etl","ArduinoJson"]`); applied in both deps & requirements |
+
+### On-board selection（板端选择，可选）
+```json
+"on_board_validation": {
+  "os": ["Linux"],
+  "profile_arch": ["x86_64"],
+  "toolchain_version": ["11.3.rel1"]
+}
+```
+- `profile_arch` is the **physical CPU core** (`cortex-a53`), deliberately not Conan's
+  `settings.arch` (`armv8`): the arch family cannot tell a53/a55/a76 apart. Writing a family
+  value here is a configuration error.
+- `on_board_analyzer.py` maps the `os x profile_arch x toolchain_version` product onto target
+  ids and reconciles them with `.github/misc/supportable-board-matrix.yml`, the
+  **hardware-verified** gold standard. A combination no verified target covers is a warning when
+  something else matched, and an error when nothing did.
+- Board models, ABIs, FPUs, routes and remote paths never appear here; they stay in the platform
+  catalog and are injected at run time.
 
 ### Coverage Policy（覆盖率策略，可选）
 | Field（字段） | Purpose（作用） |

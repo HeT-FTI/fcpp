@@ -1,4 +1,4 @@
-# fcpp Private Gitmoji Trigger Superset — Cheat Sheet（私有 gitmoji 触发超集速查表）
+# Private Gitmoji Trigger Superset — Cheat Sheet（私有 gitmoji 触发超集速查表）
 
 > Fact source: emoji parsing in `.github/workflows/metadata-controller.yml`. All skills reference this table, never copy it. 所有技能引用本表，不复制。
 
@@ -12,7 +12,7 @@
 | Docs（文档） | `:book:` | push + `workflow_triggers.docs=true` | `workflow_triggers.docs` |
 | Quality/security（质量/安全） | `:shield:` | push with emoji, or **any PR** (shift-left) + `workflow_triggers.security_scan=true` | `workflow_triggers.security_scan` |
 | Online cross-compile（在线交叉编译验证） | `:hammer_and_wrench:` | push + `workflow_triggers.cross_compile=true` | `workflow_triggers.cross_compile` |
-| hetai cross-compile/board（上板） | `:fire:` (or `🔥`) | push（`hetai-package-matrix.yml` separate check） | self-hosted, no switch |
+| hetai cross-compile/board（上板） | `:fire:` (or `🔥`) | push on `main` + `workflow_triggers.on_board=true` → `ci-orchestrator` calls `hetai-package-matrix` | `workflow_triggers.on_board` |
 
 ## General Rules（通用规则）
 
