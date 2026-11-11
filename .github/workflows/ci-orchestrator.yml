@@ -131,6 +131,18 @@ jobs:
       - name: Validate metadata.json
         run: ./node_modules/.bin/ajv validate -s .github/misc/metadata.schema.json -d metadata.json --spec=draft7
 
+      - name: Install Python test dependencies
+        run: python3 -m pip install --user pyyaml
+
+      - name: Validate the board contract
+        run: |
+          python3 -m unittest discover -s .github/misc/tests -p 'test_*.py'
+
+      - name: Validate supportable-board-matrix.yml
+        run: |
+          python3 -c "import json,yaml; json.dump(yaml.safe_load(open('.github/misc/supportable-board-matrix.yml', encoding='utf-8')), open('/tmp/board.json','w',encoding='utf-8'))"
+          ./node_modules/.bin/ajv validate -s .github/misc/supportable-board-matrix.schema.json -d /tmp/board.json --spec=draft7
+
   # Step 2d: Validate the canonical Agent Skills tree and materialize the harness views
   skills-contract:
     name: Skills Contract
@@ -206,4 +218,17 @@ jobs:
     uses: ./.github/workflows/cross-compile.yml
     with:
       pkg_name: ${{ needs.controller.outputs.pkg_name }}
+
+  on-board:
+    name: On-board Matrix
+    needs: controller
+    # trigger_on_board already requires a push whose commits carry :fire: and
+    # workflow_triggers.on_board=true. Only main reaches this orchestrator, so a
+    # derived project never has to fork the board workflow to change that.
+    if: needs.controller.outputs.trigger_on_board == 'true'
+    permissions:
+      contents: read
+      actions: write
+    uses: ./.github/workflows/hetai-package-matrix.yml
+    secrets: inherit
 

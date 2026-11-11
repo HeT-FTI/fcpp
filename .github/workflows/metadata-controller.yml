@@ -45,6 +45,9 @@ on:
       trigger_cross_compile:
         description: 'Whether to trigger the online cross-compile workflow'
         value: ${{ jobs.analyze.outputs.trigger_cross_compile }}
+      trigger_on_board:
+        description: 'Whether to trigger the self-hosted board matrix (on_board + :fire:)'
+        value: ${{ jobs.analyze.outputs.trigger_on_board }}
       
       # Test configuration
       saving_tests_log:
@@ -73,6 +76,7 @@ jobs:
       trigger_docs: ${{ steps.compute_triggers.outputs.trigger_docs }}
       trigger_security: ${{ steps.compute_triggers.outputs.trigger_security }}
       trigger_cross_compile: ${{ steps.compute_triggers.outputs.trigger_cross_compile }}
+      trigger_on_board: ${{ steps.compute_triggers.outputs.trigger_on_board }}
       
       # Test configuration
       saving_tests_log: ${{ steps.read_metadata.outputs.saving_tests_log }}
@@ -106,6 +110,8 @@ jobs:
           done
           wf_build=${wf[build]}; wf_tests=${wf[tests]}; wf_release=${wf[release]}
           wf_docs=${wf[docs]}; wf_security=${wf[security]}; wf_cross=${wf[cross]}
+          # on_board is optional: a derived project can upgrade before deciding to run boards.
+          wf_on_board=$(jq -r '.workflow_triggers.on_board // false | tostring' metadata.json)
           
           # Output all values
           echo "pkg_name=$pkg_name" >> $GITHUB_OUTPUT
@@ -120,6 +126,7 @@ jobs:
           echo "wf_docs=$wf_docs" >> $GITHUB_OUTPUT
           echo "wf_security=$wf_security" >> $GITHUB_OUTPUT
           echo "wf_cross=$wf_cross" >> $GITHUB_OUTPUT
+          echo "wf_on_board=$wf_on_board" >> $GITHUB_OUTPUT
           
           # Log for debugging
           echo "📦 Package: $pkg_name v$version"
@@ -141,6 +148,7 @@ jobs:
           WF_DOCS: ${{ steps.read_metadata.outputs.wf_docs }}
           WF_SECURITY: ${{ steps.read_metadata.outputs.wf_security }}
           WF_CROSS: ${{ steps.read_metadata.outputs.wf_cross }}
+          WF_ON_BOARD: ${{ steps.read_metadata.outputs.wf_on_board }}
         run: |
           # Initialize trigger flags
           trigger_build="false"
@@ -149,6 +157,7 @@ jobs:
           trigger_docs="false"
           trigger_security="false"
           trigger_cross_compile="false"
+          trigger_on_board="false"
           
           # Check commit messages for emoji triggers
           has_build_emoji="false"
@@ -182,6 +191,11 @@ jobs:
             has_cross_emoji="true"
           fi
           
+          has_fire_emoji="false"
+          if echo "$COMMIT_MESSAGES" | grep -qE ':fire:|🔥'; then
+            has_fire_emoji="true"
+          fi
+
           # build: :building_construction: on push + workflow_triggers.build
           if [[ "$EVENT_NAME" == "push" && "$has_build_emoji" == "true" && "$WF_BUILD" == "true" ]]; then
             trigger_build="true"
@@ -219,6 +233,12 @@ jobs:
           if [[ "$EVENT_NAME" == "push" && "$has_cross_emoji" == "true" && "$WF_CROSS" == "true" ]]; then
             trigger_cross_compile="true"
           fi
+
+          # on board: :fire: on push + workflow_triggers.on_board (a switch is permission;
+          # the gitmoji is intent). main only: the orchestrator has no other branch trigger.
+          if [[ "$EVENT_NAME" == "push" && "$has_fire_emoji" == "true" && "$WF_ON_BOARD" == "true" ]]; then
+            trigger_on_board="true"
+          fi
           
           # Shift-left on pull_request: build/tests are required gates, no emoji needed
           if [[ "$EVENT_NAME" == "pull_request" ]]; then
@@ -237,6 +257,7 @@ jobs:
           echo "trigger_docs=$trigger_docs" >> $GITHUB_OUTPUT
           echo "trigger_security=$trigger_security" >> $GITHUB_OUTPUT
           echo "trigger_cross_compile=$trigger_cross_compile" >> $GITHUB_OUTPUT
+          echo "trigger_on_board=$trigger_on_board" >> $GITHUB_OUTPUT
           
           # Log trigger decisions
           echo "📋 Workflow Trigger Decisions:"

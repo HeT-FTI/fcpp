@@ -1,37 +1,29 @@
 name: hetai-package-matrix
 
+# Called by ci-orchestrator.yml once it has resolved workflow_triggers.on_board and the
+# :fire: gitmoji. workflow_dispatch is a diagnostic path, not a second switch.
 on:
+  workflow_call:
   workflow_dispatch:
     inputs:
       build_mode:
-        description: Build target selection mode
+        description: Diagnostic selection mode
         required: true
-        default: default
+        default: selection
         type: choice
         options:
-          - default
+          - selection
           - all
-          - selected
-      selected_targets_json:
-        description: JSON array for selected mode, e.g. ["linux-x86_64"] or [{"id":"linux-x86_64"}]
+          - ids
+      selected_ids:
+        description: Comma-separated target ids for build_mode=ids
         required: false
-        default: "[]"
+        default: ""
         type: string
-  push:
-    branches: [main, fcpp-dev]
-    paths:
-      - ".github/workflows/hetai-package-matrix.yml"
-      - ".hetai/build-matrix.yml"
-      - "CMakeLists.txt"
-      - "LICENSE"
-      - "conanfile.py"
-      - "conandata.yml"
-      - "metadata.json"
-      - "src/**"
-      - "include/**"
-      - "test_package/**"
-      - "benchmark/**"
 
+permissions:
+  contents: read
+  actions: write
 env:
   HETAI_PLAN_ROOT: /home/fcpp/WorkProject/Plan
   BUILD_REGISTRY_API_URL: ${{ vars.BUILD_REGISTRY_API_URL }}
@@ -40,47 +32,52 @@ env:
 
 jobs:
   prepare:
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && (
-        contains(github.event.head_commit.message, ':fire:') ||
-        contains(github.event.head_commit.message, '🔥')
-      ))
     runs-on: [self-hosted, Linux, X64, hetai, docker]
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v5
 
-      - name: Resolve build mode
-        id: mode
+      - name: Resolve the on-board selection
+        id: selection
         env:
-          INPUT_BUILD_MODE: ${{ github.event.inputs.build_mode }}
-          INPUT_SELECTED_TARGETS_JSON: ${{ github.event.inputs.selected_targets_json }}
+          BUILD_MODE: ${{ github.event.inputs.build_mode }}
+          SELECTED_IDS: ${{ github.event.inputs.selected_ids }}
         run: |
           set -euo pipefail
-          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
-            {
-              echo "mode=${INPUT_BUILD_MODE}"
-              echo "selected_targets_json<<__JSON__"
-              echo "${INPUT_SELECTED_TARGETS_JSON:-[]}"
-              echo "__JSON__"
-            } >> "$GITHUB_OUTPUT"
-          else
-            # Only :fire:/🔥 push runs enter this job, so they represent an
-            # explicit request for the complete configured board matrix.
-            echo "mode=all" >> "$GITHUB_OUTPUT"
-            echo 'selected_targets_json=[]' >> "$GITHUB_OUTPUT"
-          fi
+          mode="${BUILD_MODE:-selection}"
+          args=(
+            --metadata metadata.json
+            --supportable .github/misc/supportable-board-matrix.yml
+            --out "$RUNNER_TEMP/tmp-build-matrix.yml"
+            --report "$RUNNER_TEMP/on-board-resolution.json"
+            --annotations
+          )
+          case "$mode" in
+            selection) args+=(--mode selection) ;;
+            all)       args+=(--mode all) ;;
+            ids)       args+=(--mode ids --ids "$SELECTED_IDS") ;;
+            *) echo "ERROR: unsupported diagnostic build_mode $mode" >&2; exit 1 ;;
+          esac
+          python3 .github/misc/on_board_analyzer.py "${args[@]}"
+
+      - name: Upload the derived matrix
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: on-board-selection
+          path: |
+            ${{ runner.temp }}/tmp-build-matrix.yml
+            ${{ runner.temp }}/on-board-resolution.json
+          retention-days: 30
 
       - name: Expand matrix config
         id: matrix
         run: |
           set -euo pipefail
           python3 "$HETAI_PLAN_ROOT/templates/ci/expand_build_matrix.py" \
-            .hetai/build-matrix.yml \
-            --mode "${{ steps.mode.outputs.mode }}" \
-            --selected-targets-json '${{ steps.mode.outputs.selected_targets_json }}' \
+            "$RUNNER_TEMP/tmp-build-matrix.yml" \
+            --mode all \
             --target-catalog "$HETAI_PLAN_ROOT/ops/board/contracts/board_ci_target_catalog.json" \
             --format github-output >> "$GITHUB_OUTPUT"
 
@@ -158,11 +155,7 @@ jobs:
       - name: Prepare board transfer password helper
         if: >-
           success() &&
-          (
-            (github.event_name == 'push' &&
-             (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/fcpp-dev')) ||
-            (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/fcpp-dev')
-          ) &&
+          github.ref == 'refs/heads/main' &&
           vars.BOARD_TRANSFER_ENABLED == '1'
         env:
           BOARD_TRANSFER_SSH_PASSWORD: ${{ secrets.BOARD_TRANSFER_SSH_PASSWORD }}
@@ -184,11 +177,7 @@ jobs:
       - name: Transfer build bundle to benchmark debug server
         if: >-
           success() &&
-          (
-            (github.event_name == 'push' &&
-             (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/fcpp-dev')) ||
-            (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/fcpp-dev')
-          ) &&
+          github.ref == 'refs/heads/main' &&
           vars.BOARD_TRANSFER_ENABLED == '1'
         env:
           BOARD_CI_CONFIG: ${{ vars.BOARD_CI_CONFIG }}

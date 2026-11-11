@@ -44,12 +44,18 @@
   "trigger_tests": true,
   "saving_tests_log": true,
   "enable_python_bindings": false,
+  "on_board_validation": {
+    "os": ["Linux"],
+    "profile_arch": ["x86_64"],
+    "toolchain_version": ["11.3.rel1"]
+  },
   "workflow_triggers": {
     "build": true,
     "tests": true,
     "release": true,
     "docs": true,
     "security_scan": true,
-    "cross_compile": true
+    "cross_compile": true,
+    "on_board": true
   }
 }
