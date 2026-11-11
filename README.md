@@ -131,7 +131,7 @@ as a **soft rule** the emoji also triggers from anywhere in the message:
 | Docs | `:book:` | `workflow_triggers.docs` |
 | Security / lint | `:shield:` | `workflow_triggers.security_scan` (also runs on every PR) |
 | Online cross-compile | `:hammer_and_wrench:` | `workflow_triggers.cross_compile` (Conan cross-build from a generated profile; decoupled: the emoji starts only this one) |
-| Board cross-build | `:fire:` (or `🔥`) | `workflow_triggers.on_board` + the hardware-verified gold standard |
+| Board cross-build | `:fire:` | `workflow_triggers.on_board` + the hardware-verified gold standard |
 
 > **Note**: `workflow_triggers.build` / `.tests` / `.docs` / `.security_scan` / `.cross_compile` are
 > enabled by default (commit-lint & schema gates always run on push/PR; build/tests/security
