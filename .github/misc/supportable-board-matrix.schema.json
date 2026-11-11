@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/schemas/supportable-board-matrix.json",
+  "title": "Hardware-verified board matrix",
+  "description": "The set of self-hosted targets that a real run has proven. It is the gold standard that metadata.json's on_board_validation is reconciled against; it is never consumed by the platform expander directly (the analyzer derives tmp-build-matrix.yml from it).",
+  "type": "object",
+  "required": ["defaults", "targets", "verified"],
+  "additionalProperties": false,
+  "properties": {
+    "defaults": {
+      "type": "object",
+      "required": ["toolchain_version"],
+      "additionalProperties": false,
+      "properties": {
+        "toolchain_version": { "type": "string", "minLength": 1 },
+        "create_extra_args": { "type": "string" }
+      }
+    },
+    "targets": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/target" }
+    },
+    "verified": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Evidence citations, one per proving run. A historically true statement, not a live status.",
+      "items": { "$ref": "#/definitions/citation" }
+    }
+  },
+  "definitions": {
+    "target": {
+      "type": "object",
+      "required": ["id", "target_key", "build_kind", "os", "arch", "toolchain_versions", "benchmark"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "target_key": { "type": "string", "minLength": 1 },
+        "build_kind": { "type": "string", "enum": ["linux", "baremetal"] },
+        "os": { "type": "string", "enum": ["Linux", "baremetal"] },
+        "arch": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Conan settings.arch (the platform extends it with cortex-m* values)."
+        },
+        "toolchain_versions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "benchmark": { "$ref": "#/definitions/benchmark" }
+      }
+    },
+    "benchmark": {
+      "type": "object",
+      "required": ["enabled"],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "target_os": { "type": "string" },
+        "target_cpu": { "type": "string" },
+        "target_abi": { "type": "string" },
+        "profile_arch": {
+          "type": "string",
+          "description": "Conan arch family from the platform catalog. Not the CPU core used by on_board_validation."
+        },
+        "artifact_kind": { "type": "string" },
+        "toolchain_package": { "type": "string" },
+        "compiler_version": { "type": "string" },
+        "float_abi": { "type": "string" },
+        "fpu": { "type": "string" },
+        "extra_cflags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "config_rel": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*\\.\\.).*$"
+        },
+        "remote_path": { "type": "string" },
+        "deploy_tool": { "type": "string" },
+        "ssh_host": { "type": "string" },
+        "execution_route": { "type": "string" },
+        "route_id": { "type": "string" },
+        "route_note": { "type": "string" }
+      },
+      "if": {
+        "properties": { "enabled": { "const": true } },
+        "required": ["enabled"]
+      },
+      "then": {
+        "required": [
+          "target_os",
+          "target_cpu",
+          "target_abi",
+          "profile_arch",
+          "artifact_kind",
+          "config_rel",
+          "remote_path",
+          "deploy_tool",
+          "execution_route",
+          "route_id"
+        ]
+      }
+    },
+    "citation": {
+      "type": "object",
+      "required": ["repo", "run", "date", "targets", "scope"],
+      "additionalProperties": false,
+      "properties": {
+        "repo": { "type": "string", "minLength": 1 },
+        "run": { "type": "string", "pattern": "^[0-9]+$" },
+        "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "watcher": { "type": "string" },
+        "targets": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "scope": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}
