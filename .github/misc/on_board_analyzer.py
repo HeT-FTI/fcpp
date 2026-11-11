@@ -282,9 +282,10 @@ def _write_report(path: Path | None, report: dict) -> None:
     write_atomic(path, json.dumps(report, ensure_ascii=False, indent=2) + "\n")
 
 
-def _selection_report(selection: dict | None, resolved: list[dict], selected: dict, warnings: list[str]) -> dict:
+def _selection_report(selection: dict | None, ids: list[str] | None, resolved: list[dict], selected: dict, warnings: list[str]) -> dict:
     return {
         "selection": selection,
+        "ids": ids,
         "resolved": resolved,
         "selected_targets": list(selected),
         "warnings": warnings,
@@ -312,12 +313,13 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     report_path = Path(args.report) if args.report else None
+    selection: dict | None = None
+    ids_input: list[str] | None = None
     try:
         metadata = _load_json(Path(args.metadata))
         gold, by_id = load_gold(Path(args.supportable))
         ref = package_ref(metadata)
 
-        selection = None
         resolved: list[dict] = []
         warnings: list[str] = []
 
@@ -331,8 +333,10 @@ def main(argv: list[str] | None = None) -> int:
             selected, warnings, resolved = resolve(selection, by_id)
         elif args.mode == "all":
             selected = {target["id"]: list(target["toolchain_versions"]) for target in gold["targets"]}
+            ids_input = list(selected)
         else:
             requested = [item.strip() for item in args.ids.split(",") if item.strip()]
+            ids_input = requested
             unknown = [item for item in requested if item not in by_id]
             if unknown:
                 raise ResolutionError(f"ids not present in the gold standard: {', '.join(unknown)}")
@@ -347,7 +351,14 @@ def main(argv: list[str] | None = None) -> int:
             + ", ".join(selected),
             args.annotations,
         )
-        _write_report(report_path, {"mode": args.mode, "package_ref": ref, **_selection_report(selection, resolved, selected, warnings)})
+        _write_report(
+            report_path,
+            {
+                "mode": args.mode,
+                "package_ref": ref,
+                **_selection_report(selection, ids_input, resolved, selected, warnings),
+            },
+        )
         if args.dry_run:
             print(f"dry-run: would write {len(matrix['targets'])} target(s) for {ref}")
             return 0
@@ -357,11 +368,11 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     except UsageError as exc:
         _annotate("error", str(exc), args.annotations)
-        _write_report(report_path, {"mode": args.mode, "error": str(exc)})
+        _write_report(report_path, {"mode": args.mode, "error": str(exc), "selection": selection, "ids": ids_input})
         return 2
     except ResolutionError as exc:
         _annotate("error", str(exc), args.annotations)
-        _write_report(report_path, {"mode": args.mode, "error": str(exc)})
+        _write_report(report_path, {"mode": args.mode, "error": str(exc), "selection": selection, "ids": ids_input})
         return 1
 
 

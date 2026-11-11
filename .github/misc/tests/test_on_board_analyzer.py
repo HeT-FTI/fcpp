@@ -107,11 +107,14 @@ class SelectionTests(unittest.TestCase):
         self._tmp.cleanup()
 
     def test_t1_single_target(self):
-        code, out, _ = _run(self.tmp, _metadata(self.tmp, _selection(["Linux"], ["x86_64"], ["11.3.rel1"])))
+        code, out, report = _run(self.tmp, _metadata(self.tmp, _selection(["Linux"], ["x86_64"], ["11.3.rel1"])))
         self.assertEqual(code, 0)
         matrix = yaml.safe_load(out.read_text(encoding="utf-8"))
         self.assertEqual(matrix["package_ref"], "demo/1.2.3")
         self.assertEqual([target["id"] for target in matrix["targets"]], ["linux-x86_64"])
+        payload = json.loads(report.read_text(encoding="utf-8"))
+        self.assertEqual(payload["selection"], _selection(["Linux"], ["x86_64"], ["11.3.rel1"]))
+        self.assertIsNone(payload["ids"])
 
     def test_t2_two_m_cores(self):
         code, out, _ = _run(
@@ -191,14 +194,19 @@ class SelectionTests(unittest.TestCase):
         self.assertEqual(first.read_bytes(), second.read_bytes())
 
     def test_t14_all_mode_emits_every_target(self):
-        code, out, _ = _run(self.tmp, _metadata(self.tmp, None), "--mode", "all")
+        code, out, report = _run(self.tmp, _metadata(self.tmp, None), "--mode", "all")
         self.assertEqual(code, 0)
         matrix = yaml.safe_load(out.read_text(encoding="utf-8"))
         self.assertEqual(len(matrix["targets"]), 12)
+        payload = json.loads(report.read_text(encoding="utf-8"))
+        self.assertEqual(len(payload["ids"]), 12)
 
     def test_t15_ids_mode_rejects_unknown_ids(self):
-        code, _, _ = _run(self.tmp, _metadata(self.tmp, None), "--mode", "ids", "--ids", "linux-x86_64,nope")
+        code, _, report = _run(self.tmp, _metadata(self.tmp, None), "--mode", "ids", "--ids", "linux-x86_64,nope")
         self.assertEqual(code, 1)
+        payload = json.loads(report.read_text(encoding="utf-8"))
+        self.assertEqual(payload["ids"], ["linux-x86_64", "nope"])
+        self.assertIn("nope", payload["error"])
 
 
 if __name__ == "__main__":
