@@ -61,6 +61,12 @@ jobs:
           esac
           python3 .github/misc/on_board_analyzer.py "${args[@]}"
 
+      - name: Print the selected targets
+        run: |
+          set -euo pipefail
+          echo "on-board selected targets:"
+          jq -r '.selected_targets[] | "  - " + .' "$RUNNER_TEMP/on-board-resolution.json"
+
       - name: Upload the derived matrix
         if: always()
         uses: actions/upload-artifact@v6
