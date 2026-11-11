@@ -131,7 +131,7 @@ as a **soft rule** the emoji also triggers from anywhere in the message:
 | Docs | `:book:` | `workflow_triggers.docs` |
 | Security / lint | `:shield:` | `workflow_triggers.security_scan` (also runs on every PR) |
 | Online cross-compile | `:hammer_and_wrench:` | `workflow_triggers.cross_compile` (Conan cross-build from a generated profile; decoupled: the emoji starts only this one) |
-| Board cross-build | `:fire:` | `workflow_triggers.on_board` + the hardware-verified gold standard |
+| Board cross-build | `:fire:` | `workflow_triggers.on_board` + the hardware-verified gold standard; self-hosted runner |
 
 > **Note**: `workflow_triggers.build` / `.tests` / `.docs` / `.security_scan` / `.cross_compile` are
 > enabled by default (commit-lint & schema gates always run on push/PR; build/tests/security
@@ -141,27 +141,13 @@ as a **soft rule** the emoji also triggers from anywhere in the message:
 
 ### On-board target selection
 
-Board builds are selected from `metadata.json`; the repository holds no board catalogue:
-
 ```json
 "on_board_validation": {
   "os": ["Linux"],
-  "profile_arch": ["x86_64"],
+  "profile_arch": ["x86_64", "cortex-a53"],
   "toolchain_version": ["11.3.rel1"]
 }
 ```
-
-- `profile_arch` is the **physical CPU core** (`cortex-a53`), not Conan's `settings.arch`
-  (`armv8`) — the arch family cannot tell a53/a55/a76 apart.
-- `.github/misc/on_board_analyzer.py` resolves the `os × profile_arch × toolchain_version`
-  product to target ids and reconciles them with
-  `.github/misc/supportable-board-matrix.yml`, the **hardware-verified** gold standard
-  (each target carries a run/date citation).
-- The derived `tmp-build-matrix.yml` lives in `$RUNNER_TEMP`, is uploaded as an artifact for
-  audit, and is never committed. Board models, ABIs, FPUs and routes stay in the platform
-  catalog and are injected at run time.
-- A `:fire:` commit on `main` runs the matrix only when `workflow_triggers.on_board` is true;
-  `workflow_dispatch` (`build_mode=all|ids`) is the diagnostic path, not a second switch.
 
 ## Crash Course of Build
 
