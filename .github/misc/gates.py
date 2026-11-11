@@ -317,6 +317,177 @@ def cmd_guard(explicit):
     return 0
 
 
+BOARD_MATRIX = '.github/misc/supportable-board-matrix.yml'
+BOARD_REQUIRED = ('id', 'target_key', 'build_kind', 'os', 'arch', 'toolchain_versions', 'benchmark')
+
+# Phrases that a developer (or an agent) could copy verbatim into a derived project. The
+# bare template name is allowed in identity fields and in the metadata-contract note; the
+# phrases that would *teach* the wrong name are not.
+NEUTRAL_PATTERNS = (
+    r'for the fcpp template|fcpp template|fcpp drives|fcpp 模板|'
+    r'fcpp_c\b|fcpp_cpp\b|fcpp_vec_|fcpp import-guard|fcpp-convention|^# fcpp '
+)
+PATH_PATTERNS = r'/home/(zc|fcpp)'
+# Identity fields: the template's own name/URL, which every instance must change once.
+NEUTRAL_IDENTITY = {
+    'metadata.json', 'package.json', 'package-lock.json', 'README.md', 'CHANGELOG.md',
+    'NOTICE', 'LICENSE', '.github/skills/manifest.json',
+}
+# Files that are allowed to name the upstream project on a provenance line.
+NEUTRAL_PROVENANCE = {'.github/misc/Codegen-Starter.txt': 'Based on:'}
+# The gate itself spells the forbidden phrases; scanning it would always fail.
+NEUTRAL_SKIP = {'.github/misc/gates.py'}
+# Guidance that ships to derived projects. Library sources (include/, src/, benchmark/) keep
+# this template's own sample symbols; a derived project replaces them, so they are content,
+# not guidance (same distinction the scaffold ledger makes with its not_checked tier).
+NEUTRAL_SCOPE = ('.github/skills', '.github/misc/Codegen-Starter.txt', '.github/CONTRIBUTING.md')
+
+
+def cmd_board():
+    """Guard the gold standard, its citations, the mapping table and metadata's selection.
+
+    Catches the failure mode that made .hetai/build-matrix.yml a draft: a declaration that no
+    longer matches the thing it claims to describe.
+    """
+    try:
+        import yaml
+    except ImportError:
+        _die('PyYAML is required for the board gate: pip install pyyaml')
+    path = ROOT / BOARD_MATRIX
+    if not path.is_file():
+        _die(f'{BOARD_MATRIX} not found')
+    data = yaml.safe_load(path.read_text(encoding='utf-8'))
+    if not isinstance(data, dict):
+        _die(f'{BOARD_MATRIX}: root must be a mapping')
+    targets = data.get('targets')
+    if not isinstance(targets, list) or not targets:
+        _die(f'{BOARD_MATRIX}: targets must be a non-empty list')
+
+    problems = []
+    ids = []
+    for index, target in enumerate(targets):
+        if not isinstance(target, dict):
+            problems.append(f'targets[{index}] is not a mapping')
+            continue
+        missing = [key for key in BOARD_REQUIRED if key not in target]
+        if missing:
+            problems.append(f'targets[{index}] missing {", ".join(missing)}')
+            continue
+        target_id = target['id']
+        if target_id in ids:
+            problems.append(f'duplicate target id {target_id!r}')
+        ids.append(target_id)
+        for dead in ('default', 'enabled', 'package_ref'):
+            if dead in target:
+                problems.append(f'{target_id}: dead field {dead!r} must not be declared')
+        versions = target['toolchain_versions']
+        if not isinstance(versions, list) or not versions:
+            problems.append(f'{target_id}: toolchain_versions must be a non-empty list')
+        benchmark = target['benchmark']
+        if not isinstance(benchmark, dict) or not isinstance(benchmark.get('enabled'), bool):
+            problems.append(f'{target_id}: benchmark.enabled must be a boolean')
+        elif target['build_kind'] == 'linux' and str(benchmark.get('profile_arch', '')).startswith('cortex-'):
+            problems.append(f'{target_id}: benchmark.profile_arch must be a Conan arch family, not a core')
+
+    if 'linux-riscv64' in ids:
+        problems.append('linux-riscv64 is reserved and must not be in the gold standard')
+    if len(ids) != 12:
+        problems.append(f'expected 12 hardware-verified targets, found {len(ids)}')
+
+    verified = data.get('verified')
+    if not isinstance(verified, list) or not verified:
+        problems.append('verified must be a non-empty list of citations')
+        verified = []
+    cited = set()
+    for index, record in enumerate(verified):
+        if not isinstance(record, dict):
+            problems.append(f'verified[{index}] is not a mapping')
+            continue
+        for key in ('repo', 'run', 'date', 'targets', 'scope'):
+            if key not in record:
+                problems.append(f'verified[{index}] missing {key!r}')
+        record_ids = record.get('targets') or []
+        unknown = [item for item in record_ids if item not in ids]
+        if unknown:
+            problems.append(f'verified[{index}] cites unknown target(s): {", ".join(unknown)}')
+        cited.update(record_ids)
+    if set(ids) - cited:
+        problems.append('targets without a citation: ' + ', '.join(sorted(set(ids) - cited)))
+
+    sys.path.insert(0, str(ROOT / '.github/misc'))
+    try:
+        import on_board_analyzer
+    except ImportError as exc:
+        _die(f'cannot import on_board_analyzer: {exc}')
+    mapped = {entry['id'] for entry in on_board_analyzer.TARGET_MAP.values()}
+    siblings = {
+        item
+        for entry in on_board_analyzer.TARGET_MAP.values()
+        for item in entry.get('siblings', [])
+    }
+    if mapped - set(ids):
+        problems.append('mapping points outside the gold standard: ' + ', '.join(sorted(mapped - set(ids))))
+    if set(ids) - mapped - siblings:
+        problems.append(
+            'gold targets that are neither mapped nor declared as siblings: '
+            + ', '.join(sorted(set(ids) - mapped - siblings))
+        )
+
+    triggers = _meta('workflow_triggers') or {}
+    selection = _meta('on_board_validation')
+    if triggers.get('on_board') is True:
+        if selection is None:
+            problems.append('workflow_triggers.on_board=true requires on_board_validation')
+        else:
+            try:
+                on_board_analyzer.resolve(
+                    on_board_analyzer.validate_selection(selection),
+                    {target['id']: target for target in targets},
+                )
+            except (on_board_analyzer.UsageError, on_board_analyzer.ResolutionError) as exc:
+                problems.append(f'on_board_validation does not resolve: {exc}')
+
+    if problems:
+        for problem in problems:
+            print(f'[gates] board: {problem}', file=sys.stderr, flush=True)
+        print(f'[gates] board: FAIL ({len(problems)} problem(s))', flush=True)
+        return 1
+    print(f'[gates] board: OK ({len(ids)} targets, {len(verified)} citation(s))', flush=True)
+    return 0
+
+
+def _tracked_grep(pattern):
+    done = subprocess.run(
+        ['git', 'grep', '-n', '-I', '-E', pattern, '--', *NEUTRAL_SCOPE],
+        cwd=ROOT, capture_output=True, text=True,
+    )
+    if done.returncode not in (0, 1):
+        _die(f'git grep failed: {done.stderr.strip() or done.returncode}')
+    return [line for line in done.stdout.splitlines() if line]
+
+
+def cmd_neutral():
+    """Keep the template name out of anything a derived project would copy verbatim."""
+    violations = []
+    for line in _tracked_grep(NEUTRAL_PATTERNS) + _tracked_grep(PATH_PATTERNS):
+        rel, _, rest = line.partition(':')
+        lineno, _, content = rest.partition(':')
+        if rel in NEUTRAL_SKIP or rel in NEUTRAL_IDENTITY:
+            continue
+        for path, marker in NEUTRAL_PROVENANCE.items():
+            if rel == path and marker in content:
+                break
+        else:
+            violations.append(f'{rel}:{lineno}: {content.strip()}')
+    if violations:
+        for item in violations:
+            print(f'[gates] neutral: {item}', flush=True)
+        print(f'[gates] neutral: FAIL ({len(violations)} hit(s))', flush=True)
+        return 1
+    print('[gates] neutral: OK', flush=True)
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description='Native quality gates (one implementation, three callers).')
     sub = parser.add_subparsers(dest='gate', required=True)
@@ -324,6 +495,8 @@ def main():
         'format': 'clang-format --dry-run --Werror over include/ + src/',
         'tidy': 'clang-tidy (WarningsAsErrors) over src/ TUs; header-only: one synthetic TU per header',
         'guard': 'forbidden #include directives, scoped rules from .github/misc/.include-guard.txt',
+        'board': 'gold-standard, mapping and on_board_validation consistency',
+        'neutral': 'template-name leakage and machine-path checks over tracked files',
         'all': 'format + tidy + guard',
     }
     for name, text in helps.items():
@@ -343,6 +516,10 @@ def main():
         return cmd_tidy(args.files, args.include, args.isystem)
     if args.gate == 'guard':
         return cmd_guard(args.files)
+    if args.gate == 'board':
+        return cmd_board()
+    if args.gate == 'neutral':
+        return cmd_neutral()
     return 1 if (cmd_format([]) or cmd_tidy([]) or cmd_guard([])) else 0
 
 
