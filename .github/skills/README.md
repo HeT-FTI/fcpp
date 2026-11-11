@@ -1,4 +1,4 @@
-# fcpp Skills System（技能体系）
+# Skills System（技能体系）
 
 > 15 task skills + 1 routing agent, all under the canonical `.github/skills/` tree. DSH, Cursor,
 > Gemini CLI and Copilot (VS 2026) read the default `.agents/skills` view; Claude Code and Codex are

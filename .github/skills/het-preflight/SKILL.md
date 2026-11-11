@@ -1,6 +1,6 @@
 ---
 name: het-preflight
-description: 'Pre-release gate for the fcpp template (quality, tests/coverage, docs, audit, version). Use when: pre-release check / release gate / can we release / run before release. 发版前检查门：质量、测试覆盖率、文档、审计、版本号全流程门禁。'
+description: 'Pre-release gate for this template (quality, tests/coverage, docs, audit, version). Use when: pre-release check / release gate / can we release / run before release. 发版前检查门：质量、测试覆盖率、文档、审计、版本号全流程门禁。'
 license: Apache-2.0
 argument-hint: "Target version (optional) / 目标版本（可选）"
 user-invocable: true

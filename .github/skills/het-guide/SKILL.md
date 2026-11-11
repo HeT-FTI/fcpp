@@ -1,6 +1,6 @@
 ---
 name: het-guide
-description: 'Onboarding & routing entry for the fcpp template. Use when: new users ask what this project can do automatically, where to start, how CI triggers work, or which skill to use. 新手导航/入口：项目能自动做什么、从哪开始、CI 怎么触发、该用哪个技能。'
+description: 'Onboarding & routing entry for this template. Use when: new users ask what this project can do automatically, where to start, how CI triggers work, or which skill to use. 新手导航/入口：项目能自动做什么、从哪开始、CI 怎么触发、该用哪个技能。'
 argument-hint: "Tell me what you want to do / 告诉我你想做什么"
 user-invocable: true
 license: Apache-2.0

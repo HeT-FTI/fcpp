@@ -1,6 +1,6 @@
 ---
 name: het-patent
-description: 'Patent mining & disclosure drafting for the fcpp template. Use when: mine patentable points, draft patent disclosures (专利交底书), analyze codebase for IP, create patent documents from code. 专利挖掘：从代码库挖掘可专利创新点并生成标准格式交底书（背景/方案/替代/保护点）。'
+description: 'Patent mining & disclosure drafting for this template. Use when: mine patentable points, draft patent disclosures (专利交底书), analyze codebase for IP, create patent documents from code. 专利挖掘：从代码库挖掘可专利创新点并生成标准格式交底书（背景/方案/替代/保护点）。'
 license: Apache-2.0
 argument-hint: '[project scope, e.g., "src/" or "整个项目" / 分析范围]'
 user-invocable: true
@@ -8,7 +8,7 @@ user-invocable: true
 
 # N8 · het-patent — Patent Mining & Disclosure Drafting（专利挖掘与交底书撰写）
 
-> For developers. Ported from HeT-AI `het-patent` and refactored for the fcpp template: same mining methodology, fcpp-convention frontmatter, drafts land in `workspace/patents/`（git 忽略，不污染源码树）。
+> For developers. Ported from HeT-AI `het-patent` and refactored for this template: same mining methodology, template-convention frontmatter, drafts land in `workspace/patents/`（git 忽略，不污染源码树）。
 
 ## What This Skill Produces
 
@@ -85,7 +85,7 @@ Every software project controls some set of **constrained resources** and traver
 
 *If the project spans multiple domains, run the decomposition for each domain independently.*
 
-> **fcpp 模板适用域提示**: 本模板是 C/C++ 系统级库，按模块套用域表——`etl`（嵌入式模板库）→ Domain E；`net` → Domain C；`cpptest`/`ctest`/`doctest`（测试框架）→ Domain A；`api/python_bindings` → Domain A/C。数值/算法密集处再补 Domain D。
+> **模板适用域提示**: 本模板是 C/C++ 系统级库，按模块套用域表——`etl`（嵌入式模板库）→ Domain E；`net` → Domain C；`cpptest`/`ctest`/`doctest`（测试框架）→ Domain A；`api/python_bindings` → Domain A/C。数值/算法密集处再补 Domain D。
 
 **Step 2 — For each layer where a non-trivial solution exists:**
 1. State the **generic technical contradiction** (not tied to the project's specific domain)

@@ -23,7 +23,7 @@ else:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="skillkit",
-        description="Validate and materialize the fcpp Agent Skills tree for multiple harnesses.",
+        description="Validate and materialize the project Agent Skills tree for multiple harnesses.",
     )
     parser.add_argument(
         "--root",

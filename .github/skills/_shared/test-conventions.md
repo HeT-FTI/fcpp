@@ -1,4 +1,4 @@
-# fcpp Testing Conventions（测试体系规范）
+# Testing Conventions（测试体系规范）
 
 > Fact source: `test_package/conanfile.py`, `test_package/CMakeLists.txt`, `metadata.json` switches.
 
@@ -8,7 +8,7 @@
 |------|------|------|------|
 | **test_package** | **host（桌面/x86_64）** | GTest full verification: smoke main.cpp + unit + stress + lcov coverage | GTest **always** |
 | **benchmark/** | **target（板卡）** | cross-compile + on-board performance verification | target-side deps (etl...), **never GTest** |
-| main package fcpp | target side | the library itself | no test deps |
+| main package `<name>` | target side | the library itself | no test deps |
 
 > Key: even when the library is cross-compiled to baremetal, test_package still runs host-side GTest (use `-tf=""` to skip it in cross builds). 即使交叉编译到裸机，test_package 仍是 host 侧桌面 GTest。
 

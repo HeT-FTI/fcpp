@@ -1,6 +1,6 @@
 ---
 name: het-setup
-description: 'Environment setup & first build for the fcpp template (conan/cmake/doxygen/sphinx/arm-toolchain). Use when: environment setup / install conan / first build / prerequisites / how to start. 环境搭建/首次构建：装工具链并完成首次构建与文档生成。'
+description: 'Environment setup & first build for this template (conan/cmake/doxygen/sphinx/arm-toolchain). Use when: environment setup / install conan / first build / prerequisites / how to start. 环境搭建/首次构建：装工具链并完成首次构建与文档生成。'
 license: Apache-2.0
 argument-hint: "Target platform: desktop/cross (optional) / 目标平台（桌面/交叉）（可选）"
 user-invocable: true
@@ -42,7 +42,7 @@ Docs tools (optional, Linux): `sudo apt install -y doxygen graphviz && pip insta
 ```bash
 conan create . -s build_type=Debug --build=missing
 ```
-> Builds fcpp_c/fcpp_cpp → runs test_package smoke test → packages into local cache. Success shows `CPP Compiler is ready!`. 构建库 + 跑冒烟测试 + 打包。
+> Builds `<name>_c`/`<name>_cpp` → runs test_package smoke test → packages into local cache. Success shows `CPP Compiler is ready!`. 构建库 + 跑冒烟测试 + 打包。
 
 ## Local Docs（本地出文档，可选）
 

@@ -1,6 +1,6 @@
 ---
 name: het-quality
-description: 'Quality & security gates for the fcpp template (native clang-format/clang-tidy/include-guard/gitleaks gates + a blocking MegaLinter SAST layer). Use when: code fails format/tidy/guard check/security scan, or quality CI is red. 质量/安全门禁：原生 gate 必过（WarningsAsErrors），MegaLinter SAST 同样拦提交。'
+description: 'Quality & security gates for this template (native clang-format/clang-tidy/include-guard/gitleaks gates + a blocking MegaLinter SAST layer). Use when: code fails format/tidy/guard check/security scan, or quality CI is red. 质量/安全门禁：原生 gate 必过（WarningsAsErrors），MegaLinter SAST 同样拦提交。'
 license: Apache-2.0
 argument-hint: "Scope (optional) / 检查范围（可选）"
 user-invocable: true

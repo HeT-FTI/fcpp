@@ -1,6 +1,6 @@
 ---
 name: het-audit
-description: 'Repository audit for the fcpp template (engineering standards + functional review vs plan/tests). Use when: audit / review / check template conformance / compare plan vs implementation. 仓库审计：按模板工程标准与功能标准输出差距报告。可用 /project-audit。'
+description: 'Repository audit for this template (engineering standards + functional review vs plan/tests). Use when: audit / review / check template conformance / compare plan vs implementation. 仓库审计：按模板工程标准与功能标准输出差距报告。可用 /project-audit。'
 license: Apache-2.0
 argument-hint: "Audit scope (optional) / 审计范围（可选）"
 user-invocable: true
@@ -8,7 +8,7 @@ user-invocable: true
 
 # N6 · het-audit — Repository Audit（仓库审计 /project-audit）
 
-> For developers. Audits against the fcpp template's private standards; read-only by default. 以模板私有标准为基准，默认只读。
+> For developers. Audits against this template's private standards; read-only by default. 以模板私有标准为基准，默认只读。
 
 ## Two Audit Axes（两个审计轴）
 

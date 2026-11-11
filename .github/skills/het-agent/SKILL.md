@@ -1,6 +1,6 @@
 ---
 name: het-agent
-description: 'Autonomous routing agent for the fcpp template. Use when: a natural-language composite task spans multiple skills (e.g. "add etl tests and commit", "audit and fix", "test then release"). A1 是技能体系唯一路由主体：意图识别、技能组合、护栏与汇报。'
+description: 'Autonomous routing agent for this template. Use when: a natural-language composite task spans multiple skills (e.g. "add etl tests and commit", "audit and fix", "test then release"). A1 是技能体系唯一路由主体：意图识别、技能组合、护栏与汇报。'
 argument-hint: "Describe your composite task in natural language / 用自然语言描述综合任务"
 user-invocable: true
 license: Apache-2.0

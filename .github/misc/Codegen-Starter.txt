@@ -4,7 +4,7 @@
 ================================================================================
 
 Use this prompt with GitHub Copilot agent (or any code-gen agent) to scaffold a
-new Conan 2 C/C++ library project from the HeT-FTI/fcpp template. Fill in the
+new Conan 2 C/C++ library project from this template. Fill in the
 [FILL] placeholders, then feed the entire file to the agent.
 
 ────────────────────────────────────────────────────────────────────────────────
@@ -51,7 +51,7 @@ Example:
   - types.hpp    → Shared enum/struct definitions]
 
 Source files (src/*.c and src/*.cpp) to generate:
-[FILL — List implementation files that pair with headers above. The fcpp
+[FILL — List implementation files that pair with headers above. This
 convention is one source per header (pairwise assumption).
 Example:
   - codec.c      → implements codec.h
@@ -106,7 +106,7 @@ errors in CI (fail-loud by design). See het-deps for full dependency governance.
 SECTION 4 — EDITABLE FILES & AGENT INSTRUCTIONS
 ────────────────────────────────────────────────────────────────────────────────
 
-The following files in the fcpp template are user-editable. The agent MUST
+The following files in this template are user-editable. The agent MUST
 generate/modify each one according to the project design above.
 
 4.1  metadata.json  (project-level configuration hub)
@@ -157,7 +157,7 @@ generate/modify each one according to the project design above.
 4.3  include/*.h and include/*.hpp  (public headers)
      ──────────────────────────────
      • Create all header files listed in Section 2.
-     • Every header MUST use the fcpp import-guard convention:
+     • Every header MUST use the import-guard convention:
          // Conan::ImportStart
          #pragma once
          #include <...>
@@ -180,7 +180,7 @@ generate/modify each one according to the project design above.
 4.4  src/*.c and src/*.cpp  (implementations)
      ─────────────────────
      • Create all source files listed in Section 2.
-     • Every source file MUST use the fcpp import-guard convention:
+     • Every source file MUST use the import-guard convention:
          // Conan::ImportStart
          #include "myheader.hpp"
          #include <third_party.h>
@@ -271,7 +271,7 @@ generate/modify each one according to the project design above.
 SECTION 5 — DOCUMENTATION SYSTEM
 ────────────────────────────────────────────────────────────────────────────────
 
-The fcpp template has a dual Doxygen + Sphinx documentation pipeline invoked
+This template has a dual Doxygen + Sphinx documentation pipeline invoked
 via `python ./docs/build.py`. The agent must generate:
 
 5.1  Doxygen docstrings  (inline in headers + sources, see 4.3 / 4.4)
@@ -450,7 +450,7 @@ SECTION 6 — OTHER FILES FOR PROJECT COMPLETENESS
        tree, license section. Follow the existing template's README style.
 
 6.2  LICENSE and NOTICE
-     • DO NOT MODIFY. These files are inherited from the HeT-FTI/fcpp template
+     • DO NOT MODIFY. These files are inherited from the upstream template
        and are governed by the organization's legal terms.
      • LICENSE: Apache License 2.0 — must remain as-is.
      • NOTICE: Contains copyright and CC BY-NC 4.0 documentation license
