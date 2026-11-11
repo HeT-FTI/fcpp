@@ -45,7 +45,7 @@ Order by dependency: analysis → implementation → tests → build → docs �
 
 | Phrase（说法） | Means（含义） | Where（去向） |
 |---|---|---|
-| 全量 / 全量测试 / 走一遍全量 / full sweep | every online pipeline except release (build + tests + docs + security + cross-compile) | commit form in `_shared/gitmoji.md`; if red → `het-fix-ci` |
+| 全量 / 全量测试 / 走一遍全量 / full sweep | every general pipeline (build + tests + docs + security); release, cross-compile and the board route are explicit requests | commit form in `_shared/gitmoji.md`; if red → `het-fix-ci` |
 | 只构建 / build only | the build pipeline alone | `het-build` (S1) |
 | 发版 / release / 打 tag | semantic-release, needs `(:package:):` | `het-release` (S2) |
 | 上板 / board / 烧录 | the self-hosted `:fire:` route | `het-board` (S5) |

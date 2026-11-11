@@ -53,7 +53,7 @@ One push can ask for more than one pipeline: the controller greps **every** comm
 
     feat(:building_construction:): add a C11 _Generic exercise to the C line
 
-    Requests the full sweep too: :beer: :book: :shield: :hammer_and_wrench:
+    Requests the full sweep too: :beer: :book: :shield:
 
 ## Type → Emoji Map（触发对应 CI）
 
@@ -65,7 +65,7 @@ One push can ask for more than one pipeline: the controller greps **every** comm
 | Test cases | test | `:beer:` (tests) |
 | Docs/comments | docs | `:book:` (docs) |
 | CI/infra | ci | `:shield:` (security scan) |
-| Board/baremetal | feat/fix | `:fire:` (board build) |
+| Board/baremetal | feat/fix | `:fire:` (self-hosted board matrix; not part of a sweep) |
 
 > Rule: test→`:beer:`, docs→`:book:`, build-related→`:building_construction:` — one message, two channels. 一石二鸟。
 

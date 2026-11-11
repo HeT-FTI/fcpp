@@ -36,22 +36,22 @@
 
 ## Full Sweep（全量 / 全量测试）
 
-"全量" / "全量测试" / "走一遍全量" = **every online pipeline except auto-release**: build + tests + docs + security + cross-compile. It never drags in `:package:` (release) or `:fire:` (the self-hosted board route). 全量 = 除自动发版与上板外的全部在线流水线。
+"全量" / "全量测试" / "走一遍全量" = **every general online pipeline**: build + tests + docs + security. It never drags in `:package:` (release), `:hammer_and_wrench:` (online cross-compile) or `:fire:` (the self-hosted board route) — those are explicit, specialised requests. 全量 = build + tests + docs + security 四路；发版、在线交叉编译与上板都不在内。
 
 Triggers are grep-matched across **every** commit message in the push, so one push can request several pipelines at once. For a sweep, keep the emoji that fits the change in the parentheses and list the rest on a body line:
 
     feat(:building_construction:): add a C11 _Generic exercise to the C line
 
-    Requests the full sweep too: :beer: :book: :shield: :hammer_and_wrench:
+    Requests the full sweep too: :beer: :book: :shield:
 
 This is the only sanctioned use of emojis inside a body. 主 emoji 放括号、其余写正文，是正文里唯一允许出现 emoji 的场合。
 
-若括号里放的是**无触发** emoji（如 `:wrench:`），正文列表必须补上 `:building_construction:` —— 全量集合恰好是这五个：
+若括号里放的是**无触发** emoji（如 `:wrench:`），正文列表必须补上 `:building_construction:` —— 全量集合恰好是这四个：
 
-    :building_construction: :beer: :book: :shield: :hammer_and_wrench:
+    :building_construction: :beer: :book: :shield:
 
 If the parenthesised emoji triggers nothing, the body list must carry `:building_construction:` too; those
-five emojis *are* the sweep set. 括号里是触发 emoji 时它顶替 `:building_construction:`；否则正文要补齐。
+four emojis *are* the sweep set. 括号里是触发 emoji 时它顶替 `:building_construction:`；否则正文要补齐。
 
 ## Conventional Type → Emoji Map（类型 → emoji 映射，`het-commit` N5 使用）
 
