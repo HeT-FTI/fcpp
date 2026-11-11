@@ -131,8 +131,14 @@ jobs:
       - name: Validate metadata.json
         run: ./node_modules/.bin/ajv validate -s .github/misc/metadata.schema.json -d metadata.json --spec=draft7
 
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
       - name: Install Python test dependencies
-        run: python3 -m pip install --user pyyaml
+        run: |
+          python3 -m pip install --only-binary :all: pyyaml==6.0.2
 
       - name: Validate the board contract
         run: |
