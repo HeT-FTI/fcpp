@@ -142,7 +142,7 @@ jobs:
 
       - name: Validate the board contract
         run: |
-          python3 -m unittest discover -s .github/misc/tests -p 'test_*.py'
+          python3 -m unittest discover -s .github/misc -p 'test_*.py'
           python3 .github/misc/gates.py board
           python3 .github/misc/gates.py neutral
 

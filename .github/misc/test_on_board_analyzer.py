@@ -16,7 +16,7 @@ from pathlib import Path
 
 import yaml
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / ".github" / "misc"))
 
 import on_board_analyzer as analyzer  # noqa: E402
