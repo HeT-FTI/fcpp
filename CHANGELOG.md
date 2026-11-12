@@ -1,3 +1,11 @@
+## [0.3.8](https://github.com/HeT-FTI/fcpp/compare/v0.3.7...v0.3.8) (2026-11-12)
+
+### Bug Fixes
+
+* derive the board matrix from metadata ([ac3cdfb](https://github.com/HeT-FTI/fcpp/commit/ac3cdfbd28d841749a9baaa83f183028de0d0f4f))
+* finish the metadata-driven board contract ([1945abc](https://github.com/HeT-FTI/fcpp/commit/1945abc9fdf75167674f03c97b66443559250a30)), closes [#41](https://github.com/HeT-FTI/fcpp/issues/41)
+* keep Python and YAML comments to one line ([1108b9c](https://github.com/HeT-FTI/fcpp/commit/1108b9ce0d797757e3fb032b1e70c8e43f629f6c))
+
 ## [0.3.7](https://github.com/HeT-FTI/fcpp/compare/v0.3.6...v0.3.7) (2026-11-10)
 
 ### Bug Fixes
