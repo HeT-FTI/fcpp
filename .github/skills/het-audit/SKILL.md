@@ -17,6 +17,8 @@ user-invocable: true
 | Check（检查项） | Baseline（基准） | Verdict |
 |------|------|------|
 | metadata.json consistency | single source of truth, all consumers agree | pass/violate |
+| board contract | gold-standard citations, mapping and `on_board_validation` resolve | pass/violate |
+| comment shape | one line per comment/docstring in `.py`/`.yml`; C/C++ Doxygen exempt | pass/violate |
 | 4-bucket dep semantics | GTest only in test_package; pybind11 gated; one package per bucket | pass/violate |
 | baremetal_white_list | deps & requirements filter consistently, lowercase-normalized | pass/violate |
 | module annotations | `@exporter`/`@attacher`, ImportStart/End markers | present/missing |

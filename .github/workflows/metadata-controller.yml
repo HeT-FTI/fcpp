@@ -134,7 +134,7 @@ jobs:
           echo "🧪 Trigger Tests: $trigger_tests"
           echo "📝 Saving Test Logs: $saving_tests_log"
           echo "📊 Code Coverage: $activate_code_coverage"
-          echo "🎛️  Workflow Toggles: build=$wf_build tests=$wf_tests release=$wf_release docs=$wf_docs security=$wf_security cross=$wf_cross"
+          echo "🎛️  Workflow Toggles: build=$wf_build tests=$wf_tests release=$wf_release docs=$wf_docs security=$wf_security cross=$wf_cross board=$wf_on_board"
 
       - name: Compute workflow triggers
         id: compute_triggers
@@ -192,7 +192,7 @@ jobs:
           fi
           
           has_fire_emoji="false"
-          if echo "$COMMIT_MESSAGES" | grep -qE ':fire:|🔥'; then
+          if echo "$COMMIT_MESSAGES" | grep -q ':fire:'; then
             has_fire_emoji="true"
           fi
 
@@ -201,8 +201,7 @@ jobs:
             trigger_build="true"
           fi
           
-          # tests: :beer: on push + trigger_tests + workflow_triggers.tests
-          # (deliberately NOT gated on build_type: a switch grants permission, a state must not)
+          # tests: `:beer:` on push + trigger_tests + workflow_triggers.tests; not gated on build_type, because a switch grants permission and a state must not.
           if [[ "$EVENT_NAME" == "push" && "$has_test_emoji" == "true" && "$TRIGGER_TESTS_FLAG" == "true" && "$WF_TESTS" == "true" ]]; then
             trigger_tests="true"
           fi
@@ -227,15 +226,12 @@ jobs:
             fi
           fi
 
-          # cross compile: :hammer_and_wrench: on push + workflow_triggers.cross_compile
-          # Deliberately absent from the shift-left block below -- this pipeline is
-          # decoupled, so only its own emoji starts it.
+          # cross compile: `:hammer_and_wrench:` on push + workflow_triggers.cross_compile; absent from the shift-left block because this pipeline is decoupled.
           if [[ "$EVENT_NAME" == "push" && "$has_cross_emoji" == "true" && "$WF_CROSS" == "true" ]]; then
             trigger_cross_compile="true"
           fi
 
-          # on board: :fire: on push + workflow_triggers.on_board (a switch is permission;
-          # the gitmoji is intent). main only: the orchestrator has no other branch trigger.
+          # on board: `:fire:` on push + workflow_triggers.on_board (switch + intent), main only because the orchestrator has no other branch trigger.
           if [[ "$EVENT_NAME" == "push" && "$has_fire_emoji" == "true" && "$WF_ON_BOARD" == "true" ]]; then
             trigger_on_board="true"
           fi

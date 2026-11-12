@@ -48,12 +48,12 @@ Results saved to `benchmark/results/<mcu>.json`.
   Conan** using a generated profile (README's `conan create . -pr:h=<profile> -tf=` flow) for aarch64
   cortex-a53 and cortex-m4 baremetal, then reports the packaged archives' Class/Machine.
   在线冒烟：走 conan profile 真正编译库本身，只验产物架构，不需要板子，不碰 `:fire:`。
-- Commit `fix(:fire:): ...` (or `🔥`) on `main` → `ci-orchestrator` sees `workflow_triggers.on_board`
+- Commit `ci(:fire:): ...` on `main` → `ci-orchestrator` sees `workflow_triggers.on_board`
   and calls `hetai-package-matrix`, which resolves `on_board_validation` against the hardware-verified
   gold standard. Board models, ABIs and routes come from the platform catalog, never from this repo.
   上板入口只有一个：`:fire:` + `on_board`，由 orchestrator 裁决。
-- Manual diagnostics: `workflow_dispatch` with `build_mode=all` or `ids` (never a second switch).
-  诊断入口：dispatch 的 `all` / `ids`，不是第二套开关。
+- Manual diagnostics: `workflow_dispatch` with `build_mode=selection|all|ids` (default `selection`; never a second switch).
+  诊断入口：dispatch 的 `selection` / `all` / `ids`，不是第二套开关。
 - Needs a **self-hosted runner** + hetai platform scripts (not GitHub-hosted).
   需要自托管 runner + hetai 平台。
 

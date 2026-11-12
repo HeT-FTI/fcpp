@@ -35,7 +35,7 @@ license: Apache-2.0
 
 ## Available Skills（可用技能范围）
 
-- **Template built-in（模板内置）**: all `het-*` skills registered in `manifest.json`.
+- **Template built-in（模板内置）**: all task skills in `manifest.skills`; the router itself is `manifest.agent`.
 - **Public accessible（公开白名单）**: environment-provided generic skills in `manifest.agent.public_skill_whitelist` (e.g. `project-setup-info-local`).
 - Outside the whitelist: not called unless explicitly requested. 白名单外默认不调用。
 

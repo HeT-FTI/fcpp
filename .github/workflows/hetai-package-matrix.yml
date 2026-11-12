@@ -1,7 +1,6 @@
 name: hetai-package-matrix
 
-# Called by ci-orchestrator.yml once it has resolved workflow_triggers.on_board and the
-# :fire: gitmoji. workflow_dispatch is a diagnostic path, not a second switch.
+# Called by ci-orchestrator.yml once on_board and the :fire: gitmoji are resolved; workflow_dispatch is a diagnostic path, not a second switch.
 on:
   workflow_call:
   workflow_dispatch:

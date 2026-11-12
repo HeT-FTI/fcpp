@@ -1,24 +1,10 @@
 name: Template Bootstrap
 
-# Runs on the single push that GitHub creates when a repository is instantiated
-# from this template.  Every other pipeline skips that push (see the
-# `commits[0].message != 'Initial commit'` guards in ci-orchestrator.yml and
-# semver-release.yml), which makes this workflow the one safe place to prepare a
-# fresh instance.
-#
-# Why it commits `.agents/skills` as a *copy*: DSH, Cursor, Gemini CLI and
-# Copilot (VS 2026) only discover skills under `.agents/skills`, and a plain
-# `git clone` of this template cannot contain one -- the canonical body lives in
-# `.github/skills`, and a committed symlink checks out as a plain text file on
-# Windows (``core.symlinks`` is off by default).  A byte-identical mirror makes a
-# fresh instance work with zero setup; `skillkit validate` rejects any mirror
-# that has drifted, so the body is still edited in exactly one place.
-#
-# It also drops `CHANGELOG.md`: "Use this template" copies this repository's own
-# release history, whose entries link to this repository's commits and tags, and
-# that history belongs here rather than to a new project.  semantic-release
-# recreates the file on the instance's first release with its own URLs (see
-# `.github/misc/.releaserc.json`).
+# Runs on the single `Initial commit` push GitHub creates from this template, which every other pipeline skips.
+
+# Commits `.agents/skills` as a byte-identical copy because a fresh clone cannot contain a symlink and Windows checks one out as text; skillkit validate rejects drift.
+
+# Drops `CHANGELOG.md`: the template's release history links to this repository, and semantic-release recreates it on the instance's first release.
 on:
   push:
     branches:

@@ -12,26 +12,11 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-# The gate bodies used to be copy-pasted into the workflow, the pre-commit config and
-# .vscode/tasks.json, and the copies drifted (the editor one dropped the eigen/ETL
-# include paths and pinned -std=c++17 by hand). One implementation, three callers:
-#   CI          .github/workflows/security-linters.yml
-#   pre-commit  .github/misc/.pre-commit-config.yaml
-#   VS Code     .vscode/tasks.json
-# Values the user can edit in metadata.json must never be re-typed here, so the C/C++
-# standards are read from metadata.json instead of being hardcoded.
-# Usage:
-#   python3 .github/misc/gates.py format [FILE ...]   # clang-format --dry-run --Werror
-#   python3 .github/misc/gates.py tidy   [FILE ...]   # clang-tidy (WarningsAsErrors)
-#   python3 .github/misc/gates.py guard  [FILE ...]   # forbidden #include, rules in .include-guard.txt
-#   python3 .github/misc/gates.py all
-# format covers include/ + src/. tidy covers src/ translation units; when metadata says
-# is_header (or src/ holds no TU) it instead synthesizes one TU per public header, which
-# also proves each header is self-contained. Otherwise a header-only package would have
-# nothing to check and the gate would pass vacuously.
-# tidy include roots: -Iinclude, then EIGEN_INC (default /usr/include/eigen3), then
-# GATES_INCLUDE (os.pathsep-separated) and -isystem $ETL_INC.
-# Exit codes: 0 clean, 1 gate failed, 2 setup/usage error.
+# One gate implementation for CI, pre-commit and the editor; standards and switches come from metadata.json.
+
+# Usage: gates.py {format|tidy|guard|board|neutral|all} [FILE ...]; exit 0 clean, 1 failed, 2 setup.
+
+# tidy roots: -Iinclude, EIGEN_INC, GATES_INCLUDE, -isystem $ETL_INC; header-only packages get one synthetic TU per header.
 
 ROOT = Path(__file__).resolve().parents[2]
 GATE_DIRS = ('include', 'src')
@@ -293,9 +278,7 @@ def _include_directives(path):
 
 
 def cmd_guard(explicit):
-    """Layering guard: a scope may not include something its rules forbid (e.g. core must stay
-    hardware-agnostic). Rules live in .github/misc/.include-guard.txt, one per line, so a derived
-    project states its own layering instead of editing this file."""
+    """Reject forbidden includes; rules live in .github/misc/.include-guard.txt."""
     files = _gated_files(explicit, GATE_DIRS)
     if not files:
         return _empty(explicit, 'guard', GATE_DIRS)
@@ -320,9 +303,7 @@ def cmd_guard(explicit):
 BOARD_MATRIX = '.github/misc/supportable-board-matrix.yml'
 BOARD_REQUIRED = ('id', 'target_key', 'build_kind', 'os', 'arch', 'toolchain_versions', 'benchmark')
 
-# Phrases that a developer (or an agent) could copy verbatim into a derived project. The
-# bare template name is allowed in identity fields and in the metadata-contract note; the
-# phrases that would *teach* the wrong name are not.
+# Phrases that would teach a derived project the wrong name (identity fields and the contract note are exempt).
 NEUTRAL_PATTERNS = (
     r'for the fcpp template|fcpp template|fcpp drives|fcpp 模板|'
     r'fcpp_c\b|fcpp_cpp\b|fcpp_vec_|fcpp import-guard|fcpp-convention|^# fcpp '
@@ -337,18 +318,12 @@ NEUTRAL_IDENTITY = {
 NEUTRAL_PROVENANCE = {'.github/misc/Codegen-Starter.txt': 'Based on:'}
 # The gate itself spells the forbidden phrases; scanning it would always fail.
 NEUTRAL_SKIP = {'.github/misc/gates.py'}
-# Guidance that ships to derived projects. Library sources (include/, src/, benchmark/) keep
-# this template's own sample symbols; a derived project replaces them, so they are content,
-# not guidance (same distinction the scaffold ledger makes with its not_checked tier).
+# Guidance that ships downstream; library sources keep this template's sample symbols, so they are content.
 NEUTRAL_SCOPE = ('.github/skills', '.github/misc/Codegen-Starter.txt', '.github/CONTRIBUTING.md')
 
 
 def cmd_board():
-    """Guard the gold standard, its citations, the mapping table and metadata's selection.
-
-    Catches the failure mode that made .hetai/build-matrix.yml a draft: a declaration that no
-    longer matches the thing it claims to describe.
-    """
+    """Guard the gold standard, citations, mapping and metadata selection against drift."""
     try:
         import yaml
     except ImportError:

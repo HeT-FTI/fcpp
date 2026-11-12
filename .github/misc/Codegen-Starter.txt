@@ -132,15 +132,13 @@ generate/modify each one according to the project design above.
      • Set "cmake_version" to "4.2.3" (or newer). 4.2 is the floor for MSVC:
        below it CMake cannot name the Visual Studio generator Conan derives.
      • Set "trigger_tests" to true, "saving_tests_log" to true.
-     • Set "workflow_triggers" to the team default (all six true):
-         {"build": true, "tests": true, "release": true,
-          "docs": true, "security_scan": true, "cross_compile": true}
-       A switch grants PERMISSION, the gitmoji states INTENT. Handing every
-       permission out up front is what keeps one skill document literally true
-       in every derived project. build/test/docs/security gates are on by
-       default (PR shift-left); cross_compile is decoupled (only
-       :hammer_and_wrench: starts it, and it never runs on a PR); release needs
-       BOTH the switch and the release gitmoji in the pushed commits.
+     • Set "workflow_triggers" to the team default (all seven true):
+         {"build": true, "tests": true, "release": true, "docs": true,
+          "security_scan": true, "cross_compile": true, "on_board": true}
+       A switch grants PERMISSION, the gitmoji states INTENT. build/tests/docs/
+       security/on_board are on by default; cross_compile starts only on
+       :hammer_and_wrench:; on_board only on main + :fire:; release needs both
+       the switch and the release gitmoji in the pushed commits.
      • Leave "build_type" at the project default ("Debug"). It is a declared
        project state, NOT a gate: no pipeline reads it, so never flip it in
        order to release.

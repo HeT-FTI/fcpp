@@ -1,7 +1,6 @@
 name: CI Orchestrator
 
-# Entry point: reads metadata.json once, then calls the downstream workflows
-# ubuntu-latest rolls 24.04 -> 26.04 (Oct-Nov 2026); a probe branch proved these workflows green on both.
+# Entry point: reads metadata.json once, then calls the downstream workflows; ubuntu-latest rolls 24.04 -> 26.04 around Oct-Nov 2026.
 
 on:
   push:
@@ -58,6 +57,7 @@ jobs:
           echo "  📚 Docs:       ${{ needs.controller.outputs.trigger_docs }}"
           echo "  🛡️  Security:  ${{ needs.controller.outputs.trigger_security }}"
           echo "  🛠️  Cross compile: ${{ needs.controller.outputs.trigger_cross_compile }}"
+          echo "  🔥  On-board:    ${{ needs.controller.outputs.trigger_on_board }}"
           echo ""
           echo "⚙️  Test Configuration:"
           echo "  Save Logs: ${{ needs.controller.outputs.saving_tests_log }}"
@@ -94,8 +94,7 @@ jobs:
           EVENT_BEFORE: ${{ github.event.before }}
         run: |
           FROM="$EVENT_BEFORE"
-          # A force push that rewinds history leaves `before` unreachable: the object may
-          # not exist in the clone at all ("Invalid revision range"). Fall back to the tip.
+          # A force push that rewinds history can leave `before` unreachable, so fall back to the tip when the revision range is invalid.
           if [[ "$FROM" =~ ^0+$ ]] || ! git cat-file -e "${FROM}^{commit}" 2>/dev/null \
              || ! git merge-base --is-ancestor "$FROM" HEAD; then
             FROM="HEAD~1"
@@ -230,9 +229,7 @@ jobs:
   on-board:
     name: On-board Matrix
     needs: controller
-    # trigger_on_board already requires a push whose commits carry :fire: and
-    # workflow_triggers.on_board=true. Only main reaches this orchestrator, so a
-    # derived project never has to fork the board workflow to change that.
+    # trigger_on_board already requires a push carrying :fire: and on_board=true; only main reaches the orchestrator, so no downstream fork is needed.
     if: needs.controller.outputs.trigger_on_board == 'true'
     permissions:
       contents: read

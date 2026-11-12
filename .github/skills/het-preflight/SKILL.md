@@ -31,6 +31,9 @@ user-invocable: true
 ```bash
 # 1) quality（门禁实现只有一份：.github/misc/gates.py）
 python3 .github/misc/gates.py all
+# 2) board contract + template-name leakage
+python3 .github/misc/gates.py board
+python3 .github/misc/gates.py neutral
 # 2) tests + coverage
 conan create . -s build_type=Debug --build=missing
 # 3) docs

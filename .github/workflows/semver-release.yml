@@ -23,8 +23,7 @@ jobs:
       - name: Check metadata release trigger
         id: gate
         env:
-          # Same predicate the controller uses: any commit in a push may carry the release gitmoji.
-          # Non-push events (workflow_call) have no commits, so the release stays off for them.
+          # Same predicate as the controller: any commit in a push may carry the release gitmoji, while non-push events have no commits and stay off.
           COMMIT_MESSAGES: ${{ github.event_name == 'push' && join(github.event.commits.*.message, '\n') || '' }}
         run: |
           python3 - <<'PY'

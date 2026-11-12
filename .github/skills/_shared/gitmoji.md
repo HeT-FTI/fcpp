@@ -12,7 +12,7 @@
 | Docs（文档） | `:book:` | push + `workflow_triggers.docs=true` | `workflow_triggers.docs` |
 | Quality/security（质量/安全） | `:shield:` | push with emoji, or **any PR** (shift-left) + `workflow_triggers.security_scan=true` | `workflow_triggers.security_scan` |
 | Online cross-compile（在线交叉编译验证） | `:hammer_and_wrench:` | push + `workflow_triggers.cross_compile=true` | `workflow_triggers.cross_compile` |
-| hetai cross-compile/board（上板） | `:fire:` (or `🔥`) | push on `main` + `workflow_triggers.on_board=true` → `ci-orchestrator` calls `hetai-package-matrix` | `workflow_triggers.on_board` |
+| hetai cross-compile/board（上板） | `:fire:` | push on `main` + `workflow_triggers.on_board=true` → `ci-orchestrator` calls `hetai-package-matrix` | `workflow_triggers.on_board` |
 
 ## General Rules（通用规则）
 
@@ -23,7 +23,7 @@
   self-hosted on-board route. 在线与上板两条路线互不触发。
 - **Canonical form（规范写法，推荐）**: emoji in the **parentheses right after the commit word**（放在主 commit 词后的括号里）:
   `<type>(<emoji>): <description>`
-  e.g. `feat(:fire:): cross-compile support`, `test(:beer:): vector add cases`, `chore(:package:): prepare release`.
+  e.g. `feat(:building_construction:): add a new API`, `test(:beer:): vector add cases`, `chore(:package:): prepare release`.
 - **Placement is free; the *set* is what counts（位置随意，看的是集合）**: only *which* emojis appear decides the pipelines — the controller greps the whole message. A long trigger name eats the header budget (`fix(:building_construction:): ` is 31 of 72 characters), so when the description needs the room put a **short non-triggering** emoji in the parentheses and move the pipeline emoji(s) to the body:
 
       fix(:bug:): replace the banned printf in the _Generic test

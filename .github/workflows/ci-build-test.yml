@@ -1,10 +1,6 @@
 name: Build CI
 
-# Called by ci-orchestrator.yml.
-#
-# Scope: compile + link + run test_package/main.cpp on every supported platform, in the one
-# build type metadata.json declares. Keeping this half cheap is what lets it run everywhere;
-# the test suite and coverage belong to full-test-automation.yml.
+# Called by ci-orchestrator.yml: compile, link and run test_package/main.cpp on every platform, in the single build type metadata.json declares.
 
 on:
   workflow_call:
@@ -75,10 +71,7 @@ jobs:
 
       - name: Build the package and run main.cpp
         shell: bash
-        # HET_CMAKE_BUILD_REQUIRE is the escape hatch for this leg alone if a runner's toolchain
-        # ever outgrows the cmake metadata.json pins: a version pins another, `none` uses PATH.
-        # The conf namespace is the template's, not the package's: renaming the project in
-        # metadata.json must never mean editing this line.
+        # HET_CMAKE_BUILD_REQUIRE is this leg's escape hatch: a version pins another, `none` uses PATH; the conf namespace is the template's, not the package's.
         run: |
           conan create . -pr:b=default -pr:h=default -s build_type=${{ inputs.build_type }} --build=missing \
           -c user.het:run_tests=False \

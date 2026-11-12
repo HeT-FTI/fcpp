@@ -1,6 +1,6 @@
 # metadata.json Contract（契约：单一驱动源）
 
-> This project drives everything from `metadata.json`: CMake, main recipe, test_package and CI controller all read it. Before changing any field, confirm all consumers stay consistent. 修改任何字段前必须确认所有消费方行为一致。
+> This project drives everything from `metadata.json`: CMake, the recipes, test_package, the CI controller and `on_board_analyzer.py` all read it. Before changing any field, confirm all consumers stay consistent. 修改任何字段前必须确认所有消费方行为一致。
 
 ## Fields & Consumers（字段与消费方）
 
@@ -74,7 +74,7 @@
 | `activate_code_coverage` | coverage (lcov + genhtml) |
 | `saving_tests_log` | save test log |
 | `enable_python_bindings` | build pybind11 module |
-| `workflow_triggers.*` | CI master switches (build/tests/release/docs/security_scan/cross_compile); **all false = gitmoji triggers nothing**; on by default: build/tests/docs/security_scan/cross_compile (only `release` is off); `cross_compile` is not part of PR shift-left |
+| `workflow_triggers.*` | CI master switches (build/tests/release/docs/security_scan/cross_compile/on_board); **all false = gitmoji triggers nothing**; on by default: build/tests/docs/security_scan/cross_compile/on_board (only `release` is off); `cross_compile` and `on_board` are not part of PR shift-left |
 | `workflow_triggers.on_board` | permission for the self-hosted board matrix; `:fire:` is the intent. Optional (absent = off), so a derived project upgrades without editing the schema. Only `main` reaches the orchestrator, so the board workflow needs no branch literal |
 | `baremetal_white_list` | baremetal cross-compile whitelist (default `["etl","ArduinoJson"]`); applied in both deps & requirements |
 

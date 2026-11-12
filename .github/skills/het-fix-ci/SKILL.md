@@ -57,7 +57,10 @@ user-invocable: true
 |------|------|------|
 | baremetal build fails | dep not in `baremetal_white_list` | adjust whitelist |
 | flash fails | flash_tool / device wrong | check `bench_config.json` |
-| not triggered | needs self-hosted runner | check runner |
+| not triggered | `on_board=false`, push not on `main`, or no `:fire:` in any pushed commit | check the switch, branch and message |
+| analyzer exit 1 | no verified target, or ambiguity without a preference | read `on-board-resolution.json`; adjust `on_board_validation` |
+| analyzer exit 2 | bad `profile_arch` or missing field | use a CPU core, never a Conan arch family |
+| gold mismatch | `supportable-board-matrix.yml` and the mapping disagree | run `gates.py board` |
 
 ## General Checklist（通用排查清单）
 

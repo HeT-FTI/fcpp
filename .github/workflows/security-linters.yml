@@ -1,8 +1,6 @@
 name: MegaLinter
 
-# Called by ci-orchestrator.yml on the :shield: gitmoji
-#
-# fcpp-dev keeps a debug trigger; under the orchestrator the gitmoji logic lives in the controller
+# Called by ci-orchestrator.yml on the :shield: gitmoji; the gitmoji logic lives in the controller
 
 on:
   workflow_call:
@@ -56,13 +54,11 @@ jobs:
           unzip -q /tmp/etl.zip -d /tmp/etl-src
           echo "ETL_INC=/tmp/etl-src/etl-${ETL_VER}/include" >> "$GITHUB_ENV"
 
-      # required: formatting clean; .h routes to C, .hpp to C++ (see code-conventions.md)
-      # the command body lives in .github/misc/gates.py, shared with pre-commit and the editor
+      # required: formatting clean; `.h` routes to C and `.hpp` to C++, and the command body lives in gates.py.
       - name: clang-format gate
         run: python3 .github/misc/gates.py format
 
-      # required: clang-tidy warnings are failures; only include|src diagnostics count
-      # standards come from metadata.json; ETL_INC comes from the step above, eigen is auto-detected
+      # required: clang-tidy warnings fail, only include|src diagnostics count, standards come from metadata.json, and eigen is auto-detected.
       - name: clang-tidy gate
         run: python3 .github/misc/gates.py tidy
 

@@ -8,20 +8,17 @@
 
 | type | 用途 | 示例 |
 |---|---|---|
-| `feat` / `fix` / `perf` | 版本号变更（minor/patch） | `feat(:fire:): cross-compile support` |
+| `feat` / `fix` / `perf` | 版本号变更（minor/patch） | `feat(:building_construction:): add a new API` |
 | `docs` / `test` / `build` / `ci` / `refactor` / `style` / `chore` | 不触发版本变更 | `chore(release): 1.0.0 [skip ci]` |
 
 - 破坏性变更：`feat!:` 或正文含 `BREAKING CHANGE:` → major。
 
 ### 分支版本边界
 
-- `main` 是唯一发版分支：只有 main push、发布开关开启且提交包含
+- `main` 是唯一发版分支，也是唯一 CI 分支：只有 main push、发布开关开启且提交包含
   `(:package:):` 时才由 semantic-release 生成 tag、CHANGELOG 和版本号。
-- `fcpp-dev` 只做集成分支，提交应使用 `ci`、`refactor`、`docs`、`test`、
-  `build`、`style` 或 `chore` 等非发布类型。
-- 不要在 `fcpp-dev` 使用 `feat`、`fix`、`perf` 或 `BREAKING CHANGE` 作为
-  版本意图；这些变更合并到 main 后统一由 main 的发布 PR 决定版本。
-- 在 `main` push 包含 `:fire:` / `🔥` 的提交、且 `workflow_triggers.on_board=true` 时，
+- 板端矩阵同样只在 `main` 触发；派生项目的功能与分支设计均以 `main` 为目标。
+- 在 `main` push 包含 `:fire:` 的提交、且 `workflow_triggers.on_board=true` 时，
   `ci-orchestrator` 调用 `hetai-package-matrix`，由 `on_board_validation` 选出目标并与
   硬件验证金标准对账；板卡型号不在仓库里声明。只跑诊断全量时使用
   `workflow_dispatch(build_mode=all)`。

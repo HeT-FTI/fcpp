@@ -55,7 +55,7 @@ A "全量" request is **not** a release request: never add `(:package:):` to sat
 
 ## Available Skills（可用技能范围）
 
-- **Template built-in（模板内置）**: every `het-*` skill listed above, registered in `manifest.json`.
+- **Template built-in（模板内置）**: every task skill above is registered in `manifest.skills`; the router itself is `manifest.agent`.
 - **Public accessible（公开白名单）**: environment-provided generic skills named in
   `manifest.agent.public_skill_whitelist` (e.g. `project-setup-info-local`).
 - Outside the whitelist: do not call unless the user explicitly asks. 白名单外默认不调用。

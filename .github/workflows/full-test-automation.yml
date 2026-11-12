@@ -1,12 +1,6 @@
 name: Tests
 
-# Called by ci-orchestrator.yml.
-#
-# Scope: the whole test chain in one place -- unit + stress suites, coverage and artifact
-# archive -- because it is the expensive half. Two platforms run it in parallel, in the single
-# build type metadata.json declares. gcc/lcov and clang/llvm-cov instrument differently, so the
-# second leg checks the first leg's instrumentation; it is not a second copy of the same number.
-# Windows is excluded on purpose: no coverage backend exists for MSVC (see het-fix-ci).
+# Called by ci-orchestrator.yml: compile, link and run test_package/main.cpp on every platform, in the single build type metadata.json declares.
 
 on:
   workflow_call:
@@ -212,10 +206,7 @@ jobs:
         run: |
           conan remove "${{ steps.read_metadata.outputs.pkg_name }}/*" --confirm
 
-  # The two legs measure the library with different tools, so their rates are NOT comparable:
-  # llvm-cov reports the header/inline lines that gcov attributes to the caller. What must agree
-  # is the set of translation units that got instrumented -- a file missing from one report means
-  # one toolchain silently skipped it. The lcov leg is what gets published.
+  # The legs use different tools and their rates are not comparable; what must agree is the set of instrumented translation units, and the lcov leg is published.
   reconcile:
     name: Reconcile coverage
     needs: [auto-testing]
