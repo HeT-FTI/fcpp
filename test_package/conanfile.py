@@ -17,10 +17,7 @@ _get_file_name = (lambda x: x.split(sep)[-1])
 
 
 def _lcov_ignore_errors() -> str:
-    """The error classes to continue past, named for the lcov in use: geninfo 2.x renamed the line-range ones from
-    `gcov` to `mismatch`/`inconsistent` and **validates the list**, while geninfo 1.x rejects a name it does not know
-    (measured: 1.16 exits 2 on `mismatch`), so one fixed list cannot serve both.
-    """
+    """Error classes to skip, named per lcov version: geninfo 2.x validates the list, 1.x rejects unknown names."""
     try:
         _version = subprocess.run(['lcov', '--version'], check=True, capture_output=True, text=True).stdout
         _major = int(re.search(r'(\d+)\.', _version).group(1))
@@ -39,8 +36,7 @@ def _clear_test_build():
 
 
 def _is_within(path: str, folder: str) -> bool:
-    """True when `path` lives inside `folder` (both resolved). Used to keep foreign executables
-    — interpreters, system tools — out of the coverage export."""
+    """True when `path` lives inside `folder` (both resolved); keeps foreign executables out of the coverage export."""
     _p, _f = os.path.abspath(os.path.realpath(path)), os.path.abspath(os.path.realpath(folder))
     try:
         return os.path.commonpath([_p, _f]) == _f
@@ -244,14 +240,7 @@ class PackageTestConan(ConanFile):
         return self.recipe_folder + sep + 'build' + sep + 'profraw'
 
     def _prepare_llvm_profile_env(self):
-        """Send every LLVM raw profile to one folder, one file per process.
-
-        The runtime only writes where it is told at process start, and two
-        processes sharing a name would clobber each other, hence `%p`. Setting
-        it in os.environ is enough: conan runs the binaries through
-        ``Popen(..., shell=True)`` without an explicit ``env``, so children
-        inherit the environment we set here.
-        """
+        """Send every LLVM raw profile to one folder with `%p` per process, so concurrent children do not clobber each other."""
         _folder = self._profraw_folder()
         if os.path.exists(_folder):
             shutil.rmtree(_folder)
@@ -260,11 +249,7 @@ class PackageTestConan(ConanFile):
         self.output.info(f"[coverage:llvm] LLVM_PROFILE_FILE={os.environ['LLVM_PROFILE_FILE']}")
 
     def _coverage_folder(self):
-        """`<recipe>/test/export/coverage`, recreated empty.
-
-        Its `coverage_report/` subfolder is the artifact downstream parses, so
-        the layout is a contract (C3) -- both coverage paths must use this.
-        """
+        """`<recipe>/test/export/coverage`, recreated empty; `coverage_report/` is the downstream artifact contract (C3)."""
         target_folder = self.recipe_folder + sep + 'test' + sep + 'export'
         coverage_folder = target_folder + sep + 'coverage'
         if not os.path.exists(target_folder):
@@ -276,12 +261,7 @@ class PackageTestConan(ConanFile):
         return coverage_folder
 
     def _package_root(self):
-        """Root of the tested package's cache entry, i.e. the parent of its `p/` folder.
-
-        Asking `conan list` used to return whichever package was printed first, so a cross build of
-        the same version (armv8 next to x86_64) pointed the coverage filter at the wrong tree and
-        every record was excluded. The dependency itself knows its own folder.
-        """
+        """Root of the tested package's cache entry (the parent of `p/`), so a cross build cannot point the filter at the wrong tree."""
         _name = self.tested_reference_str.split('/')[0]
         try:
             _dep = self.dependencies[_name]
@@ -294,21 +274,7 @@ class PackageTestConan(ConanFile):
         return str(Path(_pkg_folder).parent)
 
     def _instrumented_binaries(self, build_folder):
-        """The instrumented executables of this test package.
-
-        `llvm-cov export` consumes binaries (the gcc path can consume
-        .gcda/.gcno instead), and which executables exist is only known after
-        the test package is configured, so derive them from ctest's own
-        metadata rather than hard-coding names.
-
-        Two sources are needed, and taking only the first is a trap:
-          * every target gtest discovery ran, i.e. each `<target>[<n>]_*.cmake`
-            -- this is the only way to reach `main`, which defines no TEST()
-            and therefore never shows up in an `add_test` command, yet is the
-            executable that links the library and so carries the coverage we
-            actually want;
-          * the `add_test` commands, which give the executables ctest runs.
-        """
+        """Instrumented executables from ctest metadata: gtest discovery targets (reaching `main`) plus `add_test` commands."""
         _add_test = (r'add_test\s*\(\s*(?:\[=\[.*?\]=\]|"[^"]*"|\S+)\s+'
                      r'(?:\[=\[.*?\]=\]|"([^"]+)"|(\S+))')
         _discovered = r'([^/\\"]+)\[\d+\]_(?:tests|include)\.cmake'
@@ -344,12 +310,7 @@ class PackageTestConan(ConanFile):
         return _found
 
     def _clang_coverage_tools(self):
-        """Resolve llvm-profdata / llvm-cov plus the lcov renderer.
-
-        Apple ships the LLVM tools with the Xcode command line tools but usually
-        keeps them off PATH, so `xcrun -f` is the supported way to find them.
-        Missing tools are reported loudly with the command that fixes it (C2).
-        """
+        """Resolve llvm-profdata, llvm-cov and the lcov renderer, using `xcrun -f` on Apple where they are off PATH."""
         _tools = {}
         for _name in ('llvm-profdata', 'llvm-cov'):
             _path = shutil.which(_name)
@@ -370,12 +331,7 @@ class PackageTestConan(ConanFile):
         return _tools['llvm-profdata'], _tools['llvm-cov']
 
     def _coverage_totals(self, info_file):
-        """Merge the tracefile per source file, then sum, so every total is the sum of its own breakdown.
-
-        ``_source_relpath`` is the identity of a file here: two records that normalise to the same path are the
-        same source seen from two build roots and are merged line by line. A project that genuinely ships two
-        different files at the same relative path under different roots would see them treated as one.
-        """
+        """Merge the tracefile per normalized source path, then sum, so every total is the sum of its own breakdown."""
         _lines, _meta, _files = {}, {}, set()
         _current = None
         with open(info_file, 'r', encoding='utf-8') as f:
@@ -416,14 +372,7 @@ class PackageTestConan(ConanFile):
         return _totals
 
     def _merge_tracefile(self, info_file, merged_file):
-        """Rewrite ``SF:`` to one existing path per normalised key, then let lcov add the records.
-
-        One header is compiled into the package's objects and again into the consumer's, so lcov reports it once
-        per directory: ``lines`` counts the same source twice and every rate is computed on an inflated
-        denominator. Two records of one file only merge once they carry the same path, and the path kept has to be
-        one that exists -- ``genhtml`` reads the source through it to draw the annotated view. Counts are summed by
-        lcov here; that does not affect the rate, which asks whether a line ran at all, not how often.
-        """
+        """Rewrite `SF:` to one existing path per normalized key, so a header compiled twice is counted once and genhtml can read it."""
         _raw, _candidates = [], {}
         with open(info_file, 'r', encoding='utf-8') as f:
             for _line in f:
@@ -447,11 +396,7 @@ class PackageTestConan(ConanFile):
         return merged_file
 
     def _render_html_report(self, coverage_folder, info_file, pkg_root):
-        """Filter the tracefile down to OUR entry, merge duplicates, render the HTML, clean up.
-
-        Shared verbatim by the gcc and clang paths so the two cannot drift: the artifact path produced here is
-        what downstream parses.
-        """
+        """Filter to our cache entry, merge duplicates, render HTML and clean up; shared by both coverage paths."""
         # scope the report to this package's derived cache root; a non-matching filter makes lcov 2.x abort
         cmd2 = ['lcov', '--extract', info_file,
                 pkg_root.replace(sep, '/') + '/*', '--output-file',
@@ -488,17 +433,7 @@ class PackageTestConan(ConanFile):
             raise NotImplementedError(f'Compiler {compiler} is not supported.')
 
     def _code_coverage_clang(self):
-        """Apple/LLVM clang coverage: profraw -> profdata -> lcov -> html.
-
-        GNU lcov/gcov cannot read LLVM's raw profiles, so the front of this
-        pipeline necessarily differs from the gcc one. The tail -- filter to our
-        cache entry, render, clean up -- is shared verbatim so the two can never
-        drift, which is what keeps the artifact path a stable contract.
-
-        Difference in the numbers is expected and is not a bug: llvm-cov counts
-        lines and functions its own way, and it also reports inline code from
-        headers that gcc/gcov attributes to the caller.
-        """
+        """Apple/LLVM clang coverage: profraw -> profdata -> lcov -> html; only the front differs from gcc, so the artifact contract stays shared."""
         _profdata_bin, _cov_bin = self._clang_coverage_tools()
         coverage_folder = self._coverage_folder()
 

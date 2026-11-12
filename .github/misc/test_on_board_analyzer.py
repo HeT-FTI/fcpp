@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Contract tests for the on-board selection resolver.
-
-The gold standard is the fixture: these tests assert that the shipped file, the mapping
-table and metadata.json's vocabulary cannot drift apart.
-"""
+"""Contract tests keeping the gold standard, mapping and metadata vocabulary aligned."""
 from __future__ import annotations
 
 import contextlib
@@ -80,8 +76,7 @@ class GoldStandardTests(unittest.TestCase):
             self.assertTrue(set(record["targets"]) <= ids, record["run"])
 
     def test_benchmark_profile_arch_is_not_a_cpu_core(self):
-        # On Linux the matrix's profile_arch is Conan's arch family (armv8), never a core;
-        # on baremetal the platform deliberately uses the core name for both.
+        # Linux profile_arch is Conan's arch family (armv8); baremetal uses the core name for both.
         for target in self.data["targets"]:
             if target["build_kind"] == "linux":
                 self.assertFalse(target["benchmark"]["profile_arch"].startswith("cortex-"), target["id"])

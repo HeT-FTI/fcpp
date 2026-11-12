@@ -1,6 +1,4 @@
-# .mega-linter.yml
-#
-# MegaLinter version is pinned outside this file: the CI action SHA and run-megalinter.sh --release
+# MegaLinter descriptors; the version is pinned by the CI action SHA and run-megalinter.sh --release.
 FILTER_REGEX_INCLUDE: "(include|src)/"
 
 ENABLE: "C,CPP"
@@ -59,15 +57,11 @@ REPOSITORY_DEVSKIM_ARGUMENTS:
 # use the FLAT <LINTER>_CONFIG_FILE key; the nested form is silently ignored
 C_CLANG_FORMAT_CONFIG_FILE: ".github/misc/.clang-format-c"
 CPP_CLANG_FORMAT_CONFIG_FILE: ".github/misc/.clang-format-cpp"
-# cppcheck answers "too many branches, analysis limited" with an `information:` diagnostic, and
-# `--error-exitcode=1` turns that into a failed job with no defect behind it. `exhaustive` removes the
-# message by finishing the analysis, not by suppressing a rule that would then check nothing anywhere.
-# Both descriptors run cppcheck: .h/.c go through C, everything else through CPP.
+# cppcheck `exhaustive` removes the `information: analysis limited` diagnostic instead of suppressing a rule; both descriptors run cppcheck.
 C_CPPCHECK_ARGUMENTS: "--check-level=exhaustive"
 CPP_CPPCHECK_ARGUMENTS: "--check-level=exhaustive"
 
-# .h belongs to the C family (see code-conventions.md): the C++ linter must not claim it,
-# or a C header gets the left-aligned C++ style and fails a header-only package
+# `.h` belongs to the C family, so the C++ linter must not claim it and apply the left-aligned C++ style.
 CPP_CLANG_FORMAT_FILTER_REGEX_EXCLUDE: "(^|/)[^/]+\\.h$"
 
 SARIF_REPORTER: true

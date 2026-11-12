@@ -1,22 +1,5 @@
 #!/usr/bin/env python3
-"""Resolve the on-board selection declared in metadata.json into a temporary build matrix.
-
-Three owners, kept apart on purpose:
-
-* ``metadata.json`` says **what to build** (``os`` / ``profile_arch`` / ``toolchain_version``).
-  ``profile_arch`` is the physical CPU core (``cortex-a53``), deliberately *not* Conan's
-  ``settings.arch`` (which cannot tell a53 from a55 from a76).
-* ``supportable-board-matrix.yml`` says **what the self-hosted runner has proven** on hardware.
-* The platform catalog (``board_ci_target_catalog.json``) says **what each target is**
-  (ABI, FPU, route, remote path). This script never invents or copies those facts; it only
-  selects the verified blocks and hands them back.
-
-The output is ``tmp-build-matrix.yml``: byte-identical for identical inputs, written under
-``$RUNNER_TEMP`` and never committed. The platform expander consumes it unchanged.
-
-Exit codes: 0 resolved (warnings allowed), 1 the selection cannot be honoured,
-2 bad arguments or unreadable/invalid files.
-"""
+"""Resolve metadata.json's on-board selection into a temporary build matrix (0 ok, 1 unresolvable, 2 bad input)."""
 from __future__ import annotations
 
 import argparse
@@ -30,8 +13,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 
-# (os, physical core) -> the verified target that owns it. A sibling is another target the
-# same combination would also match; it is reported, never selected silently.
+# (os, physical core) -> verified target; siblings are reported, never selected silently.
 TARGET_MAP: dict[tuple[str, str], dict[str, Any]] = {
     ("Linux", "cortex-a7"): {"id": "linux-myir-3506-A7", "conan_arch": "armv7"},
     ("Linux", "cortex-a55"): {"id": "linux-orangepi-rk3566-A55", "conan_arch": "armv8"},
@@ -50,13 +32,10 @@ TARGET_MAP: dict[tuple[str, str], dict[str, Any]] = {
     ("baremetal", "cortex-m33"): {"id": "baremetal-cortex-m33", "conan_arch": "armv8_32"},
 }
 
-# Conan arch families that cannot identify a core. Writing one of these in
-# on_board_validation.profile_arch is a configuration error, not a zero-match.
+# Conan arch families cannot identify a core, so writing one in profile_arch is a config error.
 CONAN_ARCH_ONLY = frozenset({"armv6", "armv7", "armv7hf", "armv8_32", "armv8", "armv8.3"})
 
-# Every core the platform has ever registered. A core outside this set is a typo or an
-# unregistered board (error); a known core under the wrong OS is merely a rare combination
-# (warning), because on_board_validation is written as an os x arch cross product.
+# Known core under the wrong OS is a rare combination (warning); an unknown core is an error.
 KNOWN_CORES = frozenset(arch for _, arch in TARGET_MAP)
 
 VERSION_ALIASES = {"11.3": "11.3.rel1"}

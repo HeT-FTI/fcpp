@@ -1,9 +1,4 @@
-"""Contract validation for the canonical Agent Skills tree.
-
-The checks are deliberately opinionated: this repository wants *one* editable skill
-body.  A harness view may be a link to it, or a copy that is byte-identical to it;
-anything else is a second body and fails.
-"""
+"""Validate the one-body rule: a view is a link or a byte-identical copy, never a second body."""
 
 from __future__ import annotations
 

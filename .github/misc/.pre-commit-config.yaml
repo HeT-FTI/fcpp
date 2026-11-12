@@ -11,8 +11,7 @@ repos:
 
   - repo: local
     hooks:
-      # one implementation for CI + pre-commit + the editor: .github/misc/gates.py
-      # (no `python3` alias on Windows: change the entry to `python .github/misc/gates.py format`)
+      # One implementation for CI, pre-commit and the editor: gates.py (on Windows use `python`, not `python3`).
       - id: clang-format
         name: clang-format (C/C++ dual configs)
         entry: python3 .github/misc/gates.py format

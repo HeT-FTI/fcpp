@@ -1,8 +1,4 @@
-# Dependabot configuration — fresh template repos stay quiet by default.
-#
-# open-pull-requests-limit: 0 disables version-update PRs (security updates still arrive)
-#
-# This applies to the template repo too: maintainers bump pins by hand
+# Dependabot stays quiet by default: open-pull-requests-limit 0 disables version updates while security updates still arrive; maintainers bump pins by hand here too.
 version: 2
 updates:
   # One grouped PR for all GitHub Actions bumps, on the 3rd of each month.

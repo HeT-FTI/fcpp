@@ -1,19 +1,5 @@
 #!/usr/bin/env python3
-"""
-run_bench.py  ─  One-click MCU benchmark: build + flash.
-
-Steps:
-  1. Read bench_config.json  (hardware settings)
-  2. Read ../metadata.json   (library name)
-  3. Auto-generate Conan profile in profiles/<mcu>.profile
-  4. Run: conan build . -pr:h profiles/<mcu>.profile --build=missing
-  5. Run: download.py to flash benchmark.bin to the target
-
-Usage:
-    python3 script/run_bench.py
-    python3 script/run_bench.py --no-flash
-    python3 script/run_bench.py --config my_board.json
-"""
+"""One-click MCU benchmark: read config and metadata, generate a Conan profile, build, then flash."""
 
 import argparse
 import json
@@ -29,9 +15,7 @@ ROOT_DIR   = BENCH_DIR.parent
 
 _BUILD_CPPSTD = None
 
-# Base Firmware owns getTicks() and its unit varies by board.  Express the
-# verified tick rates in one canonical unit so the benchmark protocol can emit
-# integer nanoseconds per case invocation on every target.
+# Base Firmware owns getTicks() and its unit varies by board; express the verified rates in one canonical unit so every target emits integer ns.
 BENCH_TICK_NS_BY_MCU = {
     "cortex-m0": (125, 8),          # BAT32: 64 MHz expanded cycle counter
     "cortex-m3": (1_000_000, 1),    # STM32F205: 1 ms tick
@@ -139,11 +123,7 @@ def generate_profile(cfg: dict, lib_name: str) -> Path:
     toolchain_version = str(cfg.get("toolchain_package_version", "11.3.rel1"))
     extra_cflags      = cfg.get("extra_cflags", [])
 
-    # ``profile_arch`` is the physical-core contract consumed by the watcher,
-    # whereas ``conan_arch`` may carry an ABI-qualified build selector (for
-    # example Cortex-M7 double-precision hard-float).  Keep both explicit so
-    # the package built by the runner and this benchmark resolve the same
-    # Conan binary identity.
+    # `profile_arch` is the physical-core contract and `conan_arch` the ABI-qualified build selector; keep both so package and benchmark resolve the same binary.
     arch     = str(cfg.get("conan_arch") or CONAN_ARCH_MAP.get(mcu, "armv7"))
     pkg_name = f"{lib_name}_bench_mcu"
 
@@ -226,9 +206,7 @@ def generate_profile_linux(cfg: dict, lib_name: str) -> Path:
     arch = str(cfg.get("profile_arch") or CONAN_ARCH_MAP.get(cpu, "armv7"))
     is_native_x86 = arch == "x86_64"
     is_riscv64 = arch == "riscv64"
-    # Conan's Linux/armv8 and Linux/armv8.3 profiles select the AArch64
-    # toolchain.  They still need -mcpu, but the ARM32-only float ABI/FPU
-    # switches are invalid for aarch64-none-linux-gnu-gcc.
+    # Conan's Linux/armv8 and armv8.3 profiles select the AArch64 toolchain: -mcpu is valid, ARM32-only float ABI/FPU switches are not.
     is_aarch64 = arch in {"armv8", "armv8.3"}
 
     flags = []

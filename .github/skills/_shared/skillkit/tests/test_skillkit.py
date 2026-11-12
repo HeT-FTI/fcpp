@@ -1,7 +1,4 @@
-"""Unit tests for skillkit.  Run with:
-
-    python -m unittest discover -s .github/skills/_shared/skillkit/tests -v
-"""
+"""Unit tests for skillkit (python -m unittest discover -s .github/skills/_shared/skillkit/tests -v)."""
 
 from __future__ import annotations
 

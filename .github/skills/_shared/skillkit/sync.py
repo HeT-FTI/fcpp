@@ -1,16 +1,4 @@
-"""Create and verify the harness views of the canonical skill tree.
-
-Two view modes are supported:
-
-``link`` (default)  a single directory symlink (POSIX) or junction (Windows) to
-                    ``.github/skills``.  Nothing is duplicated and nothing can drift.
-``copy``            a byte-identical mirror directory.  Needed where the view has to
-                    exist in a fresh ``git clone`` before any command runs, and where
-                    a committed symlink would check out as a plain text file on Windows.
-
-Either way ``.github/skills`` stays the only editable body: a copy view is only
-accepted while it is byte-identical (``skillkit validate`` enforces this).
-"""
+"""Create and verify harness views as links, or as byte-identical copies where a link cannot ship."""
 
 from __future__ import annotations
 

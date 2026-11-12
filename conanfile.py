@@ -118,10 +118,7 @@ class PackageRecipe(ConanFile):
     conandata, meta, headers, sources, license_full_text , importable_modules = [None for _ in range(6)]
 
     def init(self):
-        """
-        ps1: Get-Content "build" | Invoke-Expression
-        bash: bash ./build
-        """
+        """Parse conandata, metadata and license, then derive the package metadata used by the generators."""
         conandata_path = Path(self.recipe_folder) / "conandata.yml"
         metadata_path = Path(self.recipe_folder) / METADATA_FILENAME
         license_path = Path(self.recipe_folder) / "LICENSE"

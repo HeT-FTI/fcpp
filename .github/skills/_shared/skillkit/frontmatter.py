@@ -1,9 +1,4 @@
-"""Read YAML frontmatter from an Agent Skills ``SKILL.md`` file.
-
-PyYAML is used when it is installed.  The fallback parser covers the flat
-``key: value`` subset this repository uses, which keeps ``skillkit`` runnable in
-a bare Python 3.10+ environment.
-"""
+"""Read SKILL.md frontmatter with PyYAML, or a flat key/value fallback in a bare Python environment."""
 
 from __future__ import annotations
 

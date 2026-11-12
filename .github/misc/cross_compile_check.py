@@ -156,9 +156,7 @@ def main():
     meta = json.loads(Path('metadata.json').read_text(encoding='utf-8'))
     lib_name, lib_ver = meta['name'], meta['version']
 
-    # README's documented cross-build: host profile + cross profile + no test folder. `--build=<pkg>`
-    # forces a real rebuild (a cached package would make the archive check a replay), while
-    # `--build=missing` still builds the target-side dependencies on a cold cache.
+    # Force a real rebuild (--build=<pkg>) while --build=missing still satisfies target-side deps on a cold cache.
     _create = ['conan', 'create', '.', '-pr:b=default', f'-pr:h={profile}',
                '-tf=', '--build=missing', f'--build={lib_name}*']
     try:
@@ -182,8 +180,7 @@ def main():
                       sorted(Path(pkg_folder, 'include').rglob('*.hpp'))
             if not headers:
                 raise RuntimeError(f'header-only package ships no header under {pkg_folder}/include')
-            # Nothing to disassemble: the CMake header probes compiled every public header
-            # with this toolchain during `conan create`, so a bad target build is already fatal
+            # Nothing to disassemble: the header probes already compiled every public header for this toolchain.
             print(f'--- {args.target}: header-only, no archive by design ---')
             print('  headers: ' + ', '.join(_.name for _ in headers))
             summary = os.environ.get('GITHUB_STEP_SUMMARY')

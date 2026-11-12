@@ -34,10 +34,7 @@ def _inherit_root_metadata():
     return _meta
 
 
-# The filters below must accept all three bilingual shapes or a language leaks into (or vanishes from)
-# the build: compact `///< [en] gain. [zh] 增益。`, an indented block whose `[zh]` sits on its own line,
-# and a wrapped sentence whose marker lands on the second line. `_normalize_bilingual()` moves markers
-# onto tag lines first; the matchers stay indentation-agnostic because doc blocks live at any depth.
+# The filters must accept all three bilingual shapes (compact, indented block, wrapped marker) or text vanishes from one build.
 _hit_com_tag = re.compile(r"\s*\* @")
 _hit_lang_tag = re.compile(rf"(\s*\* @[a-z]+).*\[({'|'.join(_inherit_root_metadata().get('doc_languages'))})] ")
 _hit_free_tag = re.compile(r"\s*\* [^@]+")
@@ -51,10 +48,7 @@ SINCE_TAG = '@since '
 
 
 def _match_file_doc(block: str):
-    """Linear match: anchor the `/*!` start and locate @file/@defgroup via
-
-    str.find to avoid backtracking-heavy regexes.
-    """
+    """Linear match: anchor `/*!` and locate @file/@defgroup with `str.find` to avoid backtracking-heavy regexes."""
     m = _hit_file_start.match(block)
     if m is None or '@file' not in block or '@defgroup' not in block:
         return None
@@ -62,10 +56,7 @@ def _match_file_doc(block: str):
 
 
 def _match_since_command(block: str):
-    """Linear match: anchor the `/**` start and locate SINCE_TAG via str.find
-
-    to avoid backtracking-heavy regexes.
-    """
+    """Linear match: anchor `/**` and locate SINCE_TAG with `str.find` to avoid backtracking-heavy regexes."""
     m = _hit_since_start.match(block)
     if m is None or SINCE_TAG not in block:
         return None
@@ -82,9 +73,7 @@ def _idx_slicer(x: np.ndarray, _closes: list[bool]) -> list[list[int]]:
     res, _in_selection = [], False
     for i, v in enumerate(x):
         if _closes[i]:
-            # A block comment ended here, so what follows is code -- and code has no language. It must not
-            # inherit the selection that happened to be open, or the declaration after a documented member
-            # is absorbed into the last language group and disappears from the other language's build.
+            # A block comment ended here, so what follows is code and must not inherit the open language group.
             _in_selection = False
             continue
         if not (v[0] == True and v[1] == True and v[2] == False):
@@ -108,9 +97,7 @@ def _determine_sub_groups(x: list[list[int]], languages: list[str],
 
 
 _lang_marker_re = re.compile(r"\[(en|zh|jp)\]\s?")
-# Lines that only open or close a block comment. They carry no language; dropping the closer makes the file
-# end inside a comment, which Doxygen reports as "file ended in the middle of a comment block" and then
-# documents nothing at all.
+# Lines that only open or close a block comment carry no language; dropping the closer makes Doxygen document nothing.
 _comment_structure_re = re.compile(r"^\s*(?:/\*\*?<?|/\*!|\*/)\s*$")
 _tag_line_re = re.compile(r"^(\s*\*\s*)@([A-Za-z_][A-Za-z0-9_]*)(.*?)(\r?\n)?$")
 _inline_doc_re = re.compile(r"^(.*?(?:///<?|\*\*<)\s*)(.*?)(\r?\n)?$")
@@ -118,10 +105,7 @@ _cjk_re = re.compile(r"[\u3000-\u303f\u4e00-\u9fff\uff01-\uff60]")
 
 
 def _split_lang_segments(text: str):
-    """Split 'a [en] b [zh] c' into its marked segments.
-
-    Returns (lead, [(lang, text), ...]); lead is whatever precedes the first marker.
-    """
+    """Split `a [en] b [zh] c` into its marked segments and return `(lead, [(lang, text), ...])`."""
     marks = list(_lang_marker_re.finditer(text))
     if not marks:
         return text, []
@@ -144,11 +128,7 @@ def _chunk_characters(text: str) -> dict:
 
 
 def _assert_no_loss(ch: dict, out: list[str]) -> list[str]:
-    """A regrouping may move text between lines. It may not delete any of it.
-
-    Runs on every chunk of every doc build, because the failure it guards against is silent: a block simply
-    renders shorter, and nobody notices until a paragraph is missing from a published page.
-    """
+    """A regrouping may move text between lines but must not delete any of it; assert this on every chunk."""
     _before = _chunk_characters(ch['raw'] + ''.join(ch['lines']))
     _after = _chunk_characters(''.join(out))
     _lost = {_c: _n - _after.get(_c, 0) for _c, _n in _before.items() if _n > _after.get(_c, 0)}
@@ -163,9 +143,7 @@ def _rewrite_chunk(ch: dict) -> list[str]:
     _lead, _segs = _split_lang_segments(ch['rest'])
     _body_has_marker = any(_lang_marker_re.search(_l) for _l in ch['lines'])
     if not _segs or (len(_segs) == 1 and not _body_has_marker):
-        # Nothing to split, but the chunk's own body lines still belong to it. Returning the tag line alone
-        # deleted every untagged paragraph -- invisible while both languages shared a tag line, fatal once
-        # each language got its own, which is the shape the sources use.
+        # Nothing to split, but the chunk's own body lines still belong to it; returning the tag line alone deletes untagged paragraphs.
         return _assert_no_loss(ch, [ch['raw'], *ch['lines']])
 
     _primary = _segs[0][0]
@@ -188,22 +166,18 @@ def _rewrite_chunk(ch: dict) -> list[str]:
             continue
         _c_lead, _c_segs = _split_lang_segments(_content)
         if _c_segs:
-            # Text in front of the first marker on a *body* line continues the language already open: a
-            # wrapped sentence carries its `[zh]` at the end of the second line, so skipping the lead
-            # erases half of every such sentence.
+            # Text in front of the first marker on a body line continues the open language, so skipping the lead erases half a wrapped sentence.
             if _c_lead.strip():
                 _push(_primary, _c_lead)
             for _lang, _text in _c_segs:
                 _push(_lang, _text)
             continue
-        # Body paragraphs carry no marker: CJK belongs to the Chinese group, the rest to the language
-        # that opened the chunk.
+        # Body paragraphs carry no marker: CJK belongs to the Chinese group, the rest to the language that opened the chunk.
         _push('zh' if _cjk_re.search(_content) else _primary, _content)
 
     _indent = ch['prefix']
     _eol = ch['eol'] or '\n'
-    # Whatever sits between the tag and the first marker belongs to every language: it is the documented
-    # name for @param/@tparam, and dropping it makes Doxygen read the first word of the description as it.
+    # Text between the tag and the first marker belongs to every language: it is the documented name for @param/@tparam.
     _head = (ch['tag'] + _lead).rstrip() + ' '
     _out = []
     _written = [k for k in _order if _buckets[k]]
@@ -243,11 +217,7 @@ def _rewrite_block(block: list[str]) -> list[str]:
 
 
 def _normalize_bilingual(lines: list[str]) -> list[str]:
-    """Move every bilingual marker onto its own tag line, one group per language.
-
-    Without this the filter downstream assigns a `[zh]` continuation line to the English group
-    (English docs show Chinese) and drops it from the Chinese group (Chinese docs lose the text).
-    """
+    """Move every bilingual marker onto its own tag line, one group per language, before filtering."""
     _out, _block, _in_block = [], [], False
     for _line in lines:
         _stripped = _line.lstrip()
@@ -280,8 +250,7 @@ def _inline_lang_pick(line: str, lang_tag: Language) -> str:
     for _lang, _text in _segs:
         if _lang == lang_tag:
             return f"{_m.group(1)}{_text.strip()}{_m.group(3) or ''}"
-    # Tagged, but not in this language: an `[zh]`-only field description in the English build is not a
-    # translation gap to paper over, it is text the source says the English reader must not see.
+    # Tagged but not in this language: an `[zh]`-only field description must not appear in the English build.
     return ''
 
 
@@ -314,8 +283,7 @@ def _language_filter(lines: list[str], langs: list[str], lang_tag: Language) -> 
                 else:
                     container.append(l)
 
-    # A build that ships an unclosed comment documents nothing from that file, and Doxygen only says so in a
-    # warning nobody reads. Count doc-block openers against closers and fail here instead.
+    # An unclosed comment makes Doxygen document nothing, so count doc-block openers against closers and fail here.
     _depth = 0
     for _l in container:
         _s = _l.strip()
@@ -343,18 +311,13 @@ def _clean_doxygen_build(root: str):
 
 
 def _file_collector(folders: list[str], obj: list[str]) -> list[tuple[str, str]]:
-    """Collect ``(folder_root, relative_path)`` for every suffix hit.
-
-    Keeping the path relative to its configured folder is what lets the caller mirror the
-    source layout instead of flattening it.
-    """
+    """Collect `(folder_root, relative_path)` for every suffix hit so the caller can mirror the source layout."""
     res = []
     for folder in folders:
         entry = Path(folder)
         for _obj in obj:
             for file in entry.rglob(f"*.{_obj}"):
-                # relative paths stay POSIX internally: downstream compares them as strings
-                # (tutorial location, Doxyfile injection, messages) and pathlib yields '\' here
+                # Relative paths stay POSIX internally because downstream compares them as strings, while pathlib yields backslashes here.
                 res.append((folder, str(file.relative_to(entry)).replace(sep, '/')))
     return res
 
@@ -370,11 +333,7 @@ def _walk_files(root: str) -> list[str]:
 
 
 def _mirror_roots(folders: list[str]) -> dict[str, str]:
-    """Top-level name each configured doc folder gets inside the generated mirror.
-
-    ``include`` -> ``include``, ``src`` -> ``src``, ``docs/doxygen/dox`` -> ``dox``. Two
-    folders sharing a basename would silently collide, so that is a hard error.
-    """
+    """Top-level name a configured doc folder gets in the mirror; two folders sharing a basename are a hard error."""
     res, _seen = {}, {}
     for folder in folders:
         _key = os.path.basename(folder.rstrip(sep))
@@ -539,11 +498,7 @@ def _generate_docs_index(languages: list[str], versions: list[str], lib: str) ->
 
 
 def _capture_escape_files(x: list[str]) -> list[str]:
-    """A version-dropped file drags its paired suffix along (``.h`` <-> ``.c`` etc.).
-
-    splitext keeps a dotted directory name from confusing the pairing, and suffixes with
-    no pair (``.dox``/``.cxx``) are skipped instead of inventing a name.
-    """
+    """A version-dropped file drags its paired suffix along; use splitext so dotted directories do not confuse the pairing."""
     res = set(x)
     for _rel in x:
         _stem, _ext = os.path.splitext(_rel)
@@ -591,8 +546,7 @@ class AutomationDoc:
                 subprocess.run(["make", "-C", _path, "-e", f"SPHINXOPTS=-D language={lang_tag_map[_]}", "html"])
         subprocess.run(["make", "-C", _path, "clean"])
         subprocess.run(["make", "-C", _path, "html"])
-        # `make html` renders whatever `language` conf.py pins, so every other language -- the source
-        # language included -- would get no tree at all: emit one per language as `build/html_<code>`.
+        # `make html` renders only the language conf.py pins, so emit one tree per language as `build/html_<code>`.
         _pinned = self._sphinx_pinned_language(_path)
         _sphinx = shutil.which('sphinx-build')
         if _sphinx is None:
@@ -657,9 +611,7 @@ class AutomationDoc:
             for _ver in self.meta.get('doc_versions'):
                 os.mkdir(_lang_folder + sep + f'v{_ver}')
 
-        # move filtered docstring files, mirroring each source folder rather than flattening
-        # it: the tree keeps include/ src/ dox/ apart, so the published docs get real
-        # directory pages and two same-named files can no longer overwrite each other
+        # Mirror each source folder instead of flattening so the published docs keep directory pages and same-named files cannot collide.
         _folders = [self._root + sep + _ for _ in self.meta.get('doc_doxygen_folders')]
         _mirror = _mirror_roots(_folders)
         _files = _file_collector(_folders, self.meta.get('doc_doxygen_suffix'))
@@ -737,9 +689,7 @@ class AutomationDoc:
                 _meta = _meta_config.replace("%LAN%", _lang)
                 _meta = _meta.replace("%VER%", _ver)
                 _meta = _meta.replace("%FULL_LAN%", language_map.get(_lang))
-                # @example only matches files sitting DIRECTLY under EXAMPLE_PATH (unlike
-                # @include it ignores EXAMPLE_RECURSIVE), so the directories that actually
-                # hold a tutorial have to be listed, plus the mirror root for @include
+                # @example matches only files directly under EXAMPLE_PATH (it ignores EXAMPLE_RECURSIVE), so list the tutorial directories and the mirror root.
                 _meta = _meta.replace("%EXAMPLE_DIRS%", ' '.join(
                     f"./_{_lang}_v{_ver}_docstrings/" + (f"{_}/" if _ else '')
                     for _ in self._example_dirs).strip())
@@ -754,19 +704,13 @@ class AutomationDoc:
             _f_out = _build_folder + sep + _lang
             for _ver in self.meta.get('doc_versions'):
                 _leaf = _f_out + sep + f'v{_ver}'
-                # check=True: a doxygen that dies must fail the build. It used to print
-                # "successfully generated" whatever the exit status was.
+                # check=True: a doxygen that dies must fail the build instead of printing `successfully generated`.
                 subprocess.run(["doxygen", DOXYFILE_IN], cwd=Path(_leaf), check=True)
                 self._validate_doxygen_output(_leaf, _lang, _ver)
                 print(f"Doxygen build system: Documentation of [{_lang}, v{_ver}] successfully generated")
 
     def _validate_doc_sources(self):
-        """Completeness of the hand-written doc sources: landing page + tutorial.
-
-        Deliberately asserts properties, not paths -- ``doc_doxygen_folders`` alone decides
-        where documentation may live, so moving a file around inside the scanned tree stays
-        green. Only a broken property fails.
-        """
+        """Completeness of the hand-written doc sources: assert landing-page and tutorial properties, not paths."""
         _folders = [self._root + sep + _ for _ in self.meta.get('doc_doxygen_folders')]
         _files = _file_collector(_folders, self.meta.get('doc_doxygen_suffix'))
         _mirror = _mirror_roots(_folders)
@@ -832,8 +776,7 @@ class AutomationDoc:
             with open(_index, 'r', encoding='utf-8') as f:
                 _text = f.read()
             if self._mainpage_sections:
-                # @section ids survive the language and version filtering, so they mark the
-                # landing page no matter which language or version is being built
+                # @section ids survive language and version filtering, so they mark the landing page in every build.
                 for _sec in self._mainpage_sections:
                     if _sec not in _text:
                         _problems.append(f'landing page lost mainpage section "{_sec}"')

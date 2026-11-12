@@ -1,9 +1,4 @@
-"""Filesystem link helpers that work on POSIX and Windows without privileges.
-
-POSIX uses relative symlinks.  Windows first tries a symlink (Developer Mode or an
-elevated shell) and falls back to a directory junction, which every user can create
-on NTFS.
-"""
+"""Create and remove skill-tree links on POSIX (symlink) and Windows (junction fallback)."""
 
 from __future__ import annotations
 
@@ -69,8 +64,7 @@ def remove_dir_link(link: Path) -> None:
 
 
 def _run_cmd(arguments: list[str]) -> None:
-    # cmd builtins (mklink/rmdir) need cmd.exe.  Output is deliberately discarded:
-    # the Windows sandbox does not allow every child process to own a pipe.
+    # cmd builtins need cmd.exe; output is discarded because the Windows sandbox cannot pipe every child.
     result = subprocess.run(
         ["cmd", "/c", *arguments],
         stdout=subprocess.DEVNULL,
