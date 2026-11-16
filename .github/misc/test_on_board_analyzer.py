@@ -92,6 +92,16 @@ class GoldStandardTests(unittest.TestCase):
         # Every gold target is either reachable from the table or declared as a sibling of one.
         self.assertEqual(set(self.by_id) - mapped, siblings)
 
+    def test_metadata_schema_accepts_analyzer_core_names(self):
+        schema_path = ROOT / ".github" / "misc" / "metadata.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        pattern = schema["properties"]["on_board_validation"]["properties"]["profile_arch"]["items"]["pattern"]
+
+        for core in analyzer.KNOWN_CORES:
+            self.assertRegex(core, pattern)
+        for invalid in ("cortex-a53/bad", "Cortex-A53", "cortex a53"):
+            self.assertNotRegex(invalid, pattern)
+
 
 class SelectionTests(unittest.TestCase):
     def setUp(self):
