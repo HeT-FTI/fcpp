@@ -1,3 +1,9 @@
+## [0.3.9](https://github.com/HeT-FTI/fcpp/compare/v0.3.8...v0.3.9) (2026-11-16)
+
+### Bug Fixes
+
+* allow hyphenated CPU core names in metadata schema ([c9bd721](https://github.com/HeT-FTI/fcpp/commit/c9bd7210167be418184ecac3527d4f4112a1896e))
+
 ## [0.3.8](https://github.com/HeT-FTI/fcpp/compare/v0.3.7...v0.3.8) (2026-11-12)
 
 ### Bug Fixes
