@@ -1,11 +1,11 @@
-# MegaLinter descriptors; the version is pinned by the CI action SHA and run-megalinter.sh --release.
+# MegaLinter config; version is pinned in run-megalinter.sh (v10.2.0).
 FILTER_REGEX_INCLUDE: "(include|src)/"
 
 ENABLE: "C,CPP"
 DISABLE: "SPELL"
 
 ENABLE_LINTERS:
-  - REPOSITORY_GITLEAKS
+  - REPOSITORY_BETTERLEAKS
   - REPOSITORY_SEMGREP
   - REPOSITORY_CHECKOV
   - REPOSITORY_DEVSKIM
@@ -21,7 +21,7 @@ COPYPASTE_JSCPD_ARGUMENTS:
   - "--pattern"
   - "include/**/*,src/**/*"
 
-REPOSITORY_GITLEAKS_ARGUMENTS:
+REPOSITORY_BETTERLEAKS_ARGUMENTS:
   - "-c"
   - ".github/misc/.gitleaks.toml"
   - "--verbose"

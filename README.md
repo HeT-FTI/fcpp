@@ -195,12 +195,12 @@ built ones. If the later one, at least you need a locale Conan server for managi
 ### 5. Run MegaLinter locally (blocking SAST)
 
 MegaLinter mirrors the CI `megalinter` job (`.github/workflows/security-linters.yml`): same config
-(`.github/misc/.mega-linter.yml`), same full image, and the same version (`v8.8.0`, pinned to match the
-CI action). It runs the SAST layer — gitleaks / semgrep / checkov / devskim, plus clang-format
+(`.github/misc/.mega-linter.yml`), same full image, and the same version (`v10.2.0`, pinned to match the
+runner). It runs the SAST layer — betterleaks / semgrep / checkov / devskim, plus clang-format
 & cppcheck. The **required** gates (clang-format / clang-tidy / gitleaks with pinned tool versions) are the
 native `quality-gates` job of the same workflow.
 
-Prerequisites: Docker (or Podman) + Node.js ≥ 20.
+Prerequisites: Docker (or Podman) + Node.js ≥ 22.18.
 
 ```bash
 bash .github/misc/run-megalinter.sh             # lint the whole codebase
@@ -209,7 +209,7 @@ bash .github/misc/run-megalinter.sh src/foo.c   # lint selected files only
 CONTAINER_ENGINE=podman bash .github/misc/run-megalinter.sh   # Podman users
 ```
 
-- The first run pulls the `v8.8.0` image (a few GB — cached on later runs).
+- The first run pulls the `v10.2.0` image (a few GB — cached on later runs).
 - Reports are written to `megalinter-reports/` (git-ignored); per-linter details are in
   `megalinter-reports/linters_logs/ERROR-*.log`.
 - The runner (`mega-linter-runner`) is a devDependency — `npm ci` installs it, or it is fetched

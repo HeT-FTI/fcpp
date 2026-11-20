@@ -77,9 +77,10 @@ jobs:
   megalinter:
     name: MegaLinter
     runs-on: ubuntu-latest
-    # MegaLinter blocks on the rules it is configured with; it only reads, so callers stay least-privilege
+    # MegaLinter only reads; commit statuses need statuses: write.
     permissions:
       contents: read
+      statuses: write
 
     steps:
       - name: Checkout Code
@@ -92,50 +93,61 @@ jobs:
         id: check_grafana
         run: |
           if [[ -n "$API_URL" && -n "$API_USER" && -n "$API_PASS" ]]; then
-            echo "available=true" >> $GITHUB_OUTPUT
-            echo "✅ Grafana API reporter secrets are configured"
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Grafana reporter configured; GitHub Status remains the default"
           else
-            echo "available=false" >> $GITHUB_OUTPUT
-            echo "ℹ️  Grafana API reporter secrets not configured — will fallback to artifact upload"
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Grafana reporter not configured; using GitHub Status + artifact"
           fi
         env:
           API_URL: ${{ secrets.API_REPORTER_URL }}
           API_USER: ${{ secrets.API_REPORTER_BASIC_AUTH_USERNAME }}
           API_PASS: ${{ secrets.API_REPORTER_BASIC_AUTH_PASSWORD }}
 
-      # devskim/semgrep/checkov block as well; the native gate above is the deterministic baseline
-      - name: MegaLinter (with Grafana reporter)
-        if: steps.check_grafana.outputs.available == 'true'
-        # Pinned to MegaLinter v8.8.0 -- keep in sync with run-megalinter.sh --release
-        uses: oxsecurity/megalinter@e08c2b05e3dbc40af4c23f41172ef1e068a7d651
-        continue-on-error: false
-        id: ml_grafana
+      - name: Free runner disk
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/local/share/chromium
+          df -h /
+
+      - name: MegaLinter
         env:
-          MEGALINTER_CONFIG: .github/misc/.mega-linter.yml
-          VALIDATE_ALL_CODEBASE: ${{ inputs.validate_all_codebase }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          API_REPORTER: true
+          GITHUB_STATUS_REPORTER: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+          API_AVAILABLE: ${{ steps.check_grafana.outputs.available }}
           API_REPORTER_URL: ${{ secrets.API_REPORTER_URL }}
           API_REPORTER_BASIC_AUTH_USERNAME: ${{ secrets.API_REPORTER_BASIC_AUTH_USERNAME }}
           API_REPORTER_BASIC_AUTH_PASSWORD: ${{ secrets.API_REPORTER_BASIC_AUTH_PASSWORD }}
           API_REPORTER_METRICS_URL: ${{ secrets.API_REPORTER_METRICS_URL }}
           API_REPORTER_METRICS_BASIC_AUTH_USERNAME: ${{ secrets.API_REPORTER_METRICS_BASIC_AUTH_USERNAME }}
           API_REPORTER_METRICS_BASIC_AUTH_PASSWORD: ${{ secrets.API_REPORTER_METRICS_BASIC_AUTH_PASSWORD }}
-          API_REPORTER_DEBUG: false
+        run: |
+          set -euo pipefail
+          trap 'rm -f .env' EXIT
+          {
+            echo "MEGALINTER_CONFIG=.github/misc/.mega-linter.yml"
+            echo "VALIDATE_ALL_CODEBASE=${{ inputs.validate_all_codebase }}"
+            echo "APPLY_FIXES=none"
+            echo "GITHUB_TOKEN=$GITHUB_TOKEN"
+            echo "GITHUB_SHA=$GITHUB_SHA"
+            echo "GITHUB_REPOSITORY=${GITHUB_REPOSITORY:-}"
+            echo "GITHUB_HEAD_REF=${GITHUB_HEAD_REF:-}"
+            echo "GITHUB_REF_NAME=${GITHUB_REF_NAME:-}"
+            echo "GITHUB_STATUS_REPORTER=$GITHUB_STATUS_REPORTER"
+            echo "GITHUB_COMMENT_REPORTER=false"
+            if [ "$API_AVAILABLE" = "true" ]; then
+              echo "API_REPORTER=true"
+              echo "API_REPORTER_URL=$API_REPORTER_URL"
+              echo "API_REPORTER_BASIC_AUTH_USERNAME=$API_REPORTER_BASIC_AUTH_USERNAME"
+              echo "API_REPORTER_BASIC_AUTH_PASSWORD=$API_REPORTER_BASIC_AUTH_PASSWORD"
+              echo "API_REPORTER_METRICS_URL=$API_REPORTER_METRICS_URL"
+              echo "API_REPORTER_METRICS_BASIC_AUTH_USERNAME=$API_REPORTER_METRICS_BASIC_AUTH_USERNAME"
+              echo "API_REPORTER_METRICS_BASIC_AUTH_PASSWORD=$API_REPORTER_METRICS_BASIC_AUTH_PASSWORD"
+              echo "API_REPORTER_DEBUG=false"
+            fi
+          } > .env
+          bash .github/misc/run-megalinter.sh
 
-      # Run MegaLinter WITHOUT Grafana API reporter as fallback
-      - name: MegaLinter (artifact-only)
-        if: steps.check_grafana.outputs.available != 'true'
-        # Pinned to MegaLinter v8.8.0 (same as the Grafana path above).
-        uses: oxsecurity/megalinter@e08c2b05e3dbc40af4c23f41172ef1e068a7d651
-        continue-on-error: false
-        id: ml_fallback
-        env:
-          MEGALINTER_CONFIG: .github/misc/.mega-linter.yml
-          VALIDATE_ALL_CODEBASE: ${{ inputs.validate_all_codebase }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Always upload artifacts as a safety net (works for both paths)
       - name: Archive production artifacts
         if: success() || failure()
         uses: actions/upload-artifact@v7

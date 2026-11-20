@@ -23,7 +23,7 @@ user-invocable: true
    python3 .github/misc/gates.py tidy     # clang-tidy (WarningsAsErrors, standards from metadata.json)
    python3 .github/misc/gates.py guard    # forbidden #include directives (rules: .github/misc/.include-guard.txt)
    # SAST — mirrors CI `megalinter` job (also blocking); requires Docker/Podman + Node
-   # version pinned to v8.8.0 (same as the pinned CI action) so results match CI
+   # version pinned to v10.2.0 (same as the runner pin) so results match CI
    bash .github/misc/run-megalinter.sh   # or: npm run lint:megalinter  (--fix to auto-fix)
    ```
    > Shell note: only the `bash` line is POSIX; `python3 .github/misc/gates.py` is cross-platform. On Windows
