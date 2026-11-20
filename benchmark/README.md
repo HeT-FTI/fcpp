@@ -10,7 +10,7 @@
 
 ```
 benchmark/
-├── bench_entry.c              ← 【算法工程师编辑】用例注册入口（MCU/Linux 共用）
+├── bench_entry.cpp            ← 【算法工程师编辑】用例注册入口（MCU/Linux 共用）
 ├── algo_module.ld.in          ← Linker Script 模板（仅裸机，自动填充地址）
 ├── CMakeLists.txt             ← 双目标编译脚本（baremetal / Linux 自动分支）
 ├── conanfile.py               ← Conan 包配方（不需要修改）
@@ -19,11 +19,11 @@ benchmark/
 │   ├── het_bench_core.h       ← Benchmark ABI（HostInterface、Case、Manifest）
 │   └── het_bench_core.c       ← 运行时（计时、输出、用例调度）—— MCU/Linux 共用
 ├── platform/
-│   ├── bench_config.json          ← 【每块板卡配置一次】Cortex-M 硬件参数
-│   └── bench_config_linux.json    ← 【参考模板】Cortex-A Linux 硬件参数示例
+│   ├── bench_config.json          ← 【模板维护】Cortex-M 硬件参数
+│   └── bench_config_linux.json    ← 【模板维护】Cortex-A Linux 硬件参数示例
 ├── port/
 │   └── linux/
-│       └── bench_main_linux.c ← 【A 核唯一新增 .c】main() + clock_gettime + printf
+│       └── bench_main_linux.cpp ← 【A 核唯一新增 .cpp】main() + clock_gettime + printf
 ├── profiles/                  ← 自动生成的 Conan profile（勿手动编辑，每次构建覆盖）
 └── script/
     ├── run_bench.py           ← 核心自动化脚本（生成 profile、构建、部署）
@@ -41,8 +41,8 @@ benchmark/
 | 输出 | UART 回调 → 串口捕获 | `printf()` → stdout（ADB/SSH 捕获） |
 | 输出协议 | `BENCHMARK_START / RESULT / BENCHMARK_END` | **完全相同** |
 | 部署 | JLink / OpenOCD / PyOCD 烧录 | `adb push` / `scp` 传输后执行 |
-| 新增端口文件 | 无（Base Firmware 已提供） | `port/linux/bench_main_linux.c` |
-| `bench_entry.c` | 共用，无需修改 | 共用，无需修改 |
+| 新增端口文件 | 无（Base Firmware 已提供） | `port/linux/bench_main_linux.cpp` |
+| `bench_entry.cpp` | 共用，无需修改 | 共用，无需修改 |
 | `het_bench_core.c` | 共用，无需修改 | 共用，无需修改 |
 
 ---
@@ -70,13 +70,18 @@ source /path/to/.venv/bin/activate
 
 ---
 
-### Step 1：配置板卡参数（每块新板配置一次）
+### Step 1：选择板卡配置
 
-根据目标平台选择对应的配置：
+`platform/` 下的板卡配置由模板维护者维护，派生项目不要修改。直接选择与目标板匹配的配置，用 `--config` 传入：
+
+```bash
+cd benchmark
+python3 script/run_bench.py --config platform/bench_config_stm32f767.json --no-flash
+```
 
 #### Cortex-M / 裸机
 
-编辑 `bench_config.json`：
+现有 Cortex-M 配置的字段说明（示例：`platform/bench_config_stm32f767.json`）：
 
 ```json
 {
@@ -105,11 +110,7 @@ source /path/to/.venv/bin/activate
 
 #### Cortex-A / Linux
 
-复制示例文件后编辑：
-
-```bash
-cp bench_config_linux.json bench_config.json
-```
+现有 Linux 配置字段说明（示例：`platform/bench_config_linux.json`）：
 
 ```json
 {
@@ -136,13 +137,13 @@ cp bench_config_linux.json bench_config.json
 | `remote_path` | 目标设备上的路径 | `/data/local/tmp/benchmark` |
 | `ssh_host` | SSH 目标地址（ssh 模式） | `root@192.168.1.100` |
 
-> **多板管理**：不同板卡创建不同 `*.json` 文件（如 `board_m0.json`、`board_a7.json`），用 `--config` 参数切换。
+> **多板管理**：不同板卡使用不同配置文件，用 `--config` 切换。目标板没有对应配置时，把最接近的配置复制到项目自有目录（如 `benchmark/configs/bench_config_myboard.json`）再编辑；不要修改 `platform/`。
 
 ---
 
 ### Step 2：编写算法测试用例（MCU / Linux 完全一致）
 
-编辑 `bench_entry.c`，**只修改 USER ZONE 内的内容**：
+编辑 `bench_entry.cpp`，**只修改 USER ZONE 内的内容**：
 
 ```c
 /* ============================================================
@@ -208,7 +209,7 @@ Output: build/Release/benchmark.bin
 [INFO] --no-flash specified, skipping download step.
 ```
 
-**Cortex-A Linux 预期输出（bench_config.json 已设 target_os=Linux）：**
+**Cortex-A Linux 预期输出（所用配置已设 target_os=Linux）：**
 
 ```
 [INFO] Profile generated: profiles/cortex-a7.profile
@@ -532,12 +533,12 @@ adb devices                # 验证设备连接
 
 ```mermaid
 flowchart TD
-    E[算法工程师\n编辑 bench_entry.c\n注册用例表] --> CM
+    E[算法工程师\n编辑 bench_entry.cpp\n注册用例表] --> CM
     E --> LA
 
     subgraph CM["Cortex-M 路径（裸机）"]
         direction TB
-        CM1[bench_config.json\ntarget_mcu / flash地址 / jlink_device] --> CM2
+        CM1[所选 *.json\ntarget_mcu / flash地址 / jlink_device] --> CM2
         CM2[run_bench.py\n生成 baremetal profile] --> CM3[Conan build\n-ffreestanding + 链接脚本]
         CM3 --> CM4[benchmark.bin]
         CM4 --> CM5[download.py\nJLink / OpenOCD / PyOCD]
@@ -549,11 +550,11 @@ flowchart TD
 
     subgraph LA["Cortex-A 路径（Linux）"]
         direction TB
-        LA1[bench_config.json\ntarget_os=Linux / target_cpu / deploy_tool] --> LA2
+        LA1[所选 *.json\ntarget_os=Linux / target_cpu / deploy_tool] --> LA2
         LA2[run_bench.py\n生成 Linux profile] --> LA3[Conan build\n标准可执行文件]
         LA3 --> LA4[benchmark ELF]
         LA4 --> LA5[download.py\nadb push / scp]
-        LA5 --> LA6[设备执行\nbench_main_linux.c main]
+        LA5 --> LA6[设备执行\nbench_main_linux.cpp main]
         LA6 --> LA7[clock_gettime getTicks\nprintf write]
         LA7 --> OUT2[stdout 输出\nBENCHMARK_START\nUNIT ns_per_call\nRESULT ns/call\nBENCHMARK_END]
     end
@@ -571,14 +572,14 @@ typedef struct {
 } HostInterface;
 ```
 
-`bench_entry.c` / `het_bench_core.c` 只依赖 `HostInterface`，对平台完全透明。
+`bench_entry.cpp` / `het_bench_core.c` 只依赖 `HostInterface`，对平台完全透明。
 
 ---
 
 ## 常见问题
 
 **Q: 编译报 `arm-toolchain/X.Y.relZ not found`**  
-A: 检查 `bench_config.json` 的 `toolchain_package_version`，确保与本地 Conan 缓存版本一致。可用 `ls ~/.conan2/p/ | grep arm-t` 查看。
+A: 检查所用配置文件的 `toolchain_package_version`，确保与本地 Conan 缓存版本一致。可用 `ls ~/.conan2/p/ | grep arm-t` 查看。
 
 **Q: Cortex-M 烧录后无 UART 输出**  
 A: 确认：① binary 烧到了正确的 Flash 地址；② Base Firmware 的 `bench_host` 指向了对应 Slot；③ 串口波特率正确。
@@ -593,7 +594,7 @@ A: 不应再有。原始协议统一输出整数 `ns/call`，`benchmark-report.m
 `REPEAT|...` 和报告中的 `canonical_unit: ms/call`。
 
 **Q: `CASE_ERROR` 出现在输出中**  
-A: 用例 wrapper 函数返回了 `0`。检查 `bench_entry.c` 中对应函数的返回值（应返回 `1` 表示通过）。
+A: 用例 wrapper 函数返回了 `0`。检查 `bench_entry.cpp` 中对应函数的返回值（应返回 `1` 表示通过）。
 
 **Q: Cortex-M Flash / RAM 不够**  
 A: 修改 `algo_module.ld.in` 中的 `LENGTH`（默认 Flash 64K，RAM 32K），确保地址范围不与 Base Firmware 重叠。

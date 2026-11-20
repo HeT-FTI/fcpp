@@ -61,13 +61,13 @@ Linux armv7 RK3506 推荐配置：
 }
 ```
 
-不要覆盖模板 `platform/bench_config_linux.json`。本机调试可新增：
+`platform/` 下的配置随模板维护，派生项目不要修改。项目自有的板卡配置放在 `benchmark/configs/` 下，例如：
 
 ```text
-platform/bench_config_rk3506.json
+benchmark/configs/bench_config_rk3506.json
 ```
 
-CI 临时配置可由 CI 脚本生成，不要求提交到仓库。
+运行时用 `--config` 指定该文件。CI 临时配置可由 CI 脚本生成，不要求提交到仓库。
 
 ### OrangePi RK3588 CI 预留
 

@@ -110,6 +110,11 @@ jobs:
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/local/share/chromium
           df -h /
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22.18'
+
       - name: MegaLinter
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

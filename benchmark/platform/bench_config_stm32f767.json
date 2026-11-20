@@ -1,5 +1,5 @@
 {
-  "_comment": "Board configuration. Edit this file for your specific hardware target. This is the ONLY file you need to change per board.",
+  "_comment": "Board configuration maintained with the template. Copy it to a project-owned path and pass --config; do not edit it in a derived project.",
 
   "target_mcu":        "cortex-m7",
   "float_abi":         "hard",

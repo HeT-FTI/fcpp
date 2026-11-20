@@ -394,7 +394,7 @@ def main():
     cfg_path = BENCH_DIR / args.config
     if not cfg_path.exists():
         print(f"[ERROR] Config not found: {cfg_path}")
-        print("  Copy platform/bench_config.json and edit it for your board.")
+        print("  Copy platform/bench_config.json to a project-owned path and pass --config; do not edit platform/.")
         sys.exit(1)
 
     cfg      = load_json(cfg_path)
