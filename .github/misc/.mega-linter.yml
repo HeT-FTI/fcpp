@@ -51,8 +51,6 @@ REPOSITORY_CHECKOV_ARGUMENTS:
 REPOSITORY_DEVSKIM_ARGUMENTS:
   - "--include-globs"
   - "**/include/**,**/src/**"
-  - "--ignore-globs"
-  - "**/test_package/**"
 
 # use the FLAT <LINTER>_CONFIG_FILE key; the nested form is silently ignored
 C_CLANG_FORMAT_CONFIG_FILE: ".github/misc/.clang-format-c"
