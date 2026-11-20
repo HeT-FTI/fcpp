@@ -76,23 +76,28 @@ jobs:
 
       - name: Verify metadata.json format preserved
         run: |
-          # the release may change ONLY the version field, else the job fails loudly
+          # the release may change ONLY version, plus scaffold for the upstream template
           python3 - <<'PY'
           import json, difflib, sys
           pre = open('/tmp/metadata.pre.json', encoding='utf-8').read()
           post = open('metadata.json', encoding='utf-8').read()
-          json.loads(pre)
-          json.loads(post)
+          pre_obj = json.loads(pre)
+          post_obj = json.loads(post)
+          changed = {key for key in set(pre_obj) | set(post_obj) if pre_obj.get(key) != post_obj.get(key)}
+          if not changed:
+              print('metadata.json unchanged; no release was produced in this run')
+              sys.exit(0)
           diff = [
               l for l in difflib.unified_diff(pre.splitlines(), post.splitlines(), lineterm='')
               if (l.startswith('+') or l.startswith('-')) and not l.startswith(('+++', '---'))
           ]
-          ok = len(diff) == 2 and all('"version"' in l for l in diff)
+          allowed = changed in ({"version"}, {"version", "scaffold"})
+          ok = allowed and len(diff) in (2, 4) and all(('"version"' in l or '"scaffold"' in l) for l in diff)
           if not ok:
-              print('::error::metadata.json drifted beyond the version field during release')
+              print('::error::metadata.json drifted beyond version/scaffold during release')
               print('\n'.join(diff))
               sys.exit(1)
-          print('metadata.json format preserved; only the version field changed')
+          print(f'metadata.json format preserved; changed fields: {sorted(changed)}')
           PY
 
       - name: Emit release log

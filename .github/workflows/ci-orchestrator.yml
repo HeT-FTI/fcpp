@@ -229,7 +229,7 @@ jobs:
   build:
     name: Build
     needs: controller
-    if: needs.controller.outputs.trigger_build == 'true'
+    if: needs.controller.outputs.trigger_build == 'true' || needs.controller.outputs.trigger_release == 'true'
     uses: ./.github/workflows/ci-build-test.yml
     with:
       pkg_name: ${{ needs.controller.outputs.pkg_name }}
@@ -238,7 +238,7 @@ jobs:
   tests:
     name: Tests
     needs: controller
-    if: needs.controller.outputs.trigger_tests == 'true'
+    if: needs.controller.outputs.trigger_tests == 'true' || needs.controller.outputs.trigger_release == 'true'
     uses: ./.github/workflows/full-test-automation.yml
     with:
       pkg_name: ${{ needs.controller.outputs.pkg_name }}
@@ -246,11 +246,19 @@ jobs:
       activate_code_coverage: ${{ needs.controller.outputs.activate_code_coverage }}
       build_type: ${{ needs.controller.outputs.build_type }}
 
-  # Release runs in the same orchestrator run; semver-release.yml gates on :package: again.
+  # Release uses the same set as the main-protection required checks; optional docs/cross/on-board do not block it.
   release:
     name: Release
-    needs: controller
-    if: github.event_name == 'push' && needs.controller.outputs.trigger_release == 'true'
+    needs: [controller, project-gates, build, tests, security]
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      needs.controller.result == 'success' &&
+      needs.controller.outputs.trigger_release == 'true' &&
+      needs.project-gates.result == 'success' &&
+      needs.build.result == 'success' &&
+      needs.tests.result == 'success' &&
+      needs.security.result == 'success'
     permissions:
       contents: write
       issues: write
@@ -267,7 +275,7 @@ jobs:
   security:
     name: Security Scan
     needs: controller
-    if: needs.controller.outputs.trigger_security == 'true'
+    if: needs.controller.outputs.trigger_security == 'true' || needs.controller.outputs.trigger_release == 'true'
     permissions:
       contents: read
       statuses: write

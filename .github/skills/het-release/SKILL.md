@@ -28,6 +28,8 @@ user-invocable: true
 
 ## 3-Step Checklist（三步操作清单）
 
+> In `ci-orchestrator.yml`, `Release` is a job that waits for `Build`, `Tests` and `Security Scan`; a release push forces those three even when their emojis are absent. 发版 job 会等 build/tests/security 全绿，发布推送会自动强制这三项。
+
 1. Confirm the pre-flight gate above. 确认前置门。
 2. Land the work with proper prefixes（用规范前缀落地改动）:
    - `feat(...)` → minor（次版本 +1）

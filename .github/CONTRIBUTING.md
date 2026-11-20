@@ -18,7 +18,8 @@
 ### 分支版本边界
 
 - `main` 是唯一发版分支，也是唯一 CI 分支：只有 main push、发布开关开启且提交包含
-  `(:package:):` 时才由 semantic-release 生成 tag、CHANGELOG 和版本号。
+  `(:package:):` 时才由 semantic-release 生成 tag、CHANGELOG 和版本号。`Release` job
+  会等待 `Build`、`Tests`、`Security Scan` 全绿；发布推送会自动强制这三项。
 - 板端矩阵同样只在 `main` 触发；派生项目的功能与分支设计均以 `main` 为目标。
 - 在 `main` push 包含 `:fire:` 的提交、且 `workflow_triggers.on_board=true` 时，
   `ci-orchestrator` 调用 `hetai-package-matrix`，由 `on_board_validation` 选出目标并与
