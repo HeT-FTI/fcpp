@@ -1,3 +1,12 @@
+## [0.3.10](https://github.com/HeT-FTI/fcpp/compare/v0.3.9...v0.3.10) (2026-11-20)
+
+### Bug Fixes
+
+* absorb the 0025 build and coverage fixes ([c25d6a5](https://github.com/HeT-FTI/fcpp/commit/c25d6a56c8d2328e239c420be402d44da62fb9e6))
+* add the metadata scaffold contract ([b8ea830](https://github.com/HeT-FTI/fcpp/commit/b8ea830752daf9fc262edb4c408e475795996ff1))
+* pin benchmark platform configs, free bench_entry ([bd7bb0f](https://github.com/HeT-FTI/fcpp/commit/bd7bb0f0368c5c64b92eb940a212d35f43894d6d))
+* publish linter statuses and protect platform configs ([29ac1a2](https://github.com/HeT-FTI/fcpp/commit/29ac1a2f972737ac4a07203ac905c5a6576e434f))
+
 ## [0.3.9](https://github.com/HeT-FTI/fcpp/compare/v0.3.8...v0.3.9) (2026-11-16)
 
 ### Bug Fixes
