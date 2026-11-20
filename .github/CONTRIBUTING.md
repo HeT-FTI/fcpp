@@ -4,7 +4,9 @@
 
 提交信息是**双通道**：conventional 前缀驱动版本号（semantic-release），emoji 驱动附加 CI 流水线（见 `.github/skills/_shared/gitmoji.md`）。
 
-**Canonical form**: `<type>(<emoji|scope>)?!?: <description>`
+**Canonical form**: `<type>(:emoji:)!?: <description>` — the scope **must** be a gitmoji. 例外仅限自动化：
+`chore(release):`、`chore(deps):`、`build(deps):`。非 emoji scope（如 `fix(board):`）会被
+`canonical-scope` 规则拒绝；本地 commit-msg hook 与 CI 使用同一份规则。
 
 | type | 用途 | 示例 |
 |---|---|---|
@@ -22,10 +24,12 @@
   `ci-orchestrator` 调用 `hetai-package-matrix`，由 `on_board_validation` 选出目标并与
   硬件验证金标准对账；板卡型号不在仓库里声明。只跑诊断全量时使用
   `workflow_dispatch(build_mode=all)`。
-- **CI 门禁强制**：`ci-orchestrator.yml` 的 `commit-lint` job 在 push/PR 上校验；本地自查 `npx commitlint --config .github/misc/commitlint.config.js --from HEAD~1 --to HEAD`。
+- **CI 门禁强制**：`ci-orchestrator.yml` 的 `commit-lint` job 在 push 上校验 push commits、在 PR 上校验 PR 标题与 PR commits；本地自查 `npx commitlint --config .github/misc/commitlint.config.js --from HEAD~1 --to HEAD`。
 - ⚠️ `.github/misc/commitlint.config.js` 与 `.github/misc/.releaserc.json` 的 `headerPattern` 必须同步修改，否则会出现"门禁通过但版本不自增"。
 
 ## PR 流程
+
+`main` 受 `.github/rulesets/main.json` 保护：只接受 PR（1 approval + CODEOWNERS + required checks + linear history），并设为 squash-only。
 
 1. 从 `main` 拉分支，按 canonical form 拆分提交。
 2. 保证 `commit-lint`、`schema-check`、`build`、`tests`（PR 上 shift-left 强制）全绿。
@@ -39,8 +43,8 @@
 source ~/venv/build/bin/activate
 # node 工具（commitlint/ajv/semantic-release）
 npm ci --no-audit --no-fund
-# 第一道闸（一次性）
-pip install pre-commit && pre-commit install --config .github/misc/.pre-commit-config.yaml
+# 第一道闸（一次性）：安装 pre-commit 与 commit-msg hook
+pip install pre-commit && npm run hooks:install
 
 # 质量自查（门禁命令只有一份实现：.github/misc/gates.py，CI/pre-commit/编辑器共用）
 # 注：clang-format 需 >= 19，建议 `pip install clang-format==23.1.0`
@@ -48,7 +52,7 @@ npx ajv validate -s .github/misc/metadata.schema.json -d metadata.json --spec=dr
 python3 .github/misc/gates.py format   # clang-format --dry-run --Werror，.c/.h 走 C 配置
 python3 .github/misc/gates.py tidy     # clang-tidy（WarningsAsErrors，标准取自 metadata.json）
 # MegaLinter SAST（会拦 CI，镜像 megalinter job；需 Docker/Podman）
-# 版本已固定为 v8.8.0，与 CI action（oxsecurity/megalinter@e08c2b05...）一致
+# 版本已固定为 v10.2.0，与 run-megalinter.sh --release 一致
 bash .github/misc/run-megalinter.sh          # 或 npm run lint:megalinter；--fix 自动修复
 
 # 构建 + 测试（此处 Debug 是本地复现基线：覆盖率在 Debug 下测量）
@@ -62,6 +66,7 @@ conan create . -s build_type=Debug --build=missing
 - `metadata.json`：单一真源，schema 见 `.github/misc/metadata.schema.json`；字段语义见 `.github/skills/_shared/metadata-contract.md`。
 - 代码规范：`.github/misc/.clang-format-c`（`.c/.h`）、`.github/misc/.clang-format-cpp`（`.hpp/.cpp`）、`.github/misc/.clang-tidy`（WarningsAsErrors）与 `.github/skills/_shared/code-conventions.md`。
 - 测试体系：`test_package/test/{unit,stress}/`，GTest 只进 test_package（见 `test-conventions.md`）。
+- 脚手架对账：`metadata.scaffold` 固定模板版本，`scaffold-check` 对 `.github/misc/scaffold-paths.txt` 列出的文件逐字节比对；项目自有差异写进 `.github/project/scaffold.json` 的 `tolerated`（必须带 `patch`/`why`/`exit`），不要直接改模板文件。
 
 ## 仓库布局（Repository Layout）
 

@@ -1,0 +1,19 @@
+# Template-owned paths; downstream edits must be upstreamed or declared in scaffold.json tolerated.
+.github/misc/**
+.github/workflows/**
+.devcontainer/**
+.vscode/**
+CMakeLists.txt
+conan_provider.cmake
+conanfile.py
+docs/build.py
+test_package/CMakeLists.txt
+test_package/conanfile.py
+benchmark/CMakeLists.txt
+benchmark/conanfile.py
+benchmark/build.bat
+benchmark/bench_entry.cpp
+benchmark/algo_module.ld.in
+benchmark/core/**
+benchmark/port/**
+benchmark/script/**

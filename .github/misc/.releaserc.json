@@ -25,7 +25,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "node -e \"const fs = require('fs'); const content = fs.readFileSync('metadata.json', 'utf8'); const updated = content.replace(/\\\"version\\\"\\s*:\\s*\\\"[^\\\"]+\\\"/, '\\\"version\\\": \\\"${nextRelease.version}\\\"'); fs.writeFileSync('metadata.json', updated);\""
+        "prepareCmd": "node -e \"const fs = require('fs'); const content = fs.readFileSync('metadata.json', 'utf8'); let updated = content.replace(/\\\"version\\\"\\s*:\\s*\\\"[^\\\"]+\\\"/, '\\\"version\\\": \\\"${nextRelease.version}\\\"'); if (/\\\"name\\\"\\s*:\\s*\\\"fcpp\\\"/.test(content)) updated = updated.replace(/\\\"scaffold\\\"\\s*:\\s*\\\"[^\\\"]+\\\"/, '\\\"scaffold\\\": \\\"${nextRelease.version}\\\"'); fs.writeFileSync('metadata.json', updated);\""
       }
     ],
     [
