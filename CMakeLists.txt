@@ -1,6 +1,4 @@
-# Downstream contract (HeT DevTools): the CI baseline stays 3.28. Hosts with an
-# older CMake may explicitly lower the floor — the default path is unchanged:
-#   cmake -DHET_CMAKE_MIN=3.15 ..
+# Downstream contract: CI baseline is 3.28; an older host may lower the floor; the default path is unchanged.
 if(DEFINED HET_CMAKE_MIN)
   cmake_minimum_required(VERSION ${HET_CMAKE_MIN})
 else()
@@ -27,7 +25,7 @@ project(${LIB_NAME} LANGUAGES C CXX)
 # Coverage is decided once per build and injected by the recipe; it must be read after
 # project(), which is when the Conan toolchain that carries it is processed. An instrumented
 # library cannot be linked by an uninstrumented consumer, so the two must never disagree.
-# A direct `cmake -S . -B build` has nobody to inject it, so metadata.json stays the default.
+# Coverage is injected after project(); never mix instrumented and plain consumers; metadata.json is the default.
 if(NOT DEFINED ENABLE_COVERAGE)
     string(JSON ENABLE_COVERAGE ERROR_VARIABLE json_error GET "${METADATA_JSON}" "activate_code_coverage")
 endif()
@@ -135,8 +133,7 @@ if(IS_HEADER)  # header-only package
   # the only thing a header-only package can enforce on its consumers is the standard
   target_compile_features(${LIB_NAME} INTERFACE cxx_std_${BUILD_CPPSTD})
 
-  # a header-only package ships no TU, so nothing would prove these headers compile for
-  # this toolchain: one probe TU per public header, built but never installed
+  # A header-only package ships no TU, so one probe TU per public header proves it compiles for this toolchain.
   set(HEADER_PROBE_DIR "${CMAKE_CURRENT_BINARY_DIR}/header_probe")
   file(MAKE_DIRECTORY "${HEADER_PROBE_DIR}")
   set(HEADER_PROBES "")
@@ -263,17 +260,14 @@ else()  # general package
   )
 
 
-  # code coverage options
-  # 交叉编译（MCU 裸机 / Linux 目标板）没有 libgcov 运行时，插桩会导致
-  # __gcov_init/__gcov_exit 等符号链接期未定义；覆盖率只对本机测试构建生效。
+  # 交叉编译（MCU 裸机 / Linux 目标板）没有 libgcov 运行时，插桩会导致 __gcov_init/__gcov_exit 等符号未定义；覆盖率只对本机测试构建生效。
   if(ENABLE_COVERAGE AND NOT CMAKE_CROSSCOMPILING)
       if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
           set(COVERAGE_FLAGS "--coverage" "-O0" "-g")
           set(LINK_FLAGS "--coverage")
       elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
           set(COVERAGE_FLAGS "-fprofile-instr-generate" "-fcoverage-mapping" "-O0" "-g")
-          # -fprofile-instr-generate is a driver flag: the LLVM profile runtime is
-          # only pulled in when the flag also appears on the link line.
+          # -fprofile-instr-generate is a driver flag: the LLVM runtime is linked only with the flag on the link line.
           set(LINK_FLAGS "-fprofile-instr-generate")
       else()
           message(FATAL_ERROR "Code coverage not support for compiler: ${CMAKE_CXX_COMPILER_ID}")

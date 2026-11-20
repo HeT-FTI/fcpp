@@ -397,8 +397,8 @@ class PackageTestConan(ConanFile):
 
     def _render_html_report(self, coverage_folder, info_file, pkg_root):
         """Filter to our cache entry, merge duplicates, render HTML and clean up; shared by both coverage paths."""
-        # scope the report to this package's derived cache root; a non-matching filter makes lcov 2.x abort
-        cmd2 = ['lcov', '--extract', info_file,
+        # scope to this package's cache root; lcov 2.x also needs --ignore-errors here.
+        cmd2 = ['lcov', '--ignore-errors', _lcov_ignore_errors(), '--extract', info_file,
                 pkg_root.replace(sep, '/') + '/*', '--output-file',
                 os.path.join(coverage_folder, 'coverage_test.filtered.info')]
         subprocess.run(cmd2, check=True)

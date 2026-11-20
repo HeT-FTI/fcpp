@@ -31,5 +31,6 @@ paths = [
   '''^\.pre-commit-config\.yaml''',
   '''^\.vscode.*''',
   '''^\.devcontainer.*''',
-  '''^wokspace.*''',
+  '''^workspace.*''',
+  '''^\.env$''',
 ]
