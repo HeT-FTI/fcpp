@@ -2,7 +2,7 @@
 # Apply the checked-in main-branch ruleset; safe to re-run (create or update by name).
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 RULESET_FILE="$ROOT_DIR/.github/rulesets/main.json"
 DRY_RUN=""
 
@@ -10,7 +10,7 @@ for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN="--dry-run" ;;
     -h|--help)
-      echo "Usage: scripts/apply-main-rules.sh [--dry-run]"
+      echo "Usage: .github/misc/apply-main-rules.sh [--dry-run]"
       exit 0
       ;;
     *) echo "unknown argument: $arg" >&2; exit 2 ;;
