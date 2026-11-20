@@ -31,6 +31,9 @@ user-invocable: true
 ```bash
 pip install conan
 conan profile detect --force
+# Node tooling + local commit-msg hook (same rules as CI)
+npm ci --no-audit --no-fund
+pip install pre-commit && npm run hooks:install
 ```
 Docs tools (optional, Linux): `sudo apt install -y doxygen graphviz && pip install numpy sphinx sphinx-intl sphinx-rtd-theme`.
 

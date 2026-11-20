@@ -1,8 +1,7 @@
-// Commit gate rules; headerPattern must stay identical to .releaserc.json parserOpts
-//
-// Form: <type>(<emoji|scope>)?!?: <description>  e.g. feat(:fire:): cross-compile support
-//
-// Emoji semantics (CI triggers): see .github/skills/_shared/gitmoji.md
+// Commit gate: <type>(:emoji:): <description>; see .github/skills/_shared/gitmoji.md and /het-commit.
+// headerPattern must stay identical to .releaserc.json parserOpts (emoji <-> scope).
+const canonical = require('./commitlint-plugin-canonical');
+
 module.exports = {
   parserPreset: {
     parserOpts: {
@@ -10,7 +9,9 @@ module.exports = {
       headerCorrespondence: ['type', 'scope', 'subject'],
     },
   },
+  plugins: [canonical],
   rules: {
+    'canonical-scope': [2, 'always'],
     'type-enum': [
       2,
       'always',

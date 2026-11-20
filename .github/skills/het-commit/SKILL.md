@@ -20,10 +20,12 @@ user-invocable: true
 1. **Analyze**: `git status` + `git diff` (staged or working tree). 分析改动。
 2. **Classify**: map each file change to a conventional type. 分类。
 3. **Split**: different types → separate commits (feat/fix/docs/test/ci apart). 拆分。
-4. **Generate**: `<type>(<emoji>): <summary>` — **emoji in the parentheses after the commit word**, e.g. `test(:beer:): vector add cases`, `chore(:package:): prepare release`. 生成信息，emoji 放括号。
+4. **Generate**: `<type>(:emoji:): <summary>` — the scope **must** be a gitmoji, e.g. `test(:beer:): vector add cases`, `chore(:package:): prepare release`. 生成信息，scope 必须是 emoji；`fix(board):` 这类普通 scope 会被 `canonical-scope` 规则拒绝。
+   - Only automation may use a plain scope: `chore(release):`, `chore(deps):`, `build(deps):`.
    - Soft rule: emoji anywhere in the message still triggers CI, but always use the canonical placement. 软性规则下任意位置可触发，但一律按规范放括号。
 5. **Preview**: list every commit (type + files + message), **wait for confirmation**. 预览待确认。
 6. **Execute**: `git commit` after confirmation (no push by default). 确认后提交，默认不 push。
+7. **Validate**: `--check` runs commitlint on `HEAD` (plus the open PR title when `gh` is available); `--title` prints the squash-ready title. 提交后与开 PR 前复用同一份规则。
 
 ## Message Budget（篇幅预算 —— 硬性）
 
@@ -89,7 +91,7 @@ One push can ask for more than one pipeline: the controller greps **every** comm
 
 ## Checklist（自检清单）
 
-- [ ] Each commit has conventional prefix + correct emoji. 前缀 + emoji 正确。
+- [ ] Each commit has a conventional prefix and a `:emoji:` scope (automation scopes excepted). 前缀 + emoji scope 正确。
 - [ ] Subject ≤ 72 chars; body absent, or ≤ 3 lines / 200 chars. 篇幅达标。
 - [ ] Different types split. 已拆分。
 - [ ] Breaking annotated. breaking 已标注。

@@ -32,6 +32,15 @@ user-invocable: true
 | coverage gate red in `Tests` | the report was produced but the summary is absent or 0% | the gate reads `coverage_summary.json`; 0% means no test reached the library |
 | `[coverage] FAIL all … floor …` | the rate dropped below `metadata.coverage.floors.<RUNNER_OS>` | add tests for the new code; raise a floor only when the rate rose, and lower it only with the reason in the commit message |
 
+### Commit / Scaffold gates（提交与脚手架门禁）
+| Symptom（症状） | Cause（原因） | Fix（修复） |
+|------|------|------|
+| `canonical-scope` red | scope is a plain word such as `fix(board):` | rewrite as `fix(:bug:): ...` or run `/het-commit`; only `chore(release)` / `chore(deps)` / `build(deps)` are exempt |
+| PR title red | the PR title becomes the squash subject | rename the PR with the canonical form |
+| local hook did not run | commit-msg hook never installed | `npm run hooks:install` |
+| `Scaffold Check` red: `scaffold drift` | a template-owned file was edited locally | revert it, or upstream the change and bump `metadata.scaffold`; declared forks belong in `.github/project/scaffold.json` `tolerated` |
+| `Scaffold Check` skipped | `metadata.name == "fcpp"` (the upstream template itself) | expected |
+
 ### Release（发布）
 | Symptom | Cause | Fix |
 |------|------|------|

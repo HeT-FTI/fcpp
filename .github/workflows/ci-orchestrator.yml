@@ -22,11 +22,26 @@ concurrency:
 # least privilege: no workflow-level permissions block; each job scopes its own token
 
 jobs:
+  # Step 0: reject scaffold drift before any other preflight runs.
+  scaffold-check:
+    name: Scaffold Check
+    if: ${{ github.event_name != 'push' || github.event.commits[0].message != 'Initial commit' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Compare scaffold files with the pinned release
+        run: python3 .github/misc/scaffold_check.py
+
   # Step 1: Call the metadata controller to analyze metadata.json
   controller:
     name: Analyze Metadata
     # skip every pipeline on the template instantiation push ("Initial commit")
     if: ${{ github.event_name != 'push' || github.event.commits[0].message != 'Initial commit' }}
+    needs: [commit-lint, schema-check, skills-contract]
     uses: ./.github/workflows/metadata-controller.yml
     with:
       event_name: ${{ github.event_name }}
@@ -70,6 +85,7 @@ jobs:
     name: Commit Lint
     # Skip on the template instantiation push (see controller job above).
     if: ${{ github.event_name != 'push' || github.event.commits[0].message != 'Initial commit' }}
+    needs: scaffold-check
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -107,11 +123,18 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: printf '%s' "$PR_TITLE" | ./node_modules/.bin/commitlint --config .github/misc/commitlint.config.js
 
+      - name: Lint PR commits
+        if: github.event_name == 'pull_request'
+        run: |
+          FROM="$(git merge-base "origin/${{ github.base_ref }}" HEAD)"
+          ./node_modules/.bin/commitlint --config .github/misc/commitlint.config.js --from "$FROM" --to HEAD --verbose
+
   # Step 2c: Validate metadata.json against the machine-readable contract
   schema-check:
     name: Metadata Schema
     # Skip on the template instantiation push (see controller job above).
     if: ${{ github.event_name != 'push' || github.event.commits[0].message != 'Initial commit' }}
+    needs: scaffold-check
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -155,6 +178,7 @@ jobs:
     name: Skills Contract
     # Skip on the template instantiation push (see controller job above).
     if: ${{ github.event_name != 'push' || github.event.commits[0].message != 'Initial commit' }}
+    needs: scaffold-check
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -180,6 +204,26 @@ jobs:
             exit 1
           fi
 
+  # Step 2e: Run project-owned gates injected by downstream repositories
+  project-gates:
+    name: Project Gates
+    if: ${{ github.event_name != 'push' || github.event.commits[0].message != 'Initial commit' }}
+    needs: [commit-lint, schema-check, skills-contract]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Run project-owned gates
+        run: |
+          if [ -x .github/project/ci.sh ]; then
+            bash .github/project/ci.sh
+          else
+            echo "::notice::no project gates in this repository"
+          fi
+
   # Step 3: Trigger downstream workflows based on controller outputs
   
   build:
@@ -202,7 +246,17 @@ jobs:
       activate_code_coverage: ${{ needs.controller.outputs.activate_code_coverage }}
       build_type: ${{ needs.controller.outputs.build_type }}
 
-  # Release is not called here: it is standalone so it can hold write permissions
+  # Release runs in the same orchestrator run; semver-release.yml gates on :package: again.
+  release:
+    name: Release
+    needs: controller
+    if: github.event_name == 'push' && needs.controller.outputs.trigger_release == 'true'
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    uses: ./.github/workflows/semver-release.yml
+    secrets: inherit
 
   docs:
     name: Documentation
@@ -215,6 +269,7 @@ jobs:
     needs: controller
     if: needs.controller.outputs.trigger_security == 'true'
     uses: ./.github/workflows/security-linters.yml
+    secrets: inherit
     with:
       validate_all_codebase: ${{ github.event_name == 'push' && 'true' || 'false' }}
 

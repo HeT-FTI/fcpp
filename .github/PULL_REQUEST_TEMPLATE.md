@@ -4,7 +4,7 @@
 
 ## 自检清单（Checklist）
 
-- [ ] 提交遵循 canonical form：`<type>(<emoji|scope>)?!?: <description>`（见 `.github/CONTRIBUTING.md`）
+- [ ] 提交遵循 canonical form：`<type>(:emoji:)!?: <description>`（见 `.github/CONTRIBUTING.md`），已运行 `/het-commit` 或等价校验
 - [ ] `metadata.json` 通过 schema 校验：`npx ajv validate -s .github/misc/metadata.schema.json -d metadata.json --spec=draft7`
 - [ ] 格式检查通过：C 家族（`.c/.h`）用 `.github/misc/.clang-format-c`，C++ 家族（`.hpp/.cpp`）用 `.github/misc/.clang-format-cpp`：`python3 .github/misc/gates.py format`
 - [ ] 静态检查通过：`python3 .github/misc/gates.py tidy`

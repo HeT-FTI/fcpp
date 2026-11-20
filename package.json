@@ -5,6 +5,7 @@
   "description": "Node-side tooling for fcpp: commit lint gates and semantic-release (private, never published to npm).",
   "license": "Apache-2.0",
   "scripts": {
+    "hooks:install": "pre-commit install --hook-type pre-commit --hook-type commit-msg --config .github/misc/.pre-commit-config.yaml",
     "lint:megalinter": "bash .github/misc/run-megalinter.sh",
     "lint:megalinter:fix": "bash .github/misc/run-megalinter.sh --fix",
     "skills:validate": "python3 .github/skills/_shared/skillkit/cli.py validate --strict",
@@ -26,6 +27,6 @@
     "semantic-release": "^24.2.0"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.18"
   }
 }

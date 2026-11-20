@@ -24,6 +24,13 @@ repos:
         language: system
         files: '^(include|src)/.*\.(c|h|cpp|hpp)$'
 
+      - id: scaffold-check
+        name: scaffold-check (staged scaffold files vs pinned template)
+        entry: python3 .github/misc/scaffold_check.py --staged
+        language: system
+        pass_filenames: false
+        always_run: true
+
       - id: commitlint
         name: commitlint
         entry: npx commitlint --edit --config .github/misc/commitlint.config.js

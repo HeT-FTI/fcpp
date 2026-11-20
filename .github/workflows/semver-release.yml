@@ -1,12 +1,10 @@
 name: Release
 
-# Standalone on push to main so it can hold write permissions; gated by workflow_triggers.release
+# Called by ci-orchestrator.yml with write permissions; gated by workflow_triggers.release
 
 on:
   workflow_call:
     # No inputs needed - this workflow uses secrets
-  push:
-    branches: [main]
 
 jobs:
   gate:
