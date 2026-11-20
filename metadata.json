@@ -1,8 +1,8 @@
 {
   "name": "fcpp",
   "target": "auto",
-  "version": "0.3.10",
-  "scaffold": "0.3.10",
+  "version": "0.3.11",
+  "scaffold": "0.3.11",
   "team": "HeT-FTI",
   "license": "Apache-2.0",
   "description": "The simple description in meta",

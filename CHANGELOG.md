@@ -1,3 +1,9 @@
+## [0.3.11](https://github.com/HeT-FTI/fcpp/compare/v0.3.10...v0.3.11) (2026-11-20)
+
+### Bug Fixes
+
+* gate release behind the full CI result ([f9f3fb9](https://github.com/HeT-FTI/fcpp/commit/f9f3fb950f8778e7507d37a86551a6c2003b0ea8))
+
 ## [0.3.10](https://github.com/HeT-FTI/fcpp/compare/v0.3.9...v0.3.10) (2026-11-20)
 
 ### Bug Fixes
